@@ -45,9 +45,6 @@ object MainForm: TMainForm
     OnGetNodeDataSize = vtServicesGetNodeDataSize
     OnHeaderClick = vtServicesHeaderClick
     OnInitNode = vtServicesInitNode
-    ExplicitLeft = 0
-    ExplicitWidth = 527
-    ExplicitHeight = 336
     Columns = <
       item
         Position = 0
@@ -80,15 +77,14 @@ object MainForm: TMainForm
     Header.MainColumn = -1
     Images = ilImages
     TabOrder = 1
+    TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages]
+    TreeOptions.SelectionOptions = [toFullRowSelect]
     OnFreeNode = vtFoldersFreeNode
     OnGetText = vtFoldersGetText
     OnGetImageIndex = vtFoldersGetImageIndex
     OnGetNodeDataSize = vtFoldersGetNodeDataSize
     OnInitNode = vtFoldersInitNode
-    ExplicitLeft = 248
-    ExplicitTop = 88
-    ExplicitHeight = 100
     Columns = <>
   end
   object ActionList: TActionList

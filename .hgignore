@@ -1,0 +1,73 @@
+syntax:glob
+
+# Object files
+*.dcu
+*.obj
+*.dcuil
+
+# Map files
+*.map
+*.tds
+*.rsm
+*.dsm
+
+# Don't import tlbs, import idls from which they're generated
+*.tlb
+
+# Delphi history
+__history
+~history
+*.~*
+
+# Cache/temp/local files
+*.local
+*.identcache
+*.drc
+*.cbk
+*.dsk
+Profiling
+Dcu
+
+# Log files (no need to version these)
+*.log
+*.Log
+
+# Projects are stored now
+# *.groupproj
+# *.dproj
+
+# Older projects are not stored
+*.bdsgroup
+*.bdsproj
+*.bpg
+
+# *.res files are mostly auto-regenerated,
+# so ignore unless explicitly asked to store, to avoid confusion.
+*.res
+
+# Other permanent stuff we don't save
+dunit.ini
+*.vlb
+*.dof
+
+# Windows junk
+*/*/Thumbs.db
+
+# Binaries
+*.dpl
+*.bpl
+*.dcp
+*.dcpil
+
+# Release
+*.exe
+*.lay
+*.pkg
+*.uni
+*.CHK
+*.chr
+*.dic
+*.edc
+*.res
+Project/Win32*
+Project/Win64*

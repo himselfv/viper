@@ -1,0 +1,3 @@
+Provides notifications for AutoPlay hardware events.
+
+Used for the auto play of devices like memory cards, CD/DVD drives, etc. Also, set to Automatic if you are experiencing problems with laptop docking stations. In “My Computer,” you may not see your hardware (example: DVD drive) displayed as a “DVD Drive” if this service is disabled. However, all functionality still exists. In addition, when checking the properties of an “auto play” device, such as a DVD drive, you will not have an auto play tab displayed or available. This service also allows the option of selecting what action you wish to take with a particular “type” of file. If you enjoy the auto play function of CD’s and DVD’s after inserting them into your drive, leave this service on Automatic.

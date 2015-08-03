@@ -1,0 +1,5 @@
+System Event Notification Service
+
+Monitors system events and notifies subscribers to COM+ Event System of these events.
+
+Требуется для работы профилей пользователей, или кроме администраторов никто не залогинится.

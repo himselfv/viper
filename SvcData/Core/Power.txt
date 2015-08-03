@@ -1,0 +1,3 @@
+Manages power policy and power policy notification delivery.
+
+This is needed for Hibernate functionality to work.

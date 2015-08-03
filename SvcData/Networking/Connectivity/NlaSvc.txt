@@ -1,0 +1,9 @@
+Служба сведений о подключенных сетях
+
+Collects and stores configuration information for the network and notifies programs when this information is modified. If this service is stopped, configuration information might be unavailable. If this service is disabled, any services that explicitly depend on it will fail to start.
+
+This service in conjunction with Network List Service and Network Connections enables status of network connections in the system tray.
+
+Собирает и сохраняет сведения о конфигурации сети и уведомляет программы при изменении этих сведений. Если данная служба будет остановлена, сведения о конфигурации могут стать недоступными. Если данная служба отключена, все явно зависящие от нее службы запустить не удастся.
+
+Судя по всему, требуется для иконки подключенной сети.

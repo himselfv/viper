@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   Caption = #1057#1083#1091#1078#1073#1099
   ClientHeight = 609
-  ClientWidth = 997
+  ClientWidth = 1040
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,6 +11,8 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -23,32 +25,40 @@ object MainForm: TMainForm
   object vtServices: TVirtualStringTree
     Left = 203
     Top = 0
-    Width = 794
+    Width = 837
     Height = 609
     Align = alClient
+    BorderWidth = 1
+    Font.Charset = RUSSIAN_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Segoe UI'
+    Font.Style = []
     Header.AutoSizeIndex = 0
     Header.Font.Charset = DEFAULT_CHARSET
     Header.Font.Color = clWindowText
-    Header.Font.Height = -11
+    Header.Font.Height = -13
     Header.Font.Name = 'Tahoma'
     Header.Font.Style = []
-    Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+    Header.Height = 24
+    Header.Options = [hoColumnResize, hoDrag, hoHotTrack, hoShowSortGlyphs, hoVisible]
     Images = ilImages
+    ParentFont = False
     TabOrder = 0
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
     TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    TreeOptions.PaintOptions = [toThemeAware, toUseBlendedImages]
-    TreeOptions.SelectionOptions = [toFullRowSelect]
+    TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
+    TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
     OnCompareNodes = vtServicesCompareNodes
-    OnFreeNode = vtServicesFreeNode
     OnGetText = vtServicesGetText
+    OnGetImageIndex = vtServicesGetImageIndex
     OnGetNodeDataSize = vtServicesGetNodeDataSize
     OnHeaderClick = vtServicesHeaderClick
     OnInitNode = vtServicesInitNode
     Columns = <
       item
         Position = 0
-        Width = 100
+        Width = 150
         WideText = 'ID'
       end
       item
@@ -68,6 +78,7 @@ object MainForm: TMainForm
     Width = 200
     Height = 609
     Align = alLeft
+    BorderWidth = 1
     Header.AutoSizeIndex = 0
     Header.Font.Charset = DEFAULT_CHARSET
     Header.Font.Color = clWindowText
@@ -78,7 +89,7 @@ object MainForm: TMainForm
     Images = ilImages
     TabOrder = 1
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages]
+    TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect]
     OnFreeNode = vtFoldersFreeNode
     OnGetText = vtFoldersGetText
@@ -97,6 +108,8 @@ object MainForm: TMainForm
     end
   end
   object ilImages: TImageList
+    ColorDepth = cd32Bit
+    DrawingStyle = dsTransparent
     Left = 24
     Top = 72
   end

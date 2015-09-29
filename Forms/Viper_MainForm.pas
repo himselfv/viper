@@ -5,14 +5,16 @@ interface
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics,
   Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, Vcl.ExtCtrls,
-  ImgList, UiTypes, Generics.Collections;
+  ImgList, UiTypes, Generics.Collections, Vcl.Menus, ServiceHelper;
 
 type
   TServiceEntry = class
     ServiceName: string;
     DisplayName: string;
     Description: string;
-    ServiceStatus: SERVICE_STATUS;
+    Status: SERVICE_STATUS;
+    Config: LPQUERY_SERVICE_CONFIG;
+    destructor Destroy; override;
   end;
 
   TFolderNodeType = (
@@ -25,6 +27,7 @@ type
     NodeType: TFolderNodeType;
     FolderName: string;
     Services: array of string;
+    function ContainsService(AServiceName: string): boolean;
   end;
   PNdFolderData = ^TNdFolderData;
 
@@ -35,6 +38,38 @@ type
     Splitter1: TSplitter;
     vtFolders: TVirtualStringTree;
     ilImages: TImageList;
+    MainMenu: TMainMenu;
+    Settings1: TMenuItem;
+    cbHideEmptyFolders: TMenuItem;
+    aStartService: TAction;
+    aStopService: TAction;
+    aPauseService: TAction;
+    aResumeService: TAction;
+    aRestartService: TAction;
+    pmServices: TPopupMenu;
+    Start1: TMenuItem;
+    Stop1: TMenuItem;
+    Pause1: TMenuItem;
+    Resume1: TMenuItem;
+    Restart1: TMenuItem;
+    N1: TMenuItem;
+    Reload1: TMenuItem;
+    N2: TMenuItem;
+    miStartType: TMenuItem;
+    aStartTypeAutomatic: TAction;
+    aStartTypeManual: TAction;
+    aStartTypeDisabled: TAction;
+    Automatic1: TMenuItem;
+    Manual1: TMenuItem;
+    Disabled1: TMenuItem;
+    aDeleteService: TAction;
+    aExportService: TAction;
+    Advanced1: TMenuItem;
+    Exporttoreg1: TMenuItem;
+    Deleteservice1: TMenuItem;
+    aHideEmptyFolders: TAction;
+    pmFolders: TPopupMenu;
+    Hideemptyfolders1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -54,18 +89,31 @@ type
     procedure vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vtFoldersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure vtServicesGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: TImageIndex);
-    procedure vtFoldersGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: TImageIndex);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: Boolean; var ImageIndex: Integer);
+    procedure vtServicesGetImageIndex(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: Boolean; var ImageIndex: Integer);
+    procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Column: TColumnIndex);
+    procedure vtServicesFocusChanged(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Column: TColumnIndex);
+    procedure aHideEmptyFoldersExecute(Sender: TObject);
   protected
     iFolder, iService: integer;
     FServices: TObjectList<TServiceEntry>;
     function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
     function vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
     function LoadIcon(const ALibName: string; AResId: integer): integer;
+    procedure FilterServices(AFolder: PNdFolderData);
+    procedure FilterServices_Callback(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure FilterFolders();
+    procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   public
     procedure Reload;
     procedure LoadServiceTree;
@@ -127,6 +175,15 @@ begin
   end;
 end;
 
+destructor TServiceEntry.Destroy;
+begin
+  if Self.Config <> nil then begin
+    FreeMem(Self.Config);
+    Self.Config := nil;
+  end;
+  inherited;
+end;
+
 //Загружает список служб с их состояниями
 procedure TMainForm.Reload;
 var hSC: SC_HANDLE;
@@ -145,14 +202,14 @@ begin
     Services := nil;
     ServicesReturned := 0;
     ResumeHandle := 0;
-    if EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_ACTIVE or SERVICE_INACTIVE,
+    if EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_STATE_ALL,
        Services^,0, BytesNeeded,ServicesReturned,ResumeHandle) then Exit; //no services
     if GetLastError <> ERROR_MORE_DATA then RaiseLastOSError;
     GetMem(Services,BytesNeeded);
     try
       ServicesReturned := 0;
       ResumeHandle := 0;
-      if not EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_ACTIVE or SERVICE_INACTIVE,
+      if not EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_STATE_ALL,
         Services^,BytesNeeded,BytesNeeded,ServicesReturned,ResumeHandle) then
         RaiseLastOsError;
       S := Services;
@@ -160,7 +217,8 @@ begin
         svc := TServiceEntry.Create;
         svc.ServiceName := S^.lpServiceName;
         svc.DisplayName := S^.lpDisplayName;
-        svc.ServiceStatus := S^.ServiceStatus;
+        svc.Status := S^.ServiceStatus;
+        svc.Config := QueryServiceConfig(hSC, S^.lpServiceName);
         FServices.Add(svc);
         Inc(S);
       end;
@@ -173,6 +231,7 @@ begin
   end;
 
   vtServices.RootNodeCount := FServices.Count;
+  FilterFolders; //service list changed, re-test which folders are empty
 end;
 
 procedure TMainForm.vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
@@ -198,7 +257,7 @@ begin
     NoColumn, 0:
       CellText := Data.ServiceName;
     1: CellText := Data.DisplayName;
-    2: case Data.ServiceStatus.dwCurrentState of
+    2: case Data.Status.dwCurrentState of
          SERVICE_STOPPED: CellText := '';
          SERVICE_START_PENDING: CellText := 'Запускается...';
          SERVICE_STOP_PENDING: CellText := 'Завершается...';
@@ -206,17 +265,19 @@ begin
          SERVICE_CONTINUE_PENDING: CellText := 'Возобновляется...';
          SERVICE_PAUSE_PENDING: CellText := 'Приостанавливается...';
          SERVICE_PAUSED: CellText := 'Приостановлена';
-       else CellText := 'Неясно ('+IntToStr(Data.ServiceStatus.dwCurrentState)+')';
+       else CellText := 'Неясно ('+IntToStr(Data.Status.dwCurrentState)+')';
        end;
-  end;
-end;
-
-procedure TMainForm.vtServicesGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: TImageIndex);
-begin
-  if not (Kind in [ikNormal, ikSelected]) then exit;
-  case Column of
-    NoColumn, 0: ImageIndex := iService;
+    3: if Data.Config = nil then
+         CellText := ''
+       else
+       case Data.Config.dwStartType of
+         SERVICE_AUTO_START: CellText := 'Автоматически';
+         SERVICE_DEMAND_START: CellText := 'Вручную';
+         SERVICE_DISABLED: CellText := 'Отключена';
+         SERVICE_BOOT_START: CellText := 'Авто (загрузка)';
+         SERVICE_SYSTEM_START: CellText := 'Авто (система)';
+       else CellText := '';
+       end;
   end;
 end;
 
@@ -229,7 +290,17 @@ begin
   case Column of
     0, NoColumn: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
     1: Result := CompareText(Data1.DisplayName, Data2.DisplayName);
-    2: Result := Data2.ServiceStatus.dwCurrentState - Data1.ServiceStatus.dwCurrentState;
+    2: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
+    3: if Data1.Config = nil then
+         if Data2.Config = nil then
+           Result := 0
+         else
+           Result := 1
+       else
+         if Data2.Config = nil then
+           Result := -1
+         else
+           Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
   end;
 end;
 
@@ -249,22 +320,98 @@ begin
     Sender.Treeview.SortTree(Sender.SortColumn, Sender.SortDirection);
 end;
 
+procedure TMainForm.vtServicesGetImageIndex(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+  var Ghosted: Boolean; var ImageIndex: Integer);
+begin
+  if not (Kind in [ikNormal, ikSelected]) then exit;
+  case Column of
+    NoColumn, 0: ImageIndex := iService;
+  end;
+end;
+
+procedure TMainForm.FilterServices(AFolder: PNdFolderData);
+begin
+  vtServices.BeginUpdate;
+  try
+    vtServices.IterateSubtree(nil, FilterServices_Callback, AFolder, [], {DoInit=}true);
+  finally
+    vtServices.EndUpdate;
+  end;
+end;
+
+procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var nd: TServiceEntry;
+begin
+  if Data=nil then begin
+    Sender.IsVisible[Node] := true;
+    exit;
+  end;
+
+  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+  Assert(nd <> nil);
+
+  case PNdFolderData(Data).NodeType of
+    ntFolder: Sender.IsVisible[Node] := PNdFolderData(Data).ContainsService(nd.ServiceName);
+    ntRunningServices: Sender.IsVisible[Node] := (nd.Status.dwCurrentState <> SERVICE_STOPPED);
+    ntAllServices: Sender.IsVisible[Node] := true;
+  end;
+end;
+
+procedure TMainForm.vtServicesFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var nd: TServiceEntry;
+begin
+  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+
+  aStartService.Visible := (nd <> nil) and (nd.Status.dwCurrentState = SERVICE_STOPPED);
+  aStopService.Visible := (nd <> nil) and (nd.Status.dwCurrentState <> SERVICE_STOPPED)
+    and (nd.Status.dwCurrentState <> SERVICE_STOP_PENDING);
+  aPauseService.Visible := (nd <> nil) and (nd.Status.dwCurrentState = SERVICE_RUNNING);
+  aResumeService.Visible := (nd <> nil) and (nd.Status.dwCurrentState = SERVICE_PAUSED);
+  aRestartService.Visible := (nd <> nil) and ((nd.Status.dwCurrentState = SERVICE_RUNNING)
+    or (nd.Status.dwCurrentState = SERVICE_PAUSED));
+
+  aStartTypeAutomatic.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_AUTO_START);
+  aStartTypeManual.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_DEMAND_START);
+  aStartTypeDisabled.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_DISABLED);
+
+  aStartTypeAutomatic.Visible := (nd <> nil) and (nd.Config <> nil);
+  aStartTypeManual.Visible := (nd <> nil) and (nd.Config <> nil);
+  aStartTypeDisabled.Visible := (nd <> nil) and (nd.Config <> nil);
+  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
+
+end;
+
+
+
 
 
 //Загружает структуру папок со службами
 procedure TMainForm.LoadServiceTree;
 begin
-  vtFolders.Clear;
-  LoadServiceFolder(nil, AppFolder+'\SvcData');
-  vtFolders_AddSpecial(ntRunningServices, 'Работающие');
-  vtFolders_AddSpecial(ntAllServices, 'Все');
+  vtFolders.BeginUpdate;
+  try
+    vtFolders.Clear;
+    LoadServiceFolder(nil, AppFolder+'\SvcData');
+    vtFolders_AddSpecial(ntRunningServices, 'Работающие');
+    vtFolders_AddSpecial(ntAllServices, 'Все');
+  finally
+    vtFolders.EndUpdate;
+  end;
 end;
 
 procedure TMainForm.LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
 var res: integer;
   sr: TSearchRec;
   node: PVirtualNode;
+  nd: PNdFolderData;
 begin
+  if AParentNode = nil then
+    nd := nil
+  else
+    nd := PNdFolderData(vtFolders.GetNodeData(AParentNode));
   res := FindFirst(AFolderPath+'\*.*', faAnyFile, sr);
   while res = 0 do begin
     if (sr.Name='.') or (sr.Name='..') then begin
@@ -274,11 +421,26 @@ begin
     if (sr.Attr and faDirectory) = faDirectory then begin
       node := vtFolders_Add(AParentNode, AFolderPath+'\'+sr.Name);
       LoadServiceFolder(node, AFolderPath+'\'+sr.Name);
+    end else
+    if nd <> nil then begin
+      SetLength(nd.Services, Length(nd.Services)+1);
+      nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
     end;
-    //TODO: Also add services.
     res := FindNext(sr);
   end;
   SysUtils.FindClose(sr);
+end;
+
+function TNdFolderData.ContainsService(AServiceName: string): boolean;
+var i: integer;
+begin
+  Result := false;
+  AServiceName := LowerCase(AServiceName);
+  for i := 0 to Length(Self.Services)-1 do
+    if LowerCase(Self.Services[i]) = AServiceName then begin
+      Result := true;
+      break;
+    end;
 end;
 
 function TMainForm.vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
@@ -335,11 +497,68 @@ begin
   end;
 end;
 
-procedure TMainForm.vtFoldersGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: TImageIndex);
+procedure TMainForm.vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+  var Ghosted: Boolean; var ImageIndex: Integer);
 begin
   if not (Kind in [ikNormal, ikSelected]) then exit;
   ImageIndex := iFolder;
+end;
+
+procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var nd: PNdFolderData;
+begin
+  if Node = nil then
+    FilterServices(nil)
+  else begin
+    nd := PNdFolderData(Sender.GetNodeData(Node));
+    FilterServices(nd);
+  end;
+end;
+
+procedure TMainForm.aHideEmptyFoldersExecute(Sender: TObject);
+begin
+  FilterFolders;
+end;
+
+procedure TMainForm.FilterFolders();
+begin
+  vtFolders.BeginUpdate;
+  try
+    vtFolders.IterateSubtree(nil, FilterFolders_Callback, nil, [], {DoInit=}true);
+  finally
+    vtFolders.EndUpdate;
+  end;
+end;
+
+procedure TMainForm.FilterFolders_Callback(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var nd: PNdFolderData;
+  HasAnyServices: boolean;
+  service: TServiceEntry;
+begin
+  if Node=nil then begin
+    Sender.IsVisible[Node] := true;
+    exit;
+  end;
+
+  nd := PNdFolderData(Sender.GetNodeData(Node));
+  Assert(nd <> nil);
+  if nd.NodeType <> ntFolder then begin
+    Sender.IsVisible[Node] := true;
+    exit;
+  end;
+
+  //This can be moved to service/folder list reloading and HasAnyServices flag cached
+  HasAnyServices := false;
+  for service in Self.FServices do
+    if nd.ContainsService(service.ServiceName) then begin
+      HasAnyServices := true;
+      break;
+    end;
+
+  Sender.IsVisible[Node] := (not cbHideEmptyFolders.Checked) or HasAnyServices;
 end;
 
 

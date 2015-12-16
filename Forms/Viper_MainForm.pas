@@ -20,7 +20,8 @@ type
   TFolderNodeType = (
     ntFolder,
     ntRunningServices,
-    ntAllServices
+    ntAllServices,
+    ntUnknownServices
   );
 
   TNdFolderData = record
@@ -30,6 +31,9 @@ type
     function ContainsService(AServiceName: string): boolean;
   end;
   PNdFolderData = ^TNdFolderData;
+
+  TServiceFolders = array of PNdFolderData;
+  PServiceFolders = ^TServiceFolders;
 
   TMainForm = class(TForm)
     vtServices: TVirtualStringTree;
@@ -113,6 +117,9 @@ type
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure FilterFolders();
     procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
+    procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   public
     procedure Reload;
@@ -356,6 +363,7 @@ begin
     ntFolder: Sender.IsVisible[Node] := PNdFolderData(Data).ContainsService(nd.ServiceName);
     ntRunningServices: Sender.IsVisible[Node] := (nd.Status.dwCurrentState <> SERVICE_STOPPED);
     ntAllServices: Sender.IsVisible[Node] := true;
+    ntUnknownServices: Sender.IsVisible[Node] := Length(GetServiceFolders(nd)) <= 0;
   end;
 end;
 
@@ -395,6 +403,7 @@ begin
   try
     vtFolders.Clear;
     LoadServiceFolder(nil, AppFolder+'\SvcData');
+    vtFolders_AddSpecial(ntUnknownServices, 'Необычные');
     vtFolders_AddSpecial(ntRunningServices, 'Работающие');
     vtFolders_AddSpecial(ntAllServices, 'Все');
   finally
@@ -559,6 +568,38 @@ begin
     end;
 
   Sender.IsVisible[Node] := (not cbHideEmptyFolders.Checked) or HasAnyServices;
+end;
+
+
+type
+  TGetServiceFoldersData = record
+    Service: TServiceEntry;
+    List: TServiceFolders;
+  end;
+  PGetServiceFoldersData = ^TGetServiceFoldersData;
+
+//Возвращает список всех папок, в которые включена служба
+function TMainForm.GetServiceFolders(Service: TServiceEntry): TServiceFolders;
+var Data: TGetServiceFoldersData;
+begin
+  Data.Service := Service;
+  SetLength(Data.List, 0);
+  vtFolders.IterateSubtree(nil, GetServiceFolders_Callback, @Data);
+  Result := Data.List;
+end;
+
+procedure TMainForm.GetServiceFolders_Callback(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var ScanData: PGetServiceFoldersData absolute Data;
+  NodeData: PNdFolderData;
+begin
+  NodeData := Sender.GetNodeData(Node);
+  if NodeData = nil then exit;
+  if NodeData.NodeType <> ntFolder then exit;
+  if NodeData.ContainsService(ScanData.Service.ServiceName) then begin
+    SetLength(ScanData.List, Length(ScanData.List)+1);
+    ScanData.List[Length(ScanData.List)-1] := NodeData;
+  end;
 end;
 
 

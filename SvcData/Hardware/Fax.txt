@@ -1,0 +1,5 @@
+Fax
+
+Enables you to send and receive faxes, utilizing fax resources available on this computer or on the network.
+
+This service is not installed by default, you can install it through "Turn Windows Features on or off".

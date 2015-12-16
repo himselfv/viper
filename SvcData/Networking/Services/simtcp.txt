@@ -1,0 +1,5 @@
+Simple TCP/IP Services
+
+Supports the following TCP/IP services: Character Generator, Daytime, Discard, Echo, and Quote of the Day.
+
+This service is not installed by default.

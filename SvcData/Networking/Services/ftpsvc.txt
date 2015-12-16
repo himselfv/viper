@@ -1,0 +1,5 @@
+Microsoft FTP Service
+
+Enables this server to be a File Transfer Protocol (FTP) server. If this service is stopped, the server cannot function as an FTP server. If this service is disabled, any services that explicitly depend on it will fail to start.
+
+Default FTP server included in Windows, not installed by default.

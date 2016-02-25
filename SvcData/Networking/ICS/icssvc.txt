@@ -1,0 +1,1 @@
+Provides the ability to share a cellular data connection with another device.

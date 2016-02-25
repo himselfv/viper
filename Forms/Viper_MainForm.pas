@@ -81,6 +81,12 @@ type
     aColorByStartType: TAction;
     Colorize1: TMenuItem;
     Bystarttype1: TMenuItem;
+    File1: TMenuItem;
+    Reload2: TMenuItem;
+    aShowDrivers: TAction;
+    Showdrivers1: TMenuItem;
+    aColorByStatus: TAction;
+    Bystatus1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -208,6 +214,7 @@ end;
 //Загружает список служб с их состояниями
 procedure TMainForm.Reload;
 var hSC: SC_HANDLE;
+  ServiceTypes: dword;
   Services, S: PEnumServiceStatus;
   BytesNeeded,ServicesReturned,ResumeHandle: DWORD;
   i: integer;
@@ -216,6 +223,10 @@ begin
   vtServices.Clear;
   FServices.Clear;
 
+  ServiceTypes := SERVICE_WIN32;
+  if aShowDrivers.Checked then
+    ServiceTypes := ServiceTypes or SERVICE_DRIVER;
+
   hSC := OpenSCManager(nil, nil, SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   if hSC = 0 then
     RaiseLastOsError;
@@ -223,14 +234,14 @@ begin
     Services := nil;
     ServicesReturned := 0;
     ResumeHandle := 0;
-    if EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_STATE_ALL,
+    if EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
        Services^,0, BytesNeeded,ServicesReturned,ResumeHandle) then Exit; //no services
     if GetLastError <> ERROR_MORE_DATA then RaiseLastOSError;
     GetMem(Services,BytesNeeded);
     try
       ServicesReturned := 0;
       ResumeHandle := 0;
-      if not EnumServicesStatus(hSC, SERVICE_WIN32, SERVICE_STATE_ALL,
+      if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
         Services^,BytesNeeded,BytesNeeded,ServicesReturned,ResumeHandle) then
         RaiseLastOsError;
       S := Services;
@@ -311,10 +322,15 @@ var Data: TServiceEntry;
 begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
 
-  if (Data.Config <> nil) and (Data.Config.dwStartType = SERVICE_DISABLED) then begin
-//    EraseAction := eaColor;
-//    ItemColor := $EEEEEE;
-  end;
+  if (Data.Config <> nil) and aColorByStartType.Checked then
+    case Data.Config.dwStartType of
+      SERVICE_BOOT_START,
+      SERVICE_SYSTEM_START,
+      SERVICE_AUTO_START: begin
+        EraseAction := eaColor;
+        ItemColor := $00FFF7DD;//$00DDF5FF;
+      end;
+    end;
 end;
 
  //Customize the font
@@ -325,19 +341,21 @@ var Data: TServiceEntry;
 begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
 
+  if aColorByStatus.Checked then
+    case Data.Status.dwCurrentState of
+      SERVICE_STOPPED: begin end;
+    else
+      TargetCanvas.Font.Style := [fsBold];
+    end;
+
   if (Data.Config <> nil) and aColorByStartType.Checked then
     case Data.Config.dwStartType of
       SERVICE_BOOT_START,
       SERVICE_SYSTEM_START,
-      SERVICE_AUTO_START:
-        TargetCanvas.Font.Color := clBlue;
+      SERVICE_AUTO_START: begin end;
       SERVICE_DISABLED:
         TargetCanvas.Font.Color := $AAAAAA;
     end;
-
-{  if (Data.Status.dwCurrentState <> SERVICE_STOPPED) and (Column = 0) then begin
-    TargetCanvas.Font.Style := TargetCanvas.Font.Style + [fsBold];
-  end;}
 end;
 
 procedure TMainForm.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,

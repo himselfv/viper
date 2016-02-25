@@ -216,9 +216,21 @@ object MainForm: TMainForm
       OnExecute = aHideEmptyFoldersExecute
     end
     object aColorByStartType: TAction
-      Category = 'Display'
+      Category = 'Coloring'
       AutoCheck = True
       Caption = 'By start type'
+      Checked = True
+      OnExecute = aColorByStartTypeExecute
+    end
+    object aShowDrivers: TAction
+      AutoCheck = True
+      Caption = 'Show drivers'
+      OnExecute = aReloadExecute
+    end
+    object aColorByStatus: TAction
+      Category = 'Coloring'
+      AutoCheck = True
+      Caption = 'By status'
       Checked = True
       OnExecute = aColorByStartTypeExecute
     end
@@ -232,8 +244,18 @@ object MainForm: TMainForm
   object MainMenu: TMainMenu
     Left = 24
     Top = 128
+    object File1: TMenuItem
+      Caption = 'File'
+      object Reload2: TMenuItem
+        Action = aReload
+      end
+    end
     object Settings1: TMenuItem
       Caption = 'Settings'
+      object Showdrivers1: TMenuItem
+        Action = aShowDrivers
+        AutoCheck = True
+      end
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
         AutoCheck = True
@@ -242,6 +264,10 @@ object MainForm: TMainForm
         Caption = 'Colorize'
         object Bystarttype1: TMenuItem
           Action = aColorByStartType
+          AutoCheck = True
+        end
+        object Bystatus1: TMenuItem
+          Action = aColorByStatus
           AutoCheck = True
         end
       end

@@ -101,9 +101,11 @@ object MainForm: TMainForm
       TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
       TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
       TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
+      OnBeforeItemErase = vtServicesBeforeItemErase
       OnCompareNodes = vtServicesCompareNodes
       OnFocusChanged = vtServicesFocusChanged
       OnGetText = vtServicesGetText
+      OnPaintText = vtServicesPaintText
       OnGetImageIndex = vtServicesGetImageIndex
       OnGetNodeDataSize = vtServicesGetNodeDataSize
       OnHeaderClick = vtServicesHeaderClick
@@ -213,6 +215,13 @@ object MainForm: TMainForm
       Checked = True
       OnExecute = aHideEmptyFoldersExecute
     end
+    object aColorByStartType: TAction
+      Category = 'Display'
+      AutoCheck = True
+      Caption = 'By start type'
+      Checked = True
+      OnExecute = aColorByStartTypeExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -228,6 +237,13 @@ object MainForm: TMainForm
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
         AutoCheck = True
+      end
+      object Colorize1: TMenuItem
+        Caption = 'Colorize'
+        object Bystarttype1: TMenuItem
+          Action = aColorByStartType
+          AutoCheck = True
+        end
       end
     end
   end

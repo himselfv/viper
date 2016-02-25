@@ -78,6 +78,9 @@ type
     pnlDetails: TPanel;
     Splitter2: TSplitter;
     mmDetails: TMemo;
+    aColorByStartType: TAction;
+    Colorize1: TMenuItem;
+    Bystarttype1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -110,6 +113,13 @@ type
     procedure vtServicesFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
+    procedure vtServicesBeforeItemErase(Sender: TBaseVirtualTree;
+      TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect;
+      var ItemColor: TColor; var EraseAction: TItemEraseAction);
+    procedure vtServicesPaintText(Sender: TBaseVirtualTree;
+      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+      TextType: TVSTTextType);
+    procedure aColorByStartTypeExecute(Sender: TObject);
   protected
     iFolder, iService: integer;
     FServices: TObjectList<TServiceEntry>;
@@ -291,6 +301,43 @@ begin
        else CellText := '';
        end;
   end;
+end;
+
+//Customize the background
+procedure TMainForm.vtServicesBeforeItemErase(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect;
+  var ItemColor: TColor; var EraseAction: TItemEraseAction);
+var Data: TServiceEntry;
+begin
+  Data := TServiceEntry(Sender.GetNodeData(Node)^);
+
+  if (Data.Config <> nil) and (Data.Config.dwStartType = SERVICE_DISABLED) then begin
+//    EraseAction := eaColor;
+//    ItemColor := $EEEEEE;
+  end;
+end;
+
+ //Customize the font
+procedure TMainForm.vtServicesPaintText(Sender: TBaseVirtualTree;
+  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  TextType: TVSTTextType);
+var Data: TServiceEntry;
+begin
+  Data := TServiceEntry(Sender.GetNodeData(Node)^);
+
+  if (Data.Config <> nil) and aColorByStartType.Checked then
+    case Data.Config.dwStartType of
+      SERVICE_BOOT_START,
+      SERVICE_SYSTEM_START,
+      SERVICE_AUTO_START:
+        TargetCanvas.Font.Color := clBlue;
+      SERVICE_DISABLED:
+        TargetCanvas.Font.Color := $AAAAAA;
+    end;
+
+{  if (Data.Status.dwCurrentState <> SERVICE_STOPPED) and (Column = 0) then begin
+    TargetCanvas.Font.Style := TargetCanvas.Font.Style + [fsBold];
+  end;}
 end;
 
 procedure TMainForm.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
@@ -606,6 +653,11 @@ begin
     SetLength(ScanData.List, Length(ScanData.List)+1);
     ScanData.List[Length(ScanData.List)-1] := NodeData;
   end;
+end;
+
+procedure TMainForm.aColorByStartTypeExecute(Sender: TObject);
+begin
+  vtServices.Invalidate;
 end;
 
 

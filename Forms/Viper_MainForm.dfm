@@ -23,63 +23,6 @@ object MainForm: TMainForm
     Height = 609
     ExplicitLeft = 194
   end
-  object vtServices: TVirtualStringTree
-    Left = 203
-    Top = 0
-    Width = 837
-    Height = 609
-    Align = alClient
-    BorderWidth = 1
-    Font.Charset = RUSSIAN_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Segoe UI'
-    Font.Style = []
-    Header.AutoSizeIndex = 0
-    Header.Font.Charset = DEFAULT_CHARSET
-    Header.Font.Color = clWindowText
-    Header.Font.Height = -13
-    Header.Font.Name = 'Tahoma'
-    Header.Font.Style = []
-    Header.Height = 24
-    Header.Options = [hoColumnResize, hoDrag, hoHotTrack, hoShowSortGlyphs, hoVisible]
-    Images = ilImages
-    ParentFont = False
-    PopupMenu = pmServices
-    TabOrder = 0
-    TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
-    TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
-    TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
-    OnCompareNodes = vtServicesCompareNodes
-    OnFocusChanged = vtServicesFocusChanged
-    OnGetText = vtServicesGetText
-    OnGetImageIndex = vtServicesGetImageIndex
-    OnGetNodeDataSize = vtServicesGetNodeDataSize
-    OnHeaderClick = vtServicesHeaderClick
-    OnInitNode = vtServicesInitNode
-    Columns = <
-      item
-        Position = 0
-        Width = 150
-        WideText = 'ID'
-      end
-      item
-        Position = 1
-        Width = 500
-        WideText = #1053#1072#1079#1074#1072#1085#1080#1077
-      end
-      item
-        Position = 2
-        Width = 150
-        WideText = #1057#1086#1089#1090#1086#1103#1085#1080#1077
-      end
-      item
-        Position = 3
-        Width = 150
-        WideText = #1058#1080#1087' '#1079#1072#1087#1091#1089#1082#1072
-      end>
-  end
   object vtFolders: TVirtualStringTree
     Left = 0
     Top = 0
@@ -96,7 +39,7 @@ object MainForm: TMainForm
     Header.MainColumn = -1
     Images = ilImages
     PopupMenu = pmFolders
-    TabOrder = 1
+    TabOrder = 0
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
@@ -107,6 +50,108 @@ object MainForm: TMainForm
     OnGetNodeDataSize = vtFoldersGetNodeDataSize
     OnInitNode = vtFoldersInitNode
     Columns = <>
+  end
+  object pnlMain: TPanel
+    Left = 203
+    Top = 0
+    Width = 837
+    Height = 609
+    Align = alClient
+    BevelOuter = bvNone
+    TabOrder = 1
+    ExplicitLeft = 0
+    ExplicitTop = 568
+    ExplicitWidth = 41
+    ExplicitHeight = 1040
+    object Splitter2: TSplitter
+      Left = 0
+      Top = 453
+      Width = 837
+      Height = 3
+      Cursor = crVSplit
+      Align = alBottom
+      ExplicitTop = 0
+      ExplicitWidth = 568
+    end
+    object vtServices: TVirtualStringTree
+      Left = 0
+      Top = 0
+      Width = 837
+      Height = 453
+      Align = alClient
+      BorderWidth = 1
+      Font.Charset = RUSSIAN_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Segoe UI'
+      Font.Style = []
+      Header.AutoSizeIndex = 0
+      Header.Font.Charset = DEFAULT_CHARSET
+      Header.Font.Color = clWindowText
+      Header.Font.Height = -13
+      Header.Font.Name = 'Tahoma'
+      Header.Font.Style = []
+      Header.Height = 24
+      Header.Options = [hoColumnResize, hoDrag, hoHotTrack, hoShowSortGlyphs, hoVisible]
+      Images = ilImages
+      ParentFont = False
+      PopupMenu = pmServices
+      TabOrder = 0
+      TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
+      TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
+      TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
+      TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
+      OnCompareNodes = vtServicesCompareNodes
+      OnFocusChanged = vtServicesFocusChanged
+      OnGetText = vtServicesGetText
+      OnGetImageIndex = vtServicesGetImageIndex
+      OnGetNodeDataSize = vtServicesGetNodeDataSize
+      OnHeaderClick = vtServicesHeaderClick
+      OnInitNode = vtServicesInitNode
+      ExplicitHeight = 609
+      Columns = <
+        item
+          Position = 0
+          Width = 150
+          WideText = 'ID'
+        end
+        item
+          Position = 1
+          Width = 500
+          WideText = #1053#1072#1079#1074#1072#1085#1080#1077
+        end
+        item
+          Position = 2
+          Width = 150
+          WideText = #1057#1086#1089#1090#1086#1103#1085#1080#1077
+        end
+        item
+          Position = 3
+          Width = 150
+          WideText = #1058#1080#1087' '#1079#1072#1087#1091#1089#1082#1072
+        end>
+    end
+    object pnlDetails: TPanel
+      Left = 0
+      Top = 456
+      Width = 837
+      Height = 153
+      Align = alBottom
+      BevelOuter = bvNone
+      TabOrder = 1
+      object mmDetails: TMemo
+        Left = 0
+        Top = 0
+        Width = 837
+        Height = 153
+        Align = alClient
+        ReadOnly = True
+        TabOrder = 0
+        ExplicitLeft = 652
+        ExplicitWidth = 153
+        ExplicitHeight = 185
+      end
+    end
   end
   object ActionList: TActionList
     Left = 24

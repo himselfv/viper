@@ -5,7 +5,7 @@ interface
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics,
   Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, Vcl.ExtCtrls,
-  ImgList, UiTypes, Generics.Collections, Vcl.Menus, ServiceHelper;
+  ImgList, UiTypes, Generics.Collections, Vcl.Menus, ServiceHelper, Vcl.StdCtrls;
 
 type
   TServiceEntry = class
@@ -36,7 +36,6 @@ type
   PServiceFolders = ^TServiceFolders;
 
   TMainForm = class(TForm)
-    vtServices: TVirtualStringTree;
     ActionList: TActionList;
     aReload: TAction;
     Splitter1: TSplitter;
@@ -74,6 +73,11 @@ type
     aHideEmptyFolders: TAction;
     pmFolders: TPopupMenu;
     Hideemptyfolders1: TMenuItem;
+    pnlMain: TPanel;
+    vtServices: TVirtualStringTree;
+    pnlDetails: TPanel;
+    Splitter2: TSplitter;
+    mmDetails: TMemo;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -226,6 +230,7 @@ begin
         svc.DisplayName := S^.lpDisplayName;
         svc.Status := S^.ServiceStatus;
         svc.Config := QueryServiceConfig(hSC, S^.lpServiceName);
+        svc.Description := QueryServiceDescription(hSC, S^.lpServiceName);
         FServices.Add(svc);
         Inc(S);
       end;
@@ -390,6 +395,7 @@ begin
   aStartTypeDisabled.Visible := (nd <> nil) and (nd.Config <> nil);
   miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
 
+  mmDetails.Text := nd.Description;
 end;
 
 

@@ -1,0 +1,25 @@
+Microsoft Software Shadow Copy Provider
+
+Manages software-based volume shadow copies taken by the Volume Shadow Copy service. If this service is stopped, software-based volume shadow copies cannot be managed.
+
+-----
+
+The Microsoft Software Shadow Copy Provider service manages software-based shadow copies that are taken by the Volume Shadow Copy Service. A shadow copy is a snapshot copy of a disk volume that represents a consistent read-only point in time for that volume. This point-in-time snapshot then stays constant and allows an application, such as backup software, to copy data from the shadow copy to tape.
+
+There are two general classes of shadow copies:
+
+    Hardware. A hardware shadow copy is a mirror of two or more disks that are split into separate volumes. One of the two volumes remains the working set, and the other one can be mounted separately.
+
+    Software. A software shadow copy uses a copy-on-write scheme to copy all sectors of a volume that change over time into a differential area on disk. When the shadow copy is mounted, all unchanged sectors are read from the original volume and all sectors that have changed are read from the differential area.
+
+Shadow copies can resolve three classic data backup challenges:
+
+    The need to back up files that were opened for exclusive access. Backup of an open file is a challenge because it is likely in a state of change. Without a shadow copy or a way to suspend the application, backups often become corrupted.
+
+    The need to maintain a computer's availability during the shadow copy.
+
+    Use of the same communications channels as snapshots to facilitate information transfer between application and backup tools.
+
+If the Microsoft Software Shadow Copy Provider service stops, software-based volume shadow copies cannot be managed, which could cause Windows Backup to fail. 
+
+https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_swprv

@@ -1,0 +1,7 @@
+Storage Service
+
+ru:Предоставление служб, обеспечивающих параметры памяти и расширение внешнего хранилища
+
+> The Storage Service (StorSvc) enforces group policy settings for storage devices. It is available for computers running Windows 7 Professional or Windows 7 Enterprise only. Its startup type is Manual and logs on using the Local System account by default.
+
+Supposedly, only group policy settings?

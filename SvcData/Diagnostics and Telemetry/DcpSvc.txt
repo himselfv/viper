@@ -1,0 +1,20 @@
+Data Collection and Publishing / Crowdsourcing Service
+TELEMETRY
+
+> The DCP (Data Collection and Publishing) service supports first party apps to upload data to cloud.
+
+Seems to be related to Windows Phone and "crowdsourcing", telemetry. Contains URLs below.
+
+In dcpsvc.dll:
+> Windows Phone Crowdsourcing Data Loader
+> X-WPS-Partner-StatusCode, X-WPS-DeviceID:, X-WPS-Partner-StatusMessage, Content-Encoding: gzip, X-WPS-LiveID:, X-WPS-Crowdsource
+> https://dcpservice.windowsphone.com
+> https://dcp-pn.dcpservice.windowsphone-int.com/
+> dcp.windowsphone.net
+> PhoneMobileOperatorName,
+> Microsoft.Windows.Telemetry.DataCollectionAndPublish
+> Microsoft-Windows-DataCollectionServiceChannel
+
+Seems to have been called "CrowdsourcingService" before, as all functions start with that.
+
+RESUME: Probably better off disabled and/or deleted. Looks like a remnant from something deprecated.

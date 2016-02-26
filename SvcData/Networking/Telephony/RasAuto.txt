@@ -1,3 +1,11 @@
-Диспетчер автоматических подключений удаленного доступа
+Remote Access Auto Connection Manager
+ru:Диспетчер автоматических подключений удаленного доступа
 
-Создает подключение к удаленной сети, когда программа обращается к удаленному DNS- или NetBIOS-имени или адресу.
+Creates a connection to a remote network whenever a program references a remote DNS or NetBIOS name or address.
+ru:Создает подключение к удаленной сети, когда программа обращается к удаленному DNS- или NetBIOS-имени или адресу.
+
+
+The Remote Access Auto Connection Manager (RasAuto) service detects unsuccessful attempts to connect to a remote network or computer and provides alternative methods for connection. When a program fails in an attempt to reference a remote DNS or NetBIOS name or address or when network access is unavailable, the service displays a dialog box that allows you to make a dial-up or VPN connection to the remote computer.
+
+The Remote Access Auto Connection Manager service maintains a local database of connections that were previously used to reach named computers or shares. When the service detects an unsuccessful attempt to reach a remote computer or shared folder, it offers to dial the connection that was last used to reach this remote device. It is started automatically on an as-needed basis.
+https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_rasauto

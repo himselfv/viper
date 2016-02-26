@@ -1,0 +1,17 @@
+Provides protected storage for sensitive data, such as passwords, to prevent access by unauthorized services, processes, or users.
+
+Not to be confused with VaultSvc. Seems to be unrelated to saved passwords from "Manage your credentials" (see VaultSvc for that).
+
++Windows 7
+-Windows 10: Deprecated in Windows 10.
+
+> Protected Storage service was deprecated and made read-only in Vista and removed in Windows 8. It was not very secure.
+> The replacement to be used by app developers is a more secure API like the Windows Data Protection API. IE, EFS, CredMan, EFS all use that.
+https://social.technet.microsoft.com/Forums/en-US/86a8b803-9f8f-4875-b4b6-29d227e1e46f/where-is-protected-storage-service?forum=W8ITProPreRel
+
+> The Protected Storage service protects storage of sensitive information, such as private keys, and prevents access by unauthorized services, processes, or users. The service provides a set of software libraries that allow applications to retrieve security and other information from personal storage locations as it hides the implementation and details of the storage itself.
+> The storage location that is provided by this service is protected from modification. The Protected Storage service uses the Hash-Based Message Authentication Code (HMAC) and the Secure Hash Algorithm 1 (SHA1) cryptographic hash function to encrypt the user's master key. This component requires no configuration.
+> If the Protected Storage service stops, private keys are inaccessible, the Certificate Services service does not operate, Secure/Multipurpose Internet Mail Extensions (S/MIME) and SSL do not work, and smart card logon fails.
+https://technet.microsoft.com/en-us/library/hh125927(v=ws.10).aspx#BKMK_protectedstorage
+
+

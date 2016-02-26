@@ -1,0 +1,10 @@
+ru:Служба времени Windows
+
+The service itself is not required, but time must be kept synchronized finely enough because the following depends on it:
+* Cryptography (various handshakes)
+* Domain authentication
+* HTTPS / SSL / TLS / Secure connections
+
+Can be set to manual.
+
+ru:Управляет синхронизацией даты и времени на всех клиентах и серверах в сети. Если эта служба остановлена, синхронизация даты и времени не будет доступна.

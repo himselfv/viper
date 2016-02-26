@@ -1,0 +1,7 @@
+Indexing Service
+
+Replaced by: Windows Search.
+
+The Indexing Service (CISVC) indexes the contents and properties of files on local and remote computers and provides rapid access to files through a flexible querying language. The Indexing Service also enables quick document search capability on local and remote computers and a search index for content that is shared on the Web. The service builds indexes of all textual information in files and documents. After the initial index build is complete, the Indexing Service maintains its indexes whenever a file is created, modified, or deleted.
+
+The Indexing Service has been replaced by Windows Search in Windows 7 and Windows Server 2008 R2. However, the Indexing Service is still available in Windows 7 and Windows Server 2008 R2 but must be explicitly installed. Once installed, its default startup type is Automatic and it will log on using the Local System account.

@@ -1,0 +1,7 @@
+DirMngr
+
+GnuPG's service for managing and downloading certificate revocation lists and for downloading the certificates themselves.
+
+Can be set on Manual.
+
+https://www.gnupg.org/documentation/manuals/dirmngr/

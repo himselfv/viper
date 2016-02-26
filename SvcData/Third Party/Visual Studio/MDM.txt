@@ -1,0 +1,3 @@
+MDM (Machine Debug Manager)
+
+Supports local and remote debugging for Visual Studio and script debuggers. If this service is stopped, the debuggers will not function properly.

@@ -1,0 +1,13 @@
+ru:Служба общего доступа к портам Net.Tcp
+
+ru:Предоставляет возможность совместного использования TCP-портов по протоколу Net.Tcp.
+
+> A Worker Process: Any process communicating over net.tcp:// using shared ports.
+> The WCF TCP transport: Implements the net.tcp:// protocol.
+> The Net.TCP Port Sharing Service: Allows many worker processes to share the same TCP port.
+
+Related to: WCF (Windows Communication Foundation)
+
+Can safely be disabled almost always, unless some app explicitly requires it.
+
+Not to be confused with NetTcpActivator, which is part of WSA/Message queueing and is mostly unrelated.

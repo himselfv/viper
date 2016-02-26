@@ -1,0 +1,9 @@
+Net.Pipe Listener Adapter
+ru:Адаптер прослушивателя Net.Pipe
+
+ru:Получает запросы на активацию по протоколу net.pipe и передает их Службе активации процессов Windows.
+
+Related to WSA.
+
+Can be uninstalled from "Turn Windows Features on or off".
+Can be disabled, unless something explicitly needs it.

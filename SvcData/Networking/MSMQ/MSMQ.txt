@@ -1,1 +1,9 @@
 Message Queuing
+
+Provides a messaging infrastructure and development tool for creating distributed messaging applications for Windows-based networks and programs.
+
+Not required unless some distributed software wants it. Almost never required on home systems.
+
+Can be disabled in "Turn Windows Features on or off".
+
++Windows 8, Windows 7, Windows Vista, Windows XP

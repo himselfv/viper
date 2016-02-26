@@ -1,0 +1,11 @@
+Windows Process Activation Service
+
+The Windows Process Activation Service (WAS) provides process activation, resource management and health management services for message-activated applications.
+
+Related to Message Queueing.
+
+Can be disabled in "Turn Windows Features on or off".
+
++Windows 8
++Windows 7
++Windows Vista

@@ -1,0 +1,5 @@
+ehRecvr (Служба ресивера Windows Media Center)
+
+Служба Windows Media Center для приема ТВ и FM-передач
+
++Windows 7

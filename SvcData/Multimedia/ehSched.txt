@@ -1,0 +1,5 @@
+ehSched (Служба планировщика Windows Media Center)
+
+Начало и остановка записи телепрограмм в Windows Media Center
+
++Windows 7

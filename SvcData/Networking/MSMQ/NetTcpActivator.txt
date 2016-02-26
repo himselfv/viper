@@ -1,0 +1,10 @@
+Net.Tcp Listener Adapter
+ru:Адаптер прослушивателя Net.Tcp
+
+ru:Получает запросы на активацию по протоколу net.tcp и передает их Службе активации процессов Windows.
+
+Related to WSA.
+Not to be confused with NetTcpPortSharing, which is mostly unrelated to WSA.
+
+Can be uninstalled from "Turn Windows Features on or off".
+Can be disabled, unless something explicitly needs it.

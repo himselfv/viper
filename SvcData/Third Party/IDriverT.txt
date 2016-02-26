@@ -1,0 +1,6 @@
+InstallDriver Table Manager
+Provides support for the Running Object Table for InstallShield Drivers
+
+Left by some very rare installations (QuickTime is often accused), developer is Macromedia. Probably a custom Macromedia component for InstallShield.
+
+Most likely can be safely deleted.

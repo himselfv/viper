@@ -87,6 +87,14 @@ type
     Showdrivers1: TMenuItem;
     aColorByStatus: TAction;
     Bystatus1: TMenuItem;
+    Copy1: TMenuItem;
+    aCopyServiceName: TAction;
+    aCopyServiceID: TAction;
+    aCopyServiceDescription: TAction;
+    Ident1: TMenuItem;
+    Name1: TMenuItem;
+    Description1: TMenuItem;
+    aCopyServiceShortSummary: TAction;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -126,32 +134,46 @@ type
       const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
       TextType: TVSTTextType);
     procedure aColorByStartTypeExecute(Sender: TObject);
+    procedure aCopyServiceIDExecute(Sender: TObject);
+    procedure aCopyServiceNameExecute(Sender: TObject);
+    procedure aCopyServiceDescriptionExecute(Sender: TObject);
+    procedure vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure aCopyServiceShortSummaryExecute(Sender: TObject);
+
+  protected
+    function LoadIcon(const ALibName: string; AResId: integer): integer;
+
+  protected
+    function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
+    function vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
+    procedure FilterFolders();
+    procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+  public
+    procedure LoadServiceTree;
+    procedure LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
+
   protected
     iFolder, iService: integer;
     FServices: TObjectList<TServiceEntry>;
-    function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
-    function vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
-    function LoadIcon(const ALibName: string; AResId: integer): integer;
+    function GetFocusedService: TServiceEntry;
     procedure FilterServices(AFolder: PNdFolderData);
     procedure FilterServices_Callback(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    procedure FilterFolders();
-    procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
     procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+
   public
     procedure Reload;
-    procedure LoadServiceTree;
-    procedure LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
+
   end;
 
 var
   MainForm: TMainForm;
 
 implementation
-uses FilenameUtils, CommCtrl, ShellApi;
+uses FilenameUtils, CommCtrl, ShellApi, Clipbrd;
 
 {$R *.dfm}
 
@@ -279,6 +301,22 @@ begin
   PObject(Sender.GetNodeData(Node))^ := FServices[Node.Index];
 end;
 
+resourcestring
+  sStatusStopped = 'Остановлена';
+  sStatusStartPending = 'Запускается...';
+  sStatusStopPending = 'Завершается...';
+  sStatusRunning = 'Выполняется';
+  sStatusContinuePending = 'Возобновляется...';
+  sStatusPausePending = 'Приостанавливается...';
+  sStatusPaused = 'Приостановлена';
+  sStatusOther = 'Неясно (%d)';
+
+  sStartTypeAuto = 'Автоматически';
+  sStartTypeDemand = 'Вручную';
+  sStartTypeDisabled = 'Отключена';
+  sStartTypeBoot = 'Авто (загрузка)';
+  sStartTypeSystem = 'Авто (система)';
+
 procedure TMainForm.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -292,23 +330,23 @@ begin
     1: CellText := Data.DisplayName;
     2: case Data.Status.dwCurrentState of
          SERVICE_STOPPED: CellText := '';
-         SERVICE_START_PENDING: CellText := 'Запускается...';
-         SERVICE_STOP_PENDING: CellText := 'Завершается...';
-         SERVICE_RUNNING: CellText := 'Выполняется';
-         SERVICE_CONTINUE_PENDING: CellText := 'Возобновляется...';
-         SERVICE_PAUSE_PENDING: CellText := 'Приостанавливается...';
-         SERVICE_PAUSED: CellText := 'Приостановлена';
-       else CellText := 'Неясно ('+IntToStr(Data.Status.dwCurrentState)+')';
+         SERVICE_START_PENDING: CellText := sStatusStartPending;
+         SERVICE_STOP_PENDING: CellText := sStatusStopPending;
+         SERVICE_RUNNING: CellText := sStatusRunning;
+         SERVICE_CONTINUE_PENDING: CellText := sStatusContinuePending;
+         SERVICE_PAUSE_PENDING: CellText := sStatusPausePending;
+         SERVICE_PAUSED: CellText := sStatusPaused;
+       else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
        end;
     3: if Data.Config = nil then
          CellText := ''
        else
        case Data.Config.dwStartType of
-         SERVICE_AUTO_START: CellText := 'Автоматически';
-         SERVICE_DEMAND_START: CellText := 'Вручную';
-         SERVICE_DISABLED: CellText := 'Отключена';
-         SERVICE_BOOT_START: CellText := 'Авто (загрузка)';
-         SERVICE_SYSTEM_START: CellText := 'Авто (система)';
+         SERVICE_AUTO_START: CellText := sStartTypeAuto;
+         SERVICE_DEMAND_START: CellText := sStartTypeDemand;
+         SERVICE_DISABLED: CellText := sStartTypeDisabled;
+         SERVICE_BOOT_START: CellText := sStartTypeBoot;
+         SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
        else CellText := '';
        end;
   end;
@@ -407,6 +445,16 @@ begin
   end;
 end;
 
+function TMainForm.GetFocusedService: TServiceEntry;
+begin
+  if vtServices.FocusedNode = nil then begin
+    Result := nil;
+    exit;
+  end;
+
+  Result := TServiceEntry(vtServices.GetNodeData(vtServices.FocusedNode)^);
+end;
+
 procedure TMainForm.FilterServices(AFolder: PNdFolderData);
 begin
   vtServices.BeginUpdate;
@@ -463,9 +511,19 @@ begin
   mmDetails.Text := nd.Description;
 end;
 
+procedure TMainForm.vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
+    aCopyServiceShortSummary.Execute;
+end;
 
 
 
+
+resourcestring
+  sFolderUnknownServices = 'Необычные';
+  sFolderRunningServices = 'Работающие';
+  sFolderAllServices = 'Все';
 
 //Загружает структуру папок со службами
 procedure TMainForm.LoadServiceTree;
@@ -474,9 +532,9 @@ begin
   try
     vtFolders.Clear;
     LoadServiceFolder(nil, AppFolder+'\SvcData');
-    vtFolders_AddSpecial(ntUnknownServices, 'Необычные');
-    vtFolders_AddSpecial(ntRunningServices, 'Работающие');
-    vtFolders_AddSpecial(ntAllServices, 'Все');
+    vtFolders_AddSpecial(ntUnknownServices, sFolderUnknownServices);
+    vtFolders_AddSpecial(ntRunningServices, sFolderRunningServices);
+    vtFolders_AddSpecial(ntAllServices, sFolderAllServices);
   finally
     vtFolders.EndUpdate;
   end;
@@ -676,6 +734,62 @@ end;
 procedure TMainForm.aColorByStartTypeExecute(Sender: TObject);
 begin
   vtServices.Invalidate;
+end;
+
+procedure TMainForm.aCopyServiceIDExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
+    Clipboard.AsText := Service.ServiceName;
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+procedure TMainForm.aCopyServiceNameExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
+    Clipboard.AsText := Service.DisplayName;
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+procedure TMainForm.aCopyServiceShortSummaryExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
+    Clipboard.AsText := Service.ServiceName + ' (' + Service.DisplayName + ')';
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+procedure TMainForm.aCopyServiceDescriptionExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
+    Clipboard.AsText := Service.Description;
+  finally
+    Clipboard.Close;
+  end;
 end;
 
 

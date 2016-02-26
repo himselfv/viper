@@ -59,10 +59,6 @@ object MainForm: TMainForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitLeft = 0
-    ExplicitTop = 568
-    ExplicitWidth = 41
-    ExplicitHeight = 1040
     object Splitter2: TSplitter
       Left = 0
       Top = 453
@@ -110,7 +106,7 @@ object MainForm: TMainForm
       OnGetNodeDataSize = vtServicesGetNodeDataSize
       OnHeaderClick = vtServicesHeaderClick
       OnInitNode = vtServicesInitNode
-      ExplicitHeight = 609
+      OnKeyDown = vtServicesKeyDown
       Columns = <
         item
           Position = 0
@@ -149,9 +145,6 @@ object MainForm: TMainForm
         Align = alClient
         ReadOnly = True
         TabOrder = 0
-        ExplicitLeft = 652
-        ExplicitWidth = 153
-        ExplicitHeight = 185
       end
     end
   end
@@ -234,6 +227,26 @@ object MainForm: TMainForm
       Checked = True
       OnExecute = aColorByStartTypeExecute
     end
+    object aCopyServiceID: TAction
+      Category = 'Copy'
+      Caption = 'Name'
+      OnExecute = aCopyServiceIDExecute
+    end
+    object aCopyServiceName: TAction
+      Category = 'Copy'
+      Caption = 'Visible name'
+      OnExecute = aCopyServiceNameExecute
+    end
+    object aCopyServiceDescription: TAction
+      Category = 'Copy'
+      Caption = 'Description'
+      OnExecute = aCopyServiceDescriptionExecute
+    end
+    object aCopyServiceShortSummary: TAction
+      Category = 'Copy'
+      Caption = 'Short summary'
+      OnExecute = aCopyServiceShortSummaryExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -293,6 +306,18 @@ object MainForm: TMainForm
     end
     object N2: TMenuItem
       Caption = '-'
+    end
+    object Copy1: TMenuItem
+      Caption = 'Copy'
+      object Ident1: TMenuItem
+        Action = aCopyServiceID
+      end
+      object Name1: TMenuItem
+        Action = aCopyServiceName
+      end
+      object Description1: TMenuItem
+        Action = aCopyServiceDescription
+      end
     end
     object miStartType: TMenuItem
       Caption = 'Start type'

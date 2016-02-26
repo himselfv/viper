@@ -95,6 +95,8 @@ type
     Name1: TMenuItem;
     Description1: TMenuItem;
     aCopyServiceShortSummary: TAction;
+    aRefresh: TAction;
+    Refresh1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -139,6 +141,12 @@ type
     procedure aCopyServiceDescriptionExecute(Sender: TObject);
     procedure vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure aCopyServiceShortSummaryExecute(Sender: TObject);
+    procedure aStopServiceExecute(Sender: TObject);
+    procedure aStartServiceExecute(Sender: TObject);
+    procedure aPauseServiceExecute(Sender: TObject);
+    procedure aResumeServiceExecute(Sender: TObject);
+    procedure aRestartServiceExecute(Sender: TObject);
+    procedure aRefreshExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -163,9 +171,13 @@ type
     function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
     procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure InvalidateServiceNode(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 
   public
     procedure Reload;
+    procedure RefreshService(Service: TServiceEntry);
+    procedure RefreshAllServices;
 
   end;
 
@@ -198,6 +210,11 @@ end;
 procedure TMainForm.aReloadExecute(Sender: TObject);
 begin
   Reload;
+end;
+
+procedure TMainForm.aRefreshExecute(Sender: TObject);
+begin
+  RefreshAllServices;
 end;
 
 function TMainForm.LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -249,9 +266,7 @@ begin
   if aShowDrivers.Checked then
     ServiceTypes := ServiceTypes or SERVICE_DRIVER;
 
-  hSC := OpenSCManager(nil, nil, SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-  if hSC = 0 then
-    RaiseLastOsError;
+  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
     Services := nil;
     ServicesReturned := 0;
@@ -287,6 +302,41 @@ begin
 
   vtServices.RootNodeCount := FServices.Count;
   FilterFolders; //service list changed, re-test which folders are empty
+  vtServices.SortTree(vtServices.Header.SortColumn, vtServices.Header.SortDirection); //re-apply sort
+end;
+
+//Reload data for a specified service and repaint the node
+procedure TMainForm.RefreshService(Service: TServiceEntry);
+var hSC, hSvc: SC_HANDLE;
+begin
+  hSvc := 0;
+  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
+  try
+    hSvc := OpenService(hSC, Service.ServiceName, SERVICE_READ_ACCESS);
+    if hSvc <> 0 then begin
+      Service.Status := QueryServiceStatus(hSvc);
+      Service.Config := QueryserviceConfig(hSvc);
+    end;
+  finally
+    CloseServiceHandle(hSvc);
+    CloseServiceHandle(hSC);
+  end;
+
+  vtServices.IterateSubtree(nil, InvalidateServiceNode, Service);
+end;
+
+procedure TMainForm.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Data: Pointer; var Abort: Boolean);
+begin
+  if TServiceEntry(Sender.GetNodeData(Node)^) = Data then
+    Sender.InvalidateNode(Node);
+end;
+
+procedure TMainForm.RefreshAllServices;
+var service: TServiceEntry;
+begin
+  for service in FServices do
+    RefreshService(service);
 end;
 
 procedure TMainForm.vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
@@ -790,6 +840,76 @@ begin
   finally
     Clipboard.Close;
   end;
+end;
+
+
+procedure TMainForm.aStartServiceExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  StartService(Service.ServiceName);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aStopServiceExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  StopService(Service.ServiceName);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aPauseServiceExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  PauseService(Service.ServiceName);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aResumeServiceExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  ContinueService(Service.ServiceName);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aRestartServiceExecute(Sender: TObject);
+var Service: TServiceEntry;
+  hSC, hSvc: SC_HANDLE;
+  tmStart: cardinal;
+  stat: SERVICE_STATUS;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+
+  hSC := OpenSCManager();
+  try
+    hSvc := OpenService(hSC, Service.ServiceName);
+    if hSvc = 0 then RaiseLastOsError();
+
+    stat := StopService(hSvc);
+    tmStart := GetTickCount();
+    while stat.dwCurrentState <> SERVICE_STOPPED do begin
+      Sleep(50);
+      stat := QueryServiceStatus(hSvc);
+      if GetTickCount() - tmStart > 5000 then
+        raise Exception.Create('Cannot stop service');
+    end;
+    //TODO: Move ^^ into "Form.WaitForStatusChange()"
+
+    StartService(hSvc);
+
+  finally
+    CloseServiceHandle(hSC);
+  end;
+
+  Reload();
 end;
 
 

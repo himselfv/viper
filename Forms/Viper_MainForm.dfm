@@ -153,28 +153,32 @@ object MainForm: TMainForm
     Top = 16
     object aReload: TAction
       Caption = 'Reload'
-      ShortCut = 116
       OnExecute = aReloadExecute
     end
     object aStartService: TAction
       Category = 'ServiceControl'
       Caption = 'Start'
+      OnExecute = aStartServiceExecute
     end
     object aStopService: TAction
       Category = 'ServiceControl'
       Caption = 'Stop'
+      OnExecute = aStopServiceExecute
     end
     object aPauseService: TAction
       Category = 'ServiceControl'
       Caption = 'Pause'
+      OnExecute = aPauseServiceExecute
     end
     object aResumeService: TAction
       Category = 'ServiceControl'
       Caption = 'Resume'
+      OnExecute = aResumeServiceExecute
     end
     object aRestartService: TAction
       Category = 'ServiceControl'
       Caption = 'Restart'
+      OnExecute = aRestartServiceExecute
     end
     object aStartTypeAutomatic: TAction
       Category = 'StartType'
@@ -201,6 +205,11 @@ object MainForm: TMainForm
     object aExportService: TAction
       Category = 'ServiceSetup'
       Caption = 'Export to .reg...'
+    end
+    object aRefresh: TAction
+      Caption = 'Refresh'
+      ShortCut = 116
+      OnExecute = aRefreshExecute
     end
     object aHideEmptyFolders: TAction
       AutoCheck = True
@@ -259,6 +268,9 @@ object MainForm: TMainForm
     Top = 128
     object File1: TMenuItem
       Caption = 'File'
+      object Refresh1: TMenuItem
+        Action = aRefresh
+      end
       object Reload2: TMenuItem
         Action = aReload
       end
@@ -353,7 +365,7 @@ object MainForm: TMainForm
       Caption = '-'
     end
     object Reload1: TMenuItem
-      Action = aReload
+      Action = aRefresh
     end
   end
   object pmFolders: TPopupMenu

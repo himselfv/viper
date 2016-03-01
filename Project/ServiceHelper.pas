@@ -1,7 +1,7 @@
 unit ServiceHelper;
 
 interface
-uses Windows, WinSvc;
+uses Windows, WinSvc, Registry;
 
 const
   SERVICE_READ_ACCESS = SERVICE_QUERY_CONFIG
@@ -33,6 +33,14 @@ function QueryServiceConfig2(dwInfoLevel: cardinal; hSvc: SC_HANDLE): PByte; ove
 function QueryServiceConfig2(hSC: SC_HANDLE; dwInfoLevel: cardinal; const AServiceName: string): PByte; overload;
 
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string;
+
+
+//Opens a configuration key for this service in the registry. The result has to be freed.
+function OpenServiceKey(const AServiceName: string): TRegistry;
+
+//Services which have svchost as their executable support additional parameter specifying
+//the DLL to load.
+function QueryServiceServiceDll(const AServiceName: string): string;
 
 
 procedure StartService(hSvc: SC_HANDLE); overload;
@@ -184,6 +192,35 @@ begin
   end;
   Result := buf.lpDescription;
   FreeMem(buf);
+end;
+
+
+function OpenServiceKey(const AServiceName: string): TRegistry;
+begin
+  Result := TRegistry.Create;
+  try
+    Result.RootKey := HKEY_LOCAL_MACHINE;
+    Result.Access := KEY_READ;
+    if not Result.OpenKey('\System\CurrentControlSet\services\'+AServiceName, false) then
+      RaiseLastOsError();
+  except
+    FreeAndNil(Result);
+    raise;
+  end;
+end;
+
+function QueryServiceServiceDll(const AServiceName: string): string;
+var reg: TRegistry;
+begin
+  reg := OpenServiceKey(AServiceName);
+  try
+    if not reg.OpenKey('Parameters', false) then
+      Result := ''
+    else
+      Result := reg.ReadString('ServiceDll');
+  finally
+    FreeAndNil(reg);
+  end;
 end;
 
 

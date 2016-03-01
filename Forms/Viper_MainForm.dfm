@@ -130,12 +130,12 @@ object MainForm: TMainForm
         end
         item
           Position = 4
-          Width = 100
+          Width = 200
           WideText = #1054#1087#1080#1089#1072#1085#1080#1077
         end
         item
           Position = 5
-          Width = 100
+          Width = 200
           WideText = #1048#1089#1087#1086#1083#1085#1103#1077#1084#1099#1081' '#1092#1072#1081#1083
         end>
     end

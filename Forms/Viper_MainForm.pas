@@ -49,6 +49,7 @@ type
     Description: string;
     Status: SERVICE_STATUS;
     Config: LPQUERY_SERVICE_CONFIG;
+    ServiceDll: string;
     Info: TServiceInfo;
     destructor Destroy; override;
     function GetEffectiveDisplayName: string;
@@ -213,7 +214,7 @@ var
   MainForm: TMainForm;
 
 implementation
-uses FilenameUtils, CommCtrl, ShellApi, Clipbrd;
+uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper;
 
 {$R *.dfm}
 
@@ -301,6 +302,9 @@ end;
 
 function TServiceEntry.GetExecutableFilename: string;
 begin
+  if Self.ServiceDll <> '' then
+    Result := Self.ServiceDll
+  else
   if Config <> nil then
     Result := Config.lpBinaryPathName
   else
@@ -346,6 +350,15 @@ begin
         svc.Status := S^.ServiceStatus;
         svc.Config := QueryServiceConfig(hSC, S^.lpServiceName);
         svc.Description := QueryServiceDescription(hSC, S^.lpServiceName);
+        if svc.Config <> nil then begin
+          if (pos('svchost.exe', svc.Config.lpBinaryPathName)>0)
+          or (pos('lsass.exe', svc.Config.lpBinaryPathName)>0) then
+         //^ this is not a surefire way to test it's running svchost.exe, but we don't need one
+         // It would be too complicated to check that it really references svchost, and the one
+         // from the system dir and not an impostor.
+         // We just optimize away unneccessary registry checks.
+            svc.ServiceDll := ExpandEnvironmentStrings(QueryServiceServiceDll(svc.ServiceName));
+        end;
         svc.Info := FServiceCat.Find(svc.ServiceName);
         FServices.Add(svc);
         Inc(S);

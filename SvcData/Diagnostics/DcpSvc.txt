@@ -1,4 +1,4 @@
-Data Collection and Publishing / Crowdsourcing Service
+Telemetry\Data Collection and Publishing (Crowdsourcing Service)
 TELEMETRY
 
 > The DCP (Data Collection and Publishing) service supports first party apps to upload data to cloud.

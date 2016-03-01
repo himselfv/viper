@@ -1,0 +1,8 @@
+Windows Presentation Foundation Font Cache
+ru:Кэш шрифтов Windows Presentation Foundation
+
+ru:Оптимизирует производительность приложений Windows Presentation Foundation (WPF) путем кэширования обычно используемых данных шрифтов. Приложения WPF запускают эту службу, если она еще не запущена. Ее можно отключить, однако это ухудшит производительность приложений WPF.
+
+\microsoft.net\framework64\v3.0\wpf\presentationfontcache.exe
+
+Related to: Windows Presentation Foundation (WPF)

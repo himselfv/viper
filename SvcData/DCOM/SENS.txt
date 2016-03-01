@@ -1,4 +1,4 @@
-System Event Notification Service
+SENS\System Event Notification Service
 
 Monitors system events and notifies subscribers to COM+ Event System of these events.
 

@@ -1,4 +1,4 @@
-Application Identity
+AppLocker\Application Identity
 
 Related to AppLocker.
 

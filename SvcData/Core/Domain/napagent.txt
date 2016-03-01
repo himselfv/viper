@@ -1,0 +1,10 @@
+NAP\Network Access Protection Agent
+ru:Агент защиты сетевого доступа
+pref:nap\
+
+The Network Access Protection Agent (napagent) service enables NAP functionality on client computers. Enabling the NAP client agent makes it possible for clients that support NAP to evaluate clients that connect to your network for compliance with organizational software security policies such as mandatory updates, antivirus, signatures, and firewall configurations.
+
+https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx
+https://en.wikipedia.org/wiki/Network_Access_Protection
+
+Related to: hkmsvc

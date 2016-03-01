@@ -1,0 +1,7 @@
+Windows CardSpace
+
+ru:Это обеспечивает надежную возможность создания, управления и раскрытия цифровых удостоверений.
+
+microsoft.net\framework64\v3.0\windows communication foundation\infocard.exe
+
+Related to: Windows Communication Foundation (WCF)

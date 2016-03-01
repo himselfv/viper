@@ -8,14 +8,19 @@ uses
   ImgList, UiTypes, Generics.Collections, Vcl.Menus, ServiceHelper, Vcl.StdCtrls;
 
 type
-  TServiceEntry = class
+ //Service information loaded from Catalogue
+  TServiceInfo = class
+  public
     ServiceName: string;
     DisplayName: string;
     Description: string;
-    Status: SERVICE_STATUS;
-    Config: LPQUERY_SERVICE_CONFIG;
-    destructor Destroy; override;
   end;
+
+  TServiceCatalogue = class(TObjectList<TServiceInfo>)
+  public
+    function Find(const AServiceName: string): TServiceInfo;
+  end;
+
 
   TFolderNodeType = (
     ntFolder,
@@ -27,13 +32,26 @@ type
   TNdFolderData = record
     NodeType: TFolderNodeType;
     FolderName: string;
+    Description: string;
     Services: array of string;
+    procedure LoadDescription(const AFilename: string);
     function ContainsService(AServiceName: string): boolean;
   end;
   PNdFolderData = ^TNdFolderData;
 
   TServiceFolders = array of PNdFolderData;
   PServiceFolders = ^TServiceFolders;
+
+ //Running service description
+  TServiceEntry = class
+    ServiceName: string;
+    DisplayName: string;
+    Description: string;
+    Status: SERVICE_STATUS;
+    Config: LPQUERY_SERVICE_CONFIG;
+    Info: TServiceInfo;
+    destructor Destroy; override;
+  end;
 
   TMainForm = class(TForm)
     ActionList: TActionList;
@@ -152,13 +170,15 @@ type
     function LoadIcon(const ALibName: string; AResId: integer): integer;
 
   protected
+    FServiceCat: TServiceCatalogue; //catalogue of static service information
     function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
     function vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
     procedure FilterFolders();
     procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    function LoadServiceInfo(const AFilename: string): TServiceInfo;
   public
-    procedure LoadServiceTree;
+    procedure ReloadServiceTree;
     procedure LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
 
   protected
@@ -189,21 +209,34 @@ uses FilenameUtils, CommCtrl, ShellApi, Clipbrd;
 
 {$R *.dfm}
 
+function TServiceCatalogue.Find(const AServiceName: string): TServiceInfo;
+var i: integer;
+begin
+  Result := nil;
+  for i := 0 to Self.Count-1 do
+    if SameText(Self[i].ServiceName, AServiceName) then begin
+      Result := Self[i];
+      break;
+    end;
+end;
+
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
+  FServiceCat := TServiceCatalogue.Create({OwnsObjects=}true);
   FServices := TObjectList<TServiceEntry>.Create;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FServices);
+  FreeAndNil(FServiceCat);
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
   iFolder := LoadIcon('shell32.dll', 4); //Иконка папки из эксплорера
   iService := LoadIcon('filemgmt.dll', 0); //Иконка службы из services.msc
-  LoadServiceTree;
+  ReloadServiceTree;
   Reload;
 end;
 
@@ -289,6 +322,7 @@ begin
         svc.Status := S^.ServiceStatus;
         svc.Config := QueryServiceConfig(hSC, S^.lpServiceName);
         svc.Description := QueryServiceDescription(hSC, S^.lpServiceName);
+        svc.Info := FServiceCat.Find(svc.ServiceName);
         FServices.Add(svc);
         Inc(S);
       end;
@@ -377,7 +411,11 @@ begin
   case Column of
     NoColumn, 0:
       CellText := Data.ServiceName;
-    1: CellText := Data.DisplayName;
+    1:
+      if (Data.Info <> nil) and (Data.Info.DisplayName <> '') then
+        CellText := Data.Info.DisplayName
+      else
+        CellText := Data.DisplayName;
     2: case Data.Status.dwCurrentState of
          SERVICE_STOPPED: CellText := '';
          SERVICE_START_PENDING: CellText := sStatusStartPending;
@@ -449,12 +487,23 @@ end;
 procedure TMainForm.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var Data1, Data2: TServiceEntry;
+  Dn1, Dn2: string;
 begin
   Data1 := TServiceEntry(Sender.GetNodeData(Node1)^);
   Data2 := TServiceEntry(Sender.GetNodeData(Node2)^);
   case Column of
     0, NoColumn: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
-    1: Result := CompareText(Data1.DisplayName, Data2.DisplayName);
+    1: begin
+      if (Data1.Info <> nil) and (Data1.Info.DisplayName <> '') then
+        Dn1 := Data1.Info.DisplayName
+      else
+        Dn1 := Data1.DisplayName;
+      if (Data2.Info <> nil) and (Data2.Info.DisplayName <> '') then
+        Dn2 := Data2.Info.DisplayName
+      else
+        Dn2 := Data2.DisplayName;
+      Result := CompareText(Dn1, Dn2);
+    end;
     2: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
     3: if Data1.Config = nil then
          if Data2.Config = nil then
@@ -575,11 +624,12 @@ resourcestring
   sFolderRunningServices = 'Работающие';
   sFolderAllServices = 'Все';
 
-//Загружает структуру папок со службами
-procedure TMainForm.LoadServiceTree;
+//Перезагружает структуру папок со службами
+procedure TMainForm.ReloadServiceTree;
 begin
   vtFolders.BeginUpdate;
   try
+    FServiceCat.Clear;
     vtFolders.Clear;
     LoadServiceFolder(nil, AppFolder+'\SvcData');
     vtFolders_AddSpecial(ntUnknownServices, sFolderUnknownServices);
@@ -598,25 +648,83 @@ var res: integer;
 begin
   if AParentNode = nil then
     nd := nil
-  else
+  else begin
     nd := PNdFolderData(vtFolders.GetNodeData(AParentNode));
+    try
+      nd.LoadDescription(AFolderPath+'\desc');
+    except
+      on EFOpenError do begin end; //no description, okay
+    end;
+  end;
+
   res := FindFirst(AFolderPath+'\*.*', faAnyFile, sr);
   while res = 0 do begin
     if (sr.Name='.') or (sr.Name='..') then begin
       res := FindNext(sr);
       continue;
     end;
+
     if (sr.Attr and faDirectory) = faDirectory then begin
       node := vtFolders_Add(AParentNode, AFolderPath+'\'+sr.Name);
       LoadServiceFolder(node, AFolderPath+'\'+sr.Name);
     end else
-    if nd <> nil then begin
-      SetLength(nd.Services, Length(nd.Services)+1);
-      nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
+    if ExtractFileExt(sr.Name) = '.txt' then begin
+      LoadServiceInfo(AFolderPath + '\' + sr.Name);
+      if nd <> nil then begin
+        SetLength(nd.Services, Length(nd.Services)+1);
+        nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
+      end;
+    end else
+    if ExtractFileExt(sr.Name) = '.lnk' then begin
+      if nd <> nil then begin
+        SetLength(nd.Services, Length(nd.Services)+1);
+        nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
+      end;
     end;
+
     res := FindNext(sr);
   end;
   SysUtils.FindClose(sr);
+end;
+
+//Reads static service information file and registers a service in a catalogue (or extends it)
+function TMainForm.LoadServiceInfo(const AFilename: string): TServiceInfo;
+var ServiceName: string;
+  sl: TStringList;
+begin
+  ServiceName := ChangeFileExt(ExtractFilename(AFilename), '');
+  Result := FServiceCat.Find(ServiceName);
+  if Result = nil then begin
+    Result := TServiceInfo.Create;
+    Result.ServiceName := ServiceName;
+    FServiceCat.Add(Result);
+  end;
+
+  sl := TStringList.Create;
+  try
+    sl.LoadFromFile(AFilename);
+    if (sl.Count > 0) and (sl[0] <> '') and (Result.DisplayName = '') then begin
+      Result.DisplayName := sl[0]; //TODO: This would better work per-folder
+      sl.Delete(0);
+    end;
+    if Result.Description <> '' then
+      Result.Description := Result.Description + #13;
+    Result.Description := Result.Description + sl.Text;
+  finally
+    FreeAndNil(sl);
+  end;
+end;
+
+procedure TNdFolderData.LoadDescription(const AFilename: string);
+var sl: TStringList;
+begin
+  sl := TStringList.Create();
+  try
+    sl.LoadFromFile(AFilename);
+    Self.Description := sl.Text;
+  finally
+    FreeAndNil(sl);
+  end;
 end;
 
 function TNdFolderData.ContainsService(AServiceName: string): boolean;

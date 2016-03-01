@@ -117,6 +117,8 @@ type
     aCopyServiceShortSummary: TAction;
     aRefresh: TAction;
     Refresh1: TMenuItem;
+    aCopyExecutableFilename: TAction;
+    Executablefilename1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -170,6 +172,7 @@ type
     procedure aStartTypeAutomaticExecute(Sender: TObject);
     procedure aStartTypeManualExecute(Sender: TObject);
     procedure aStartTypeDisabledExecute(Sender: TObject);
+    procedure aCopyExecutableFilenameExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -922,13 +925,7 @@ var Service: TServiceEntry;
 begin
   Service := GetFocusedService();
   Assert(Service <> nil);
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    Clipboard.AsText := Service.DisplayName;
-  finally
-    Clipboard.Close;
-  end;
+  Clipboard.AsText := Service.DisplayName;
 end;
 
 procedure TMainForm.aCopyServiceShortSummaryExecute(Sender: TObject);
@@ -936,13 +933,7 @@ var Service: TServiceEntry;
 begin
   Service := GetFocusedService();
   Assert(Service <> nil);
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    Clipboard.AsText := Service.ServiceName + ' (' + Service.DisplayName + ')';
-  finally
-    Clipboard.Close;
-  end;
+  Clipboard.AsText := Service.ServiceName + ' (' + Service.DisplayName + ')';
 end;
 
 procedure TMainForm.aCopyServiceDescriptionExecute(Sender: TObject);
@@ -950,14 +941,20 @@ var Service: TServiceEntry;
 begin
   Service := GetFocusedService();
   Assert(Service <> nil);
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    Clipboard.AsText := Service.Description;
-  finally
-    Clipboard.Close;
-  end;
+  Clipboard.AsText := Service.Description;
 end;
+
+procedure TMainForm.aCopyExecutableFilenameExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  if Service.Config <> nil then
+    Clipboard.AsText := Service.Config.lpBinaryPathName
+  else
+    Clipboard.AsText := '';
+end;
+
 
 
 procedure TMainForm.aStartServiceExecute(Sender: TObject);

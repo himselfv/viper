@@ -269,6 +269,11 @@ object MainForm: TMainForm
       Caption = 'Short summary'
       OnExecute = aCopyServiceShortSummaryExecute
     end
+    object aCopyExecutableFilename: TAction
+      Category = 'Copy'
+      Caption = 'Executable file name'
+      OnExecute = aCopyExecutableFilenameExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -342,6 +347,9 @@ object MainForm: TMainForm
       end
       object Description1: TMenuItem
         Action = aCopyServiceDescription
+      end
+      object Executablefilename1: TMenuItem
+        Action = aCopyExecutableFilename
       end
     end
     object miStartType: TMenuItem

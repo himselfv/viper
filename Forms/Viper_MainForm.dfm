@@ -127,6 +127,16 @@ object MainForm: TMainForm
           Position = 3
           Width = 150
           WideText = #1058#1080#1087' '#1079#1072#1087#1091#1089#1082#1072
+        end
+        item
+          Position = 4
+          Width = 100
+          WideText = #1054#1087#1080#1089#1072#1085#1080#1077
+        end
+        item
+          Position = 5
+          Width = 100
+          WideText = #1048#1089#1087#1086#1083#1085#1103#1077#1084#1099#1081' '#1092#1072#1081#1083
         end>
     end
     object pnlDetails: TPanel
@@ -185,18 +195,21 @@ object MainForm: TMainForm
       AutoCheck = True
       Caption = 'Automatic'
       GroupIndex = 1
+      OnExecute = aStartTypeAutomaticExecute
     end
     object aStartTypeManual: TAction
       Category = 'StartType'
       AutoCheck = True
       Caption = 'Manual'
       GroupIndex = 1
+      OnExecute = aStartTypeManualExecute
     end
     object aStartTypeDisabled: TAction
       Category = 'StartType'
       AutoCheck = True
       Caption = 'Disabled'
       GroupIndex = 1
+      OnExecute = aStartTypeDisabledExecute
     end
     object aDeleteService: TAction
       Category = 'ServiceSetup'

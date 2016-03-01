@@ -51,6 +51,8 @@ type
     Config: LPQUERY_SERVICE_CONFIG;
     Info: TServiceInfo;
     destructor Destroy; override;
+    function GetEffectiveDisplayName: string;
+    function GetExecutableFilename: string;
   end;
 
   TMainForm = class(TForm)
@@ -165,6 +167,9 @@ type
     procedure aResumeServiceExecute(Sender: TObject);
     procedure aRestartServiceExecute(Sender: TObject);
     procedure aRefreshExecute(Sender: TObject);
+    procedure aStartTypeAutomaticExecute(Sender: TObject);
+    procedure aStartTypeManualExecute(Sender: TObject);
+    procedure aStartTypeDisabledExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -281,6 +286,22 @@ begin
     Self.Config := nil;
   end;
   inherited;
+end;
+
+function TServiceEntry.GetEffectiveDisplayName: string;
+begin
+  if (Info <> nil) and (Info.DisplayName <> '') then
+    Result := Info.DisplayName
+  else
+    Result := Self.DisplayName;
+end;
+
+function TServiceEntry.GetExecutableFilename: string;
+begin
+  if Config <> nil then
+    Result := Config.lpBinaryPathName
+  else
+    Result := '';
 end;
 
 //Загружает список служб с их состояниями
@@ -409,13 +430,8 @@ begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
   if TextType <> ttNormal then exit;
   case Column of
-    NoColumn, 0:
-      CellText := Data.ServiceName;
-    1:
-      if (Data.Info <> nil) and (Data.Info.DisplayName <> '') then
-        CellText := Data.Info.DisplayName
-      else
-        CellText := Data.DisplayName;
+    NoColumn, 0: CellText := Data.ServiceName;
+    1: CellText := Data.GetEffectiveDisplayName;
     2: case Data.Status.dwCurrentState of
          SERVICE_STOPPED: CellText := '';
          SERVICE_START_PENDING: CellText := sStatusStartPending;
@@ -437,6 +453,8 @@ begin
          SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
        else CellText := '';
        end;
+    4: CellText := Data.Description;
+    5: CellText := Data.GetExecutableFilename;
   end;
 end;
 
@@ -487,23 +505,12 @@ end;
 procedure TMainForm.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var Data1, Data2: TServiceEntry;
-  Dn1, Dn2: string;
 begin
   Data1 := TServiceEntry(Sender.GetNodeData(Node1)^);
   Data2 := TServiceEntry(Sender.GetNodeData(Node2)^);
   case Column of
     0, NoColumn: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
-    1: begin
-      if (Data1.Info <> nil) and (Data1.Info.DisplayName <> '') then
-        Dn1 := Data1.Info.DisplayName
-      else
-        Dn1 := Data1.DisplayName;
-      if (Data2.Info <> nil) and (Data2.Info.DisplayName <> '') then
-        Dn2 := Data2.Info.DisplayName
-      else
-        Dn2 := Data2.DisplayName;
-      Result := CompareText(Dn1, Dn2);
-    end;
+    1: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
     2: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
     3: if Data1.Config = nil then
          if Data2.Config = nil then
@@ -515,6 +522,8 @@ begin
            Result := -1
          else
            Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
+    4: Result := CompareText(Data1.Description, Data2.Description);
+    5: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
   end;
 end;
 
@@ -1018,6 +1027,34 @@ begin
   end;
 
   Reload();
+end;
+
+
+procedure TMainForm.aStartTypeAutomaticExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  ChangeServiceStartType(Service.ServiceName, SERVICE_AUTO_START);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aStartTypeManualExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  ChangeServiceStartType(Service.ServiceName, SERVICE_DEMAND_START);
+  RefreshService(Service);
+end;
+
+procedure TMainForm.aStartTypeDisabledExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
+  RefreshService(Service);
 end;
 
 

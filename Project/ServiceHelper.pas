@@ -54,6 +54,10 @@ function ContinueService(hSC: SC_HANDLE; const AServiceName: string): SERVICE_ST
 function ContinueService(const AServiceName: string): SERVICE_STATUS; overload;
 
 
+procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
+procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
+procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
+
 
 implementation
 uses SysUtils;
@@ -291,6 +295,36 @@ begin
   Result := ControlService(AServiceName, SERVICE_CONTROL_CONTINUE);
 end;
 
+
+procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
+begin
+  if not ChangeServiceConfig(hSvc, SERVICE_NO_CHANGE, dwStartType, SERVICE_NO_CHANGE, nil, nil,
+    nil, nil, nil, nil, nil) then
+    RaiseLastOsError();
+end;
+
+procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_CHANGE_CONFIG);
+  if hSvc = 0 then RaiseLastOsError() else
+  try
+    ChangeServiceStartType(hSvc, dwStartType);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  try
+    ChangeServiceStartType(hSC, AServiceName, dwStartType);
+  finally
+    CloseServiceHandle(hSC);
+  end;
+end;
 
 
 end.

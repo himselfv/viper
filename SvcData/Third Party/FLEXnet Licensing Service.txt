@@ -1,0 +1,3 @@
+FLEXnet Licensing Service
+
+This service performs licensing functions on behalf of FLEXnet enabled products.

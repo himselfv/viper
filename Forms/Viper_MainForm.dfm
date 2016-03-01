@@ -274,6 +274,16 @@ object MainForm: TMainForm
       Caption = 'Executable file name'
       OnExecute = aCopyExecutableFilenameExecute
     end
+    object aJumpToBinary: TAction
+      Category = 'JumpTo'
+      Caption = 'Jump to file'
+      OnExecute = aJumpToBinaryExecute
+    end
+    object aJumpToRegistry: TAction
+      Category = 'JumpTo'
+      Caption = 'Open registry key'
+      OnExecute = aJumpToRegistryExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -337,6 +347,12 @@ object MainForm: TMainForm
     object N2: TMenuItem
       Caption = '-'
     end
+    object Jumptobinary1: TMenuItem
+      Action = aJumpToBinary
+    end
+    object Openregistrykey1: TMenuItem
+      Action = aJumpToRegistry
+    end
     object Copy1: TMenuItem
       Caption = 'Copy'
       object Ident1: TMenuItem
@@ -351,6 +367,9 @@ object MainForm: TMainForm
       object Executablefilename1: TMenuItem
         Action = aCopyExecutableFilename
       end
+    end
+    object N3: TMenuItem
+      Caption = '-'
     end
     object miStartType: TMenuItem
       Caption = 'Start type'

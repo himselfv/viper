@@ -120,6 +120,11 @@ type
     Refresh1: TMenuItem;
     aCopyExecutableFilename: TAction;
     Executablefilename1: TMenuItem;
+    aJumpToBinary: TAction;
+    aJumpToRegistry: TAction;
+    Jumptobinary1: TMenuItem;
+    Openregistrykey1: TMenuItem;
+    N3: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -174,6 +179,8 @@ type
     procedure aStartTypeManualExecute(Sender: TObject);
     procedure aStartTypeDisabledExecute(Sender: TObject);
     procedure aCopyExecutableFilenameExecute(Sender: TObject);
+    procedure aJumpToBinaryExecute(Sender: TObject);
+    procedure aJumpToRegistryExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -214,7 +221,7 @@ var
   MainForm: TMainForm;
 
 implementation
-uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper;
+uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils;
 
 {$R *.dfm}
 
@@ -1065,6 +1072,24 @@ begin
   Assert(Service <> nil);
   ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
   RefreshService(Service);
+end;
+
+
+procedure TMainForm.aJumpToBinaryExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  if Service.GetExecutableFilename <> '' then
+    ExplorerAtFile(Service.GetExecutableFilename);
+end;
+
+procedure TMainForm.aJumpToRegistryExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFocusedService();
+  Assert(Service <> nil);
+  RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
 end;
 
 

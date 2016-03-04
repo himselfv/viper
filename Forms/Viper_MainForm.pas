@@ -217,6 +217,7 @@ type
   public
     function GetFocusedService: TServiceEntry;
     function GetSelectedServices: TServiceEntries;
+    function GetFirstSelectedService: TServiceEntry;
 
   public
     procedure Reload;
@@ -610,6 +611,16 @@ begin
   entries^[Length(entries^)-1] := nd;
 end;
 
+function TMainForm.GetFirstSelectedService: TServiceEntry;
+var services: TServiceEntries;
+begin
+  services := GetSelectedServices();
+  if Length(services) < 0 then
+    Result := nil
+  else
+    Result := services[0];
+end;
+
 procedure TMainForm.FilterServices(AFolder: PNdFolderData);
 begin
   vtServices.BeginUpdate;
@@ -711,6 +722,18 @@ begin
   aPauseService.Visible := CanPause;
   aResumeService.Visible := CanResume;
   aRestartService.Visible := CanRestart;
+
+  aJumpToBinary.Visible := Length(services)=1;
+  aJumpToRegistry.Visible := Length(services)=1;
+
+  aStartTypeAutomatic.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_AUTO_START);
+  aStartTypeManual.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_DEMAND_START);
+  aStartTypeDisabled.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_DISABLED);
+
+  aStartTypeAutomatic.Visible := Length(services)>0;
+  aStartTypeManual.Visible := Length(services)>0;
+  aStartTypeDisabled.Visible := Length(services)>0;
+  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
 end;
 
 procedure TMainForm.vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -999,51 +1022,62 @@ end;
 
 procedure TMainForm.aCopyServiceIDExecute(Sender: TObject);
 var Service: TServiceEntry;
+  str: string;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    Clipboard.AsText := Service.ServiceName;
-  finally
-    Clipboard.Close;
+  str := '';
+  for service in GetSelectedServices() do begin
+    if str <> '' then str := str + #13;
+    str := str + Service.ServiceName;
   end;
+  Clipboard.AsText := str;
 end;
 
 procedure TMainForm.aCopyServiceNameExecute(Sender: TObject);
 var Service: TServiceEntry;
+  str: string;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  Clipboard.AsText := Service.DisplayName;
+  str := '';
+  for service in GetSelectedServices() do begin
+    if str <> '' then str := str + #13;
+    str := str + Service.DisplayName;
+  end;
+  Clipboard.AsText := str;
 end;
 
 procedure TMainForm.aCopyServiceShortSummaryExecute(Sender: TObject);
 var Service: TServiceEntry;
+  str: string;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  Clipboard.AsText := Service.ServiceName + ' (' + Service.DisplayName + ')';
+  str := '';
+  for service in GetSelectedServices() do begin
+    if str <> '' then str := str + #13;
+    str := str + Service.ServiceName + ' (' + Service.DisplayName + ')';
+  end;
+  Clipboard.AsText := str;
 end;
 
 procedure TMainForm.aCopyServiceDescriptionExecute(Sender: TObject);
 var Service: TServiceEntry;
+  str: string;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  Clipboard.AsText := Service.Description;
+  str := '';
+  for service in GetSelectedServices() do begin
+    if str <> '' then str := str + #13;
+    str := str + Service.Description;
+  end;
+  Clipboard.AsText := str;
 end;
 
 procedure TMainForm.aCopyExecutableFilenameExecute(Sender: TObject);
 var Service: TServiceEntry;
+  str: string;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  if Service.Config <> nil then
-    Clipboard.AsText := Service.Config.lpBinaryPathName
-  else
-    Clipboard.AsText := '';
+  str := '';
+  for service in GetSelectedServices() do begin
+    if str <> '' then str := str + #13;
+    str := str + Service.Config.lpBinaryPathName;
+  end;
+  Clipboard.AsText := str;
 end;
 
 
@@ -1189,7 +1223,7 @@ end;
 procedure TMainForm.aJumpToBinaryExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
-  Service := GetFocusedService();
+  Service := GetFirstSelectedService();
   Assert(Service <> nil);
   if Service.GetExecutableFilename <> '' then
     ExplorerAtFile(Service.GetExecutableFilename);
@@ -1198,7 +1232,7 @@ end;
 procedure TMainForm.aJumpToRegistryExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
-  Service := GetFocusedService();
+  Service := GetFirstSelectedService();
   Assert(Service <> nil);
   RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
 end;

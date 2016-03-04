@@ -214,6 +214,7 @@ type
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure InvalidateServiceNode(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure SelectionChanged;
   public
     function GetFocusedService: TServiceEntry;
     function GetSelectedServices: TServiceEntries;
@@ -417,6 +418,8 @@ procedure TMainForm.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtu
 begin
   if TServiceEntry(Sender.GetNodeData(Node)^) = Data then
     Sender.InvalidateNode(Node);
+  if Sender.Selected[Node] then
+    SelectionChanged; //properties of one of the selected nodes changed
 end;
 
 procedure TMainForm.RefreshAllServices;
@@ -656,20 +659,12 @@ procedure TMainForm.vtServicesFocusChanged(Sender: TBaseVirtualTree;
 var nd: TServiceEntry;
 begin
   nd := TServiceEntry(Sender.GetNodeData(Node)^);
-
-  aStartTypeAutomatic.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_AUTO_START);
-  aStartTypeManual.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_DEMAND_START);
-  aStartTypeDisabled.Checked := (nd <> nil) and (nd.Config <> nil) and (nd.Config.dwStartType = SERVICE_DISABLED);
-
-  aStartTypeAutomatic.Visible := (nd <> nil) and (nd.Config <> nil);
-  aStartTypeManual.Visible := (nd <> nil) and (nd.Config <> nil);
-  aStartTypeDisabled.Visible := (nd <> nil) and (nd.Config <> nil);
-  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
+ //Most availability checking is done in OnChanged, depends on Selection
 
   mmDetails.Text := nd.Description;
 end;
 
-
+//Separate functions because we need the checks both when making the action visible, and when executing
 function IsValidCommandStart(const AStatus: TServiceStatus): boolean; inline;
 begin
   Result := AStatus.dwCurrentState = SERVICE_STOPPED;
@@ -698,9 +693,17 @@ begin
 end;
 
 procedure TMainForm.vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  SelectionChanged;
+end;
+
+//Call when there's reason to suspect that node selection or the properties of those nodes
+//could have changed;
+procedure TMainForm.SelectionChanged;
 var services: TServiceEntries;
   service: TServiceEntry;
   CanStart, CanStop, CanPause, CanResume, CanRestart: boolean;
+  CommonStartType: cardinal;
 begin
   services := GetSelectedServices();
 
@@ -726,9 +729,25 @@ begin
   aJumpToBinary.Visible := Length(services)=1;
   aJumpToRegistry.Visible := Length(services)=1;
 
-  aStartTypeAutomatic.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_AUTO_START);
-  aStartTypeManual.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_DEMAND_START);
-  aStartTypeDisabled.Checked := (Length(services)=1) and (services[0].Config <> nil) and (services[0].Config.dwStartType = SERVICE_DISABLED);
+ //Check start type item if all selected services share it
+  CommonStartType := cardinal(-1);
+  for service in services do begin
+    if service.Config = nil then begin
+      CommonStartType := cardinal(-1);
+      break; //no chance to find common
+    end;
+
+    if CommonStartType = cardinal(-1) then
+      CommonStartType := service.Config.dwStartType
+    else
+      if CommonStartType <> service.Config.dwStartType then begin
+        CommonStartType := cardinal(-1);
+        break;
+      end;
+  end;
+  aStartTypeAutomatic.Checked := (CommonStartType = SERVICE_AUTO_START);
+  aStartTypeManual.Checked := (CommonStartType = SERVICE_DEMAND_START);
+  aStartTypeDisabled.Checked := (CommonStartType = SERVICE_DISABLED);
 
   aStartTypeAutomatic.Visible := Length(services)>0;
   aStartTypeManual.Visible := Length(services)>0;
@@ -1195,28 +1214,28 @@ end;
 procedure TMainForm.aStartTypeAutomaticExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  ChangeServiceStartType(Service.ServiceName, SERVICE_AUTO_START);
-  RefreshService(Service);
+  for Service in GetSelectedServices() do begin
+    ChangeServiceStartType(Service.ServiceName, SERVICE_AUTO_START);
+    RefreshService(Service);
+  end;
 end;
 
 procedure TMainForm.aStartTypeManualExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  ChangeServiceStartType(Service.ServiceName, SERVICE_DEMAND_START);
-  RefreshService(Service);
+  for Service in GetSelectedServices() do begin
+    ChangeServiceStartType(Service.ServiceName, SERVICE_DEMAND_START);
+    RefreshService(Service);
+  end;
 end;
 
 procedure TMainForm.aStartTypeDisabledExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
-  Service := GetFocusedService();
-  Assert(Service <> nil);
-  ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
-  RefreshService(Service);
+  for Service in GetSelectedServices() do begin
+    ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
+    RefreshService(Service);
+  end;
 end;
 
 

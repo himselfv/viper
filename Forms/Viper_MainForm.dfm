@@ -76,6 +76,7 @@ object MainForm: TMainForm
       Height = 453
       Align = alClient
       BorderWidth = 1
+      ChangeDelay = 50
       Font.Charset = RUSSIAN_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
@@ -96,8 +97,9 @@ object MainForm: TMainForm
       TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
       TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
       TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
-      TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
+      TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toMultiSelect, toRightClickSelect, toSimpleDrawSelection]
       OnBeforeItemErase = vtServicesBeforeItemErase
+      OnChange = vtServicesChange
       OnCompareNodes = vtServicesCompareNodes
       OnFocusChanged = vtServicesFocusChanged
       OnGetText = vtServicesGetText

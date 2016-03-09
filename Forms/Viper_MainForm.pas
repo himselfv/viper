@@ -52,8 +52,16 @@ type
     ServiceDll: string;
     Info: TServiceInfo;
     destructor Destroy; override;
+    procedure Refresh(); overload;
+    procedure RefreshFromManager(hSC: SC_HANDLE);
+    procedure RefreshFromHandle(hSvc: SC_HANDLE);
     function GetEffectiveDisplayName: string;
     function GetExecutableFilename: string;
+    function CanStart: boolean; inline;
+    function CanForceStart: boolean; inline;
+    function CanStop: boolean; inline;
+    function CanPause: boolean; inline;
+    function CanResume: boolean; inline;
   end;
 
   TServiceEntries = array of TServiceEntry;
@@ -74,7 +82,7 @@ type
     aResumeService: TAction;
     aRestartService: TAction;
     pmServices: TPopupMenu;
-    Start1: TMenuItem;
+    pmStartService: TMenuItem;
     Stop1: TMenuItem;
     Pause1: TMenuItem;
     Resume1: TMenuItem;
@@ -128,6 +136,8 @@ type
     Jumptobinary1: TMenuItem;
     Openregistrykey1: TMenuItem;
     N3: TMenuItem;
+    aForceStartService: TAction;
+    pmForceStartService: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -185,6 +195,8 @@ type
     procedure aJumpToBinaryExecute(Sender: TObject);
     procedure aJumpToRegistryExecute(Sender: TObject);
     procedure vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure aForceStartServiceExecute(Sender: TObject);
+    procedure pmServicesPopup(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -223,7 +235,9 @@ type
   public
     procedure Reload;
     procedure RefreshService(Service: TServiceEntry);
+    procedure InvalidateService(Service: TServiceEntry);
     procedure RefreshAllServices;
+    procedure InvalidateAllServices;
 
   end;
 
@@ -245,6 +259,92 @@ begin
       break;
     end;
 end;
+
+
+destructor TServiceEntry.Destroy;
+begin
+  if Self.Config <> nil then begin
+    FreeMem(Self.Config);
+    Self.Config := nil;
+  end;
+  inherited;
+end;
+
+procedure TServiceEntry.Refresh();
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
+  try
+    RefreshFromManager(hSC);
+  finally
+    CloseServiceHandle(hSC);
+  end;
+end;
+
+procedure TServiceEntry.RefreshFromManager(hSC: SC_HANDLE);
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, Self.ServiceName, SERVICE_READ_ACCESS);
+  try
+    if hSvc <> 0 then
+      RefreshFromHandle(hSvc);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+procedure TServiceEntry.RefreshFromHandle(hSvc: SC_HANDLE);
+begin
+  Self.Status := QueryServiceStatus(hSvc);
+  Self.Config := QueryServiceConfig(hSvc);
+end;
+
+function TServiceEntry.GetEffectiveDisplayName: string;
+begin
+  if (Info <> nil) and (Info.DisplayName <> '') then
+    Result := Info.DisplayName
+  else
+    Result := Self.DisplayName;
+end;
+
+function TServiceEntry.GetExecutableFilename: string;
+begin
+  if Self.ServiceDll <> '' then
+    Result := Self.ServiceDll
+  else
+  if Config <> nil then
+    Result := Config.lpBinaryPathName
+  else
+    Result := '';
+end;
+
+function TServiceEntry.CanStart: boolean;
+begin
+  Result := (Status.dwCurrentState = SERVICE_STOPPED)
+    and ((Config = nil) or (Config.dwStartType <> SERVICE_DISABLED));
+end;
+
+function TServiceEntry.CanForceStart: boolean;
+begin
+  Result := Status.dwCurrentState = SERVICE_STOPPED;
+end;
+
+function TServiceEntry.CanStop: boolean;
+begin
+  Result := (Status.dwCurrentState <> SERVICE_STOPPED)
+    and (Status.dwCurrentState <> SERVICE_STOP_PENDING);
+end;
+
+function TServiceEntry.CanPause: boolean;
+begin
+  Result := Status.dwCurrentState = SERVICE_RUNNING;
+end;
+
+function TServiceEntry.CanResume: boolean;
+begin
+  Result := Status.dwCurrentState = SERVICE_PAUSED;
+end;
+
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
@@ -298,34 +398,6 @@ begin
   finally
     FreeAndNil(icon);
   end;
-end;
-
-destructor TServiceEntry.Destroy;
-begin
-  if Self.Config <> nil then begin
-    FreeMem(Self.Config);
-    Self.Config := nil;
-  end;
-  inherited;
-end;
-
-function TServiceEntry.GetEffectiveDisplayName: string;
-begin
-  if (Info <> nil) and (Info.DisplayName <> '') then
-    Result := Info.DisplayName
-  else
-    Result := Self.DisplayName;
-end;
-
-function TServiceEntry.GetExecutableFilename: string;
-begin
-  if Self.ServiceDll <> '' then
-    Result := Self.ServiceDll
-  else
-  if Config <> nil then
-    Result := Config.lpBinaryPathName
-  else
-    Result := '';
 end;
 
 //Загружает список служб с их состояниями
@@ -395,21 +467,13 @@ end;
 
 //Reload data for a specified service and repaint the node
 procedure TMainForm.RefreshService(Service: TServiceEntry);
-var hSC, hSvc: SC_HANDLE;
 begin
-  hSvc := 0;
-  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-  try
-    hSvc := OpenService(hSC, Service.ServiceName, SERVICE_READ_ACCESS);
-    if hSvc <> 0 then begin
-      Service.Status := QueryServiceStatus(hSvc);
-      Service.Config := QueryserviceConfig(hSvc);
-    end;
-  finally
-    CloseServiceHandle(hSvc);
-    CloseServiceHandle(hSC);
-  end;
+  Service.Refresh();
+  InvalidateService(Service);
+end;
 
+procedure TMainForm.InvalidateService(Service: TServiceEntry);
+begin
   vtServices.IterateSubtree(nil, InvalidateServiceNode, Service);
 end;
 
@@ -427,6 +491,11 @@ var service: TServiceEntry;
 begin
   for service in FServices do
     RefreshService(service);
+end;
+
+procedure TMainForm.InvalidateAllServices;
+begin
+  vtServices.Invalidate;
 end;
 
 procedure TMainForm.vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
@@ -664,33 +733,6 @@ begin
   mmDetails.Text := nd.Description;
 end;
 
-//Separate functions because we need the checks both when making the action visible, and when executing
-function IsValidCommandStart(const AStatus: TServiceStatus): boolean; inline;
-begin
-  Result := AStatus.dwCurrentState = SERVICE_STOPPED;
-end;
-
-function IsValidCommandStop(const AStatus: TServiceStatus): boolean; inline;
-begin
-  Result := (AStatus.dwCurrentState <> SERVICE_STOPPED)
-    and (AStatus.dwCurrentState <> SERVICE_STOP_PENDING);
-end;
-
-function IsValidCommandPause(const AStatus: TServiceStatus): boolean; inline;
-begin
-  Result := AStatus.dwCurrentState = SERVICE_RUNNING;
-end;
-
-function IsValidCommandResume(const AStatus: TServiceStatus): boolean; inline;
-begin
-  Result := AStatus.dwCurrentState = SERVICE_PAUSED;
-end;
-
-function isValidCommandRestart(const AStatus: TServiceStatus): boolean; inline;
-begin
-  Result := (AStatus.dwCurrentState = SERVICE_RUNNING)
-    or (AStatus.dwCurrentState = SERVICE_PAUSED);
-end;
 
 procedure TMainForm.vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
@@ -702,29 +744,30 @@ end;
 procedure TMainForm.SelectionChanged;
 var services: TServiceEntries;
   service: TServiceEntry;
-  CanStart, CanStop, CanPause, CanResume, CanRestart: boolean;
+  CanStart, CanForceStart, CanStop, CanPause, CanResume: boolean;
   CommonStartType: cardinal;
 begin
   services := GetSelectedServices();
 
  //Show an action if any of the selected services allows it
   CanStart := false;
+  CanForceStart := false;
   CanStop := false;
   CanPause := false;
   CanResume := false;
-  CanRestart := false;
   for service in services do begin
-    if IsValidCommandStart(service.Status) then CanStart := true;
-    if IsValidCommandStop(service.Status) then CanStop := true;
-    if IsValidCommandPause(service.Status) then CanPause := true;
-    if IsValidCommandResume(service.Status) then CanResume := true;
-    if IsValidCommandRestart(service.Status) then CanRestart := true;
+    if service.CanStart then CanStart := true;
+    if service.CanForceStart then CanForceStart := true;
+    if service.CanStop then CanStop := true;
+    if service.CanPause then CanPause := true;
+    if service.CanResume then CanResume := true;
   end;
   aStartService.Visible := CanStart;
+  aForceStartService.Visible := CanForceStart;
   aStopService.Visible := CanStop;
   aPauseService.Visible := CanPause;
   aResumeService.Visible := CanResume;
-  aRestartService.Visible := CanRestart;
+  aRestartService.Visible := CanStop;
 
   aJumpToBinary.Visible := Length(services)=1;
   aJumpToRegistry.Visible := Length(services)=1;
@@ -759,6 +802,14 @@ procedure TMainForm.vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TSh
 begin
   if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
     aCopyServiceShortSummary.Execute;
+end;
+
+procedure TMainForm.pmServicesPopup(Sender: TObject);
+begin
+  pmForceStartService.Visible := aForceStartService.Visible
+    and (Windows.GetKeyState(VK_SHIFT) and $8000 <> 0); //Show extended action only if Shift is pressed
+  pmStartService.Visible := aStartService.Visible
+    and not pmForceStartService.Visible; //normal Start is overriden
 end;
 
 
@@ -1040,7 +1091,7 @@ begin
 end;
 
 procedure TMainForm.aCopyServiceIDExecute(Sender: TObject);
-var Service: TServiceEntry;
+var service: TServiceEntry;
   str: string;
 begin
   str := '';
@@ -1064,7 +1115,7 @@ begin
 end;
 
 procedure TMainForm.aCopyServiceShortSummaryExecute(Sender: TObject);
-var Service: TServiceEntry;
+var service: TServiceEntry;
   str: string;
 begin
   str := '';
@@ -1076,7 +1127,7 @@ begin
 end;
 
 procedure TMainForm.aCopyServiceDescriptionExecute(Sender: TObject);
-var Service: TServiceEntry;
+var service: TServiceEntry;
   str: string;
 begin
   str := '';
@@ -1088,7 +1139,7 @@ begin
 end;
 
 procedure TMainForm.aCopyExecutableFilenameExecute(Sender: TObject);
-var Service: TServiceEntry;
+var service: TServiceEntry;
   str: string;
 begin
   str := '';
@@ -1100,50 +1151,71 @@ begin
 end;
 
 
-
 procedure TMainForm.aStartServiceExecute(Sender: TObject);
-var services: TServiceEntries;
-  service: TServiceEntry;
+var service: TServiceEntry;
 begin
-  services := GetSelectedServices();
-  for service in services do
-    if IsValidCommandStart(service.Status) then begin
+  for service in GetSelectedServices() do
+    if service.CanStart then begin
       StartService(Service.ServiceName);
       RefreshService(Service);
     end;
 end;
 
-procedure TMainForm.aStopServiceExecute(Sender: TObject);
-var services: TServiceEntries;
+procedure TMainForm.aForceStartServiceExecute(Sender: TObject);
+var hSC, hSvc: SC_HANDLE;
   service: TServiceEntry;
 begin
-  services := GetSelectedServices();
-  for service in services do
-    if IsValidCommandStop(service.Status) then begin
+  hSC := OpenSCManager();
+  try
+    for service in GetSelectedServices() do begin
+      if service.CanStart then
+        StartService(hSC, Service.ServiceName) //works even if Config==nil
+      else
+      if service.CanForceStart and (service.Config <> nil) then begin //or we wouldn't know what to restore
+        hSvc := OpenService(hSC, service.ServiceName, SERVICE_READ_ACCESS or SERVICE_CONTROL_ACCESS or SERVICE_WRITE_ACCESS);
+        try
+          service.Config := QueryServiceConfig(hSvc);
+          ChangeServiceStartType(hSvc, SERVICE_DEMAND_START);
+          StartService(hSvc);
+        finally
+          ChangeServiceStartType(hSvc, service.Config.dwStartType);
+          CloseServiceHandle(hSvc);
+        end;
+      end else
+        continue;
+      Service.RefreshFromManager(hSC);
+      InvalidateService(Service);
+    end;
+  finally
+    CloseServiceHandle(hSC);
+  end;
+end;
+
+procedure TMainForm.aStopServiceExecute(Sender: TObject);
+var service: TServiceEntry;
+begin
+  for service in GetSelectedServices() do
+    if service.CanStop then begin
       StopService(Service.ServiceName);
       RefreshService(Service);
     end;
 end;
 
 procedure TMainForm.aPauseServiceExecute(Sender: TObject);
-var services: TServiceEntries;
-  service: TServiceEntry;
+var service: TServiceEntry;
 begin
-  services := GetSelectedServices();
-  for service in services do
-    if IsValidCommandPause(service.Status) then begin
+  for service in GetSelectedServices() do
+    if service.CanPause then begin
       PauseService(Service.ServiceName);
       RefreshService(Service);
     end;
 end;
 
 procedure TMainForm.aResumeServiceExecute(Sender: TObject);
-var services: TServiceEntries;
-  service: TServiceEntry;
+var service: TServiceEntry;
 begin
-  services := GetSelectedServices();
-  for service in services do
-    if IsValidCommandResume(service.Status) then begin
+  for service in GetSelectedServices() do
+    if service.CanResume then begin
       ContinueService(Service.ServiceName);
       RefreshService(Service);
     end;
@@ -1170,7 +1242,7 @@ begin
     for i := 0 to Length(services)-1 do begin
       hSvcs[i].h := OpenService(hSC, services[i].ServiceName);
       if hSvcs[i].h = 0 then RaiseLastOsError();
-      if IsValidCommandStop(services[i].Status) then begin
+      if services[i].CanStop then begin
         services[i].Status := StopService(hSvcs[i].h);
         RefreshService(services[i]);
         hSvcs[i].waiting := true;
@@ -1196,7 +1268,7 @@ begin
     //TODO: Move ^^ into "Form.WaitForStatusChange()"
 
     for i := 0 to Length(hSvcs)-1 do
-      if IsValidCommandStart(services[i].Status) then
+      if services[i].CanStart then
         StartService(hSvcs[i].h);
 
     if not all_stopped then

@@ -172,6 +172,12 @@ object MainForm: TMainForm
       Caption = 'Start'
       OnExecute = aStartServiceExecute
     end
+    object aForceStartService: TAction
+      Category = 'ServiceControl'
+      Caption = 'Start (force)'
+      Hint = 'Start services even when they are disabled'
+      OnExecute = aForceStartServiceExecute
+    end
     object aStopService: TAction
       Category = 'ServiceControl'
       Caption = 'Stop'
@@ -329,10 +335,14 @@ object MainForm: TMainForm
     end
   end
   object pmServices: TPopupMenu
+    OnPopup = pmServicesPopup
     Left = 232
     Top = 40
-    object Start1: TMenuItem
+    object pmStartService: TMenuItem
       Action = aStartService
+    end
+    object pmForceStartService: TMenuItem
+      Action = aForceStartService
     end
     object Stop1: TMenuItem
       Action = aStopService

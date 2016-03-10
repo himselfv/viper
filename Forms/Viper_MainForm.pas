@@ -27,7 +27,9 @@ type
     ntFolder,
     ntRunningServices,
     ntAllServices,
-    ntUnknownServices
+    ntUnknownServices,
+    ntRunningDrivers,
+    ntAllDrivers
   );
 
   TNdFolderData = record
@@ -113,7 +115,7 @@ type
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
     function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
-    function vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
+    function vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType; ATitle: string): PVirtualNode;
     procedure FilterFolders();
     procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
@@ -304,6 +306,7 @@ end;
 procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var nd: TServiceEntry;
+  isService: boolean;
 begin
   if Data=nil then begin
     Sender.IsVisible[Node] := true;
@@ -313,11 +316,15 @@ begin
   nd := TServiceEntry(Sender.GetNodeData(Node)^);
   Assert(nd <> nil);
 
+  isService := (nd.Status.dwServiceType and SERVICE_WIN32 <> 0);
+
   case PNdFolderData(Data).NodeType of
-    ntFolder: Sender.IsVisible[Node] := PNdFolderData(Data).ContainsService(nd.ServiceName);
-    ntRunningServices: Sender.IsVisible[Node] := (nd.Status.dwCurrentState <> SERVICE_STOPPED);
-    ntAllServices: Sender.IsVisible[Node] := true;
-    ntUnknownServices: Sender.IsVisible[Node] := Length(GetServiceFolders(nd)) <= 0;
+    ntFolder: Sender.IsVisible[Node] := isService and PNdFolderData(Data).ContainsService(nd.ServiceName);
+    ntRunningServices: Sender.IsVisible[Node] := isService and (nd.Status.dwCurrentState <> SERVICE_STOPPED);
+    ntAllServices: Sender.IsVisible[Node] :=  isService;
+    ntUnknownServices: Sender.IsVisible[Node] := isService and (Length(GetServiceFolders(nd)) <= 0);
+    ntRunningDrivers: Sender.IsVisible[Node] := (not isService) and (nd.Status.dwCurrentState <> SERVICE_STOPPED);
+    ntAllDrivers: Sender.IsVisible[Node] := not isService;
   end;
 end;
 
@@ -328,18 +335,23 @@ resourcestring
   sFolderUnknownServices = 'Необычные';
   sFolderRunningServices = 'Работающие';
   sFolderAllServices = 'Все';
+  sFolderAllDrivers = 'Драйверы';
+  sFolderRunningDrivers = 'Работающие';
 
 //Перезагружает структуру папок со службами
 procedure TMainForm.ReloadServiceTree;
+var section: PVirtualNode;
 begin
   vtFolders.BeginUpdate;
   try
     FServiceCat.Clear;
     vtFolders.Clear;
     LoadServiceFolder(nil, AppFolder+'\SvcData');
-    vtFolders_AddSpecial(ntUnknownServices, sFolderUnknownServices);
-    vtFolders_AddSpecial(ntRunningServices, sFolderRunningServices);
-    vtFolders_AddSpecial(ntAllServices, sFolderAllServices);
+    vtFolders_AddSpecial(nil, ntUnknownServices, sFolderUnknownServices);
+    vtFolders_AddSpecial(nil, ntRunningServices, sFolderRunningServices);
+    vtFolders_AddSpecial(nil, ntAllServices, sFolderAllServices);
+    section := vtFolders_AddSpecial(nil, ntAllDrivers, sFolderAllDrivers);
+    vtFolders_AddSpecial(section, ntRunningDrivers, sFolderRunningDrivers);
   finally
     vtFolders.EndUpdate;
   end;
@@ -420,22 +432,6 @@ begin
   end;
 end;
 
-procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
-var nd: TServiceEntry;
-begin
-  MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
-
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
- //Most availability checking is done in OnChanged, depends on Selection
-
-  mmDetails.Text := nd.Description;
-  if pcBottom.ActivePage = tsDependencies then
-    ReloadServiceDependencies;
-  if pcBottom.ActivePage = tsDependents then
-    ReloadServiceDependents;
-end;
-
 procedure TNdFolderData.LoadDescription(const AFilename: string);
 var sl: TStringList;
 begin
@@ -470,10 +466,10 @@ begin
   Data.FolderName := ExtractFilename(AFolderPath);
 end;
 
-function TMainForm.vtFolders_AddSpecial(AType: TFolderNodeType; ATitle: string): PVirtualNode;
+function TMainForm.vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType; ATitle: string): PVirtualNode;
 var Data: PNdFolderData;
 begin
-  Result := vtFolders.AddChild(nil);
+  Result := vtFolders.AddChild(AParent, nil);
   vtFolders.ValidateNode(Result, false);
   Data := vtFolders.GetNodeData(Result);
   Data.NodeType := AType;
@@ -562,8 +558,13 @@ begin
 
   nd := PNdFolderData(Sender.GetNodeData(Node));
   Assert(nd <> nil);
+
   if nd.NodeType <> ntFolder then begin
-    Sender.IsVisible[Node] := true;
+    case nd.NodeType of
+      ntRunningDrivers,
+      ntAllDrivers: Sender.IsVisible[Node] := aShowDrivers.Checked;
+    else Sender.IsVisible[Node] := true;
+    end;
     exit;
   end;
 
@@ -576,6 +577,22 @@ begin
     end;
 
   Sender.IsVisible[Node] := (not cbHideEmptyFolders.Checked) or HasAnyServices;
+end;
+
+procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var nd: TServiceEntry;
+begin
+  MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
+
+  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+ //Most availability checking is done in OnChanged, depends on Selection
+
+  mmDetails.Text := nd.Description;
+  if pcBottom.ActivePage = tsDependencies then
+    ReloadServiceDependencies;
+  if pcBottom.ActivePage = tsDependents then
+    ReloadServiceDependents;
 end;
 
 

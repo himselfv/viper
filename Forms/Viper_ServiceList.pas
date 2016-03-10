@@ -150,7 +150,7 @@ end;
 
 function TServiceList.AddService(Parent: PVirtualNode; Service: TServiceEntry): PVirtualNode;
 begin
-  Result := vtServices.AddChild(nil, pointer(Service));
+  Result := vtServices.AddChild(Parent, pointer(Service));
 end;
 
 procedure TServiceList.ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);

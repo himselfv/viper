@@ -127,7 +127,8 @@ type
   protected
     FServices: TServiceEntryList;
     iFolder, iService: integer;
-    procedure FilterServices(AFolder: PNdFolderData);
+    procedure FilterServices(); overload;
+    procedure FilterServices(AFolder: PNdFolderData); overload;
     procedure FilterServices_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
@@ -239,9 +240,9 @@ begin
   MainServiceList.Clear;
   FServices.Clear;
 
-  ServiceTypes := SERVICE_WIN32;
-  if aShowDrivers.Checked then
-    ServiceTypes := ServiceTypes or SERVICE_DRIVER;
+ //Let's load all services since we need all for dependencies, just make sure to handle
+ //permission denials well.
+  ServiceTypes := SERVICE_TYPE_ALL;
 
   hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
@@ -273,12 +274,14 @@ begin
     CloseServiceHandle(hSC);
   end;
 
+  FilterFolders; //service list changed, re-test which folders are empty
+
   MainServiceList.BeginUpdate;
   try
     MainServiceList.Clear;
     for i := 0 to FServices.Count-1 do
       MainServiceList.AddService(nil, FServices[i]);
-    FilterFolders; //service list changed, re-test which folders are empty
+    FilterServices();
   finally
     MainServiceList.EndUpdate;
   end;
@@ -298,6 +301,19 @@ begin
 end;
 
 
+procedure TMainForm.FilterServices();
+var node: PVirtualNode;
+  data: PNdFolderData;
+begin
+  node := vtFolders.FocusedNode;
+  if node = nil then
+    FilterServices(nil)
+  else begin
+    data := PNdFolderData(vtFolders.GetNodeData(node));
+    FilterServices(data);
+  end;
+end;
+
 procedure TMainForm.FilterServices(AFolder: PNdFolderData);
 begin
   MainServiceList.ApplyFilter(FilterServices_Callback, AFolder);
@@ -308,15 +324,19 @@ procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree;
 var nd: TServiceEntry;
   isService: boolean;
 begin
-  if Data=nil then begin
-    Sender.IsVisible[Node] := true;
-    exit;
-  end;
-
   nd := TServiceEntry(Sender.GetNodeData(Node)^);
   Assert(nd <> nil);
 
   isService := (nd.Status.dwServiceType and SERVICE_WIN32 <> 0);
+  if not isService and not aShowDrivers.Checked then begin
+    Sender.IsVisible[Node] := false;
+    exit;
+  end;
+
+  if Data=nil then begin
+    Sender.IsVisible[Node] := true;
+    exit;
+  end;
 
   case PNdFolderData(Data).NodeType of
     ntFolder: Sender.IsVisible[Node] := isService and PNdFolderData(Data).ContainsService(nd.ServiceName);
@@ -651,9 +671,8 @@ begin
       if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
         continue;
       service := FServices.Find(dep);
-     //NOTE!!
-     //Dependencies sometimes refer to drivers, which we don't (neccessarily) load.
-     //Either we have to load drivers too, or ignore non-matches.
+     //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
+     //(as we do now), or to ignore failed matches.
       if service = nil then
         raise Exception.Create('Service '+string(dep)+' not found in a general list.');
       DependencyList.AddService(nil, service);

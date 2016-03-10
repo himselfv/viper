@@ -189,8 +189,9 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
-  iFolder := LoadIcon('shell32.dll', 4); //Иконка папки из эксплорера
-  iService := LoadIcon('filemgmt.dll', 0); //Иконка службы из services.msc
+  iFolder := LoadIcon('shell32.dll', 4); //Folder icon from Explorer
+  iService := LoadIcon('filemgmt.dll', 0); //Service icon in services.msc
+  pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
   Reload;
 end;

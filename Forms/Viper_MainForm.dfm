@@ -75,7 +75,7 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsDependents
+      ActivePage = tsDescription
       Align = alBottom
       TabOrder = 0
       object tsDescription: TTabSheet

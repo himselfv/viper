@@ -169,8 +169,13 @@ begin
           RaiseLastOsError(err);
        //otherwise fall through and realloc
       end;
-      ERROR_RESOURCE_TYPE_NOT_FOUND: begin
-       //sometimes happens; means that no such info (description etc) is available
+     //Might return FILE_NOT_FOUND or RESOURCE_TYPE_NOT_FOUND if the description is EXPAND_SZ, e.g.
+     //  %SystemRoot%\lib.dll,15
+      ERROR_FILE_NOT_FOUND,
+      ERROR_RESOURCE_DATA_NOT_FOUND,
+      ERROR_RESOURCE_TYPE_NOT_FOUND,
+      ERROR_RESOURCE_NAME_NOT_FOUND: begin
+       //TODO: We can sometimes query the source string ourselves (like Autoruns does).
         Result := nil;
         break;
       end;

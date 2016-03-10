@@ -31,7 +31,10 @@ type
   TServiceEntries = array of TServiceEntry;
   PServiceEntries = ^TServiceEntries;
 
-  TServiceEntryList = TObjectList<TServiceEntry>;
+  TServiceEntryList = class(TObjectList<TServiceEntry>)
+  public
+    function Find(const AServiceName: string): TServiceEntry;
+  end;
 
 
 //Subscribe to be notified of changes
@@ -153,6 +156,17 @@ begin
   Result := Status.dwCurrentState = SERVICE_PAUSED;
 end;
 
+
+function TServiceEntryList.Find(const AServiceName: string): TServiceEntry;
+var i: integer;
+begin
+  Result := nil;
+  for i := 0 to Self.Count-1 do
+    if SameText(Self[i].ServiceName, AServiceName) then begin
+      Result := Self[i];
+      break;
+    end;
+end;
 
 
 //Reload data for a specified service and repaint the nodes

@@ -67,6 +67,9 @@ procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwS
 procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
 
 
+function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
+
+
 implementation
 uses SysUtils;
 
@@ -361,6 +364,28 @@ begin
   finally
     CloseServiceHandle(hSC);
   end;
+end;
+
+
+//Returns the list of services dependent on a given service. The list has to be freed.
+function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
+var bytesNeeded: cardinal;
+begin
+  Result := nil;
+  bytesNeeded := 0;
+
+  if WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, 0, bytesNeeded, ServiceCount) then begin
+    Result := nil;
+    exit;
+  end;
+
+  if GetLastError <> ERROR_MORE_DATA then
+    RaiseLastOsError();
+
+  GetMem(Result, bytesNeeded);
+  if not WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, bytesNeeded, bytesNeeded, ServiceCount) then
+   //We could've adjusted again but risk going into an endless loop
+    RaiseLastOsError();
 end;
 
 

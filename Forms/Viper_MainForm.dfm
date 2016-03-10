@@ -75,7 +75,7 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsRequiredBy
+      ActivePage = tsDependencies
       Align = alBottom
       TabOrder = 0
       object tsDescription: TTabSheet
@@ -93,6 +93,24 @@ object MainForm: TMainForm
       object tsDependencies: TTabSheet
         Caption = 'Depends on'
         ImageIndex = 1
+        OnShow = tsDependenciesShow
+        inline DependencyList: TServiceList
+          Left = 0
+          Top = 0
+          Width = 849
+          Height = 165
+          Align = alClient
+          TabOrder = 0
+          ExplicitLeft = 40
+          ExplicitTop = -282
+          inherited vtServices: TVirtualStringTree
+            Width = 849
+            Height = 165
+            ExplicitLeft = 0
+            ExplicitWidth = 672
+            ExplicitHeight = 447
+          end
+        end
       end
       object tsRequiredBy: TTabSheet
         Caption = 'Required by'

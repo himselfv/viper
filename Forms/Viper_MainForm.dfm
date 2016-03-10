@@ -75,7 +75,7 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsDependencies
+      ActivePage = tsDependents
       Align = alBottom
       TabOrder = 0
       object tsDescription: TTabSheet
@@ -101,20 +101,38 @@ object MainForm: TMainForm
           Height = 165
           Align = alClient
           TabOrder = 0
-          ExplicitLeft = 40
-          ExplicitTop = -282
+          ExplicitWidth = 849
+          ExplicitHeight = 165
           inherited vtServices: TVirtualStringTree
             Width = 849
             Height = 165
             ExplicitLeft = 0
-            ExplicitWidth = 672
-            ExplicitHeight = 447
+            ExplicitWidth = 849
+            ExplicitHeight = 165
           end
         end
       end
-      object tsRequiredBy: TTabSheet
+      object tsDependents: TTabSheet
         Caption = 'Required by'
         ImageIndex = 2
+        OnShow = tsDependentsShow
+        inline DependentsList: TServiceList
+          Left = 0
+          Top = 0
+          Width = 849
+          Height = 165
+          Align = alClient
+          TabOrder = 0
+          ExplicitWidth = 849
+          ExplicitHeight = 165
+          inherited vtServices: TVirtualStringTree
+            Width = 849
+            Height = 165
+            ExplicitLeft = 0
+            ExplicitWidth = 849
+            ExplicitHeight = 165
+          end
+        end
       end
       object tsOperations: TTabSheet
         Caption = 'Operations'

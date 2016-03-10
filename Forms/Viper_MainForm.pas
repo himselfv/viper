@@ -77,12 +77,13 @@ type
     tsDescription: TTabSheet;
     mmDetails: TMemo;
     tsDependencies: TTabSheet;
-    tsRequiredBy: TTabSheet;
+    tsDependents: TTabSheet;
     tsOperations: TTabSheet;
     MainServiceList: TServiceList;
     N1: TMenuItem;
     Refresh2: TMenuItem;
     DependencyList: TServiceList;
+    DependentsList: TServiceList;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -104,6 +105,7 @@ type
     procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure tsDependenciesShow(Sender: TObject);
+    procedure tsDependentsShow(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -130,6 +132,7 @@ type
     procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure ReloadServiceDependencies;
+    procedure ReloadServiceDependents;
   public
     procedure Reload;
     procedure RefreshAllServices;
@@ -428,6 +431,8 @@ begin
   mmDetails.Text := nd.Description;
   if pcBottom.ActivePage = tsDependencies then
     ReloadServiceDependencies;
+  if pcBottom.ActivePage = tsDependents then
+    ReloadServiceDependents;
 end;
 
 procedure TNdFolderData.LoadDescription(const AFilename: string);
@@ -611,36 +616,76 @@ end;
 
 procedure TMainForm.ReloadServiceDependencies;
 var service: TServiceEntry;
-  hSC, hSvc: SC_HANDLE;
-  depcy: LPENUM_SERVICE_STATUS;
-  depcyCount: cardinal;
+  deps: TArray<string>;
+  dep: string;
 begin
   service := MainServiceList.GetFocusedService;
-  if service = nil then exit;
+  if (service = nil) or (service.Config = nil) then begin
+    DependencyList.Clear;
+    exit;
+  end;
 
-  hSC := 0;
-  hSvc := 0;
   DependencyList.BeginUpdate;
   try
     DependencyList.Clear;
-    hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-    hSvc := OpenService(hSC, service.ServiceName, SERVICE_READ_ACCESS);
-    depcy := EnumDependentServices(hSvc, SERVICE_STATE_ALL, depcyCount);
-    if depcy = nil then exit;
-
-    while depcyCount > 0 do begin
-      service := FServices.Find(depcy.lpServiceName);
+    deps := SplitNullSeparatedList(service.Config.lpDependencies);
+    for dep in deps do begin
+      if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
+        continue;
+      service := FServices.Find(dep);
+     //NOTE!!
+     //Dependencies sometimes refer to drivers, which we don't (neccessarily) load.
+     //Either we have to load drivers too, or ignore non-matches.
       if service = nil then
-        raise Exception.Create('Service '+string(depcy.lpServiceName)+' not found in a general list.');
+        raise Exception.Create('Service '+string(dep)+' not found in a general list.');
       DependencyList.AddService(nil, service);
-      Inc(depcy);
-      Dec(depcyCount);
+    end;
+  finally
+    DependencyList.EndUpdate;
+  end;
+end;
+
+procedure TMainForm.tsDependentsShow(Sender: TObject);
+begin
+  ReloadServiceDependents;
+end;
+
+procedure TMainForm.ReloadServiceDependents;
+var service: TServiceEntry;
+  hSC, hSvc: SC_HANDLE;
+  depnt: LPENUM_SERVICE_STATUS;
+  depntCount: cardinal;
+begin
+  service := MainServiceList.GetFocusedService;
+  if service = nil then begin
+    DependencyList.Clear;
+    exit;
+  end;
+
+  hSC := 0;
+  hSvc := 0;
+  DependentsList.BeginUpdate;
+  try
+    DependentsList.Clear;
+    hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
+    hSvc := OpenService(hSC, service.ServiceName, SERVICE_ENUMERATE_DEPENDENTS);
+    if hSvc = 0 then exit;
+    depnt := EnumDependentServices(hSvc, SERVICE_STATE_ALL, depntCount);
+    if depnt = nil then exit;
+
+    while depntCount > 0 do begin
+      service := FServices.Find(depnt.lpServiceName);
+      if service = nil then
+        raise Exception.Create('Service '+string(depnt.lpServiceName)+' not found in a general list.');
+      DependentsList.AddService(nil, service);
+      Inc(depnt);
+      Dec(depntCount);
     end;
 
   finally
     if hSvc <> 0 then CloseServiceHandle(hSvc);
     if hSC <> 0 then CloseServiceHandle(hSC);
-    DependencyList.EndUpdate;
+    DependentsList.EndUpdate;
   end;
 end;
 

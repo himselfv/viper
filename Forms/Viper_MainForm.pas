@@ -135,6 +135,7 @@ type
     procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure ReloadServiceDependencies;
+    procedure LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadServiceDependents;
   public
     procedure Reload;
@@ -654,31 +655,39 @@ end;
 
 procedure TMainForm.ReloadServiceDependencies;
 var service: TServiceEntry;
-  deps: TArray<string>;
-  dep: string;
 begin
   service := MainServiceList.GetFocusedService;
-  if (service = nil) or (service.Config = nil) then begin
-    DependencyList.Clear;
-    exit;
-  end;
-
   DependencyList.BeginUpdate;
   try
     DependencyList.Clear;
-    deps := SplitNullSeparatedList(service.Config.lpDependencies);
-    for dep in deps do begin
-      if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
-        continue;
-      service := FServices.Find(dep);
-     //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
-     //(as we do now), or to ignore failed matches.
-      if service = nil then
-        raise Exception.Create('Service '+string(dep)+' not found in a general list.');
-      DependencyList.AddService(nil, service);
-    end;
+    LoadServiceDependencyNodes(service, nil);
   finally
     DependencyList.EndUpdate;
+  end;
+end;
+
+//Works with DependencyList. Adds child nodes for service dependencies to the node given by ParentNode.
+//Call ReloadServiceDependencies if you need to reload the whole DependencyList.
+procedure TMainForm.LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
+var deps: TArray<string>;
+  dep: string;
+  DepService: TServiceEntry;
+  DepNode: PVirtualNode;
+begin
+  if (AService = nil) or (AService.Config = nil) then
+    exit;
+
+  deps := SplitNullSeparatedList(AService.Config.lpDependencies);
+  for dep in deps do begin
+    if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
+      continue;
+    DepService := FServices.Find(dep);
+   //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
+   //(as we do now), or to ignore failed matches.
+    if DepService = nil then
+      raise Exception.Create('Service '+string(dep)+' not found in a general list.');
+    DepNode := DependencyList.AddService(AParentNode, DepService);
+    LoadServiceDependencyNodes(DepService, DepNode);
   end;
 end;
 

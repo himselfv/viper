@@ -75,7 +75,7 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsDependencies
+      ActivePage = tsDependents
       Align = alBottom
       TabOrder = 0
       object tsDescription: TTabSheet
@@ -129,6 +129,7 @@ object MainForm: TMainForm
           inherited vtServices: TVirtualStringTree
             Width = 849
             Height = 165
+            TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
             ExplicitLeft = 0
             ExplicitWidth = 849
             ExplicitHeight = 165

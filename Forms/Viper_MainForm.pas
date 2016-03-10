@@ -137,6 +137,7 @@ type
     procedure ReloadServiceDependencies;
     procedure LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadServiceDependents;
+    procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
   public
     procedure Reload;
     procedure RefreshAllServices;
@@ -671,8 +672,8 @@ end;
 procedure TMainForm.LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
 var deps: TArray<string>;
   dep: string;
-  DepService: TServiceEntry;
-  DepNode: PVirtualNode;
+  depService: TServiceEntry;
+  depNode: PVirtualNode;
 begin
   if (AService = nil) or (AService.Config = nil) then
     exit;
@@ -681,13 +682,13 @@ begin
   for dep in deps do begin
     if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
       continue;
-    DepService := FServices.Find(dep);
+    depService := FServices.Find(dep);
    //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
    //(as we do now), or to ignore failed matches.
-    if DepService = nil then
+    if depService = nil then
       raise Exception.Create('Service '+string(dep)+' not found in a general list.');
-    DepNode := DependencyList.AddService(AParentNode, DepService);
-    LoadServiceDependencyNodes(DepService, DepNode);
+    depNode := DependencyList.AddService(AParentNode, depService);
+    LoadServiceDependencyNodes(depService, depNode);
   end;
 end;
 
@@ -698,40 +699,54 @@ end;
 
 procedure TMainForm.ReloadServiceDependents;
 var service: TServiceEntry;
-  hSC, hSvc: SC_HANDLE;
-  depnt: LPENUM_SERVICE_STATUS;
-  depntCount: cardinal;
+  hSC: SC_HANDLE;
 begin
   service := MainServiceList.GetFocusedService;
   if service = nil then begin
-    DependencyList.Clear;
+    DependentsList.Clear;
     exit;
   end;
 
   hSC := 0;
-  hSvc := 0;
   DependentsList.BeginUpdate;
   try
     DependentsList.Clear;
     hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-    hSvc := OpenService(hSC, service.ServiceName, SERVICE_ENUMERATE_DEPENDENTS);
-    if hSvc = 0 then exit;
+    LoadServiceDependentsNodes(hSC, service, nil);
+
+  finally
+    if hSC <> 0 then CloseServiceHandle(hSC);
+    DependentsList.EndUpdate;
+  end;
+end;
+
+procedure TMainForm.LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
+var hSvc: SC_HANDLE;
+  depnt: LPENUM_SERVICE_STATUS;
+  depntCount: cardinal;
+  depService: TServiceEntry;
+  depNode: PVirtualNode;
+begin
+  if AService = nil then exit;
+
+  hSvc := OpenService(hSC, AService.ServiceName, SERVICE_ENUMERATE_DEPENDENTS);
+  if hSvc = 0 then exit;
+  try
     depnt := EnumDependentServices(hSvc, SERVICE_STATE_ALL, depntCount);
     if depnt = nil then exit;
 
     while depntCount > 0 do begin
-      service := FServices.Find(depnt.lpServiceName);
-      if service = nil then
+      depService := FServices.Find(depnt.lpServiceName);
+      if depService = nil then
         raise Exception.Create('Service '+string(depnt.lpServiceName)+' not found in a general list.');
-      DependentsList.AddService(nil, service);
+      depNode := DependentsList.AddService(AParentNode, depService);
+      LoadServiceDependentsNodes(hSC, depService, depNode);
+
       Inc(depnt);
       Dec(depntCount);
     end;
-
   finally
-    if hSvc <> 0 then CloseServiceHandle(hSvc);
-    if hSC <> 0 then CloseServiceHandle(hSC);
-    DependentsList.EndUpdate;
+    CloseServiceHandle(hSvc);
   end;
 end;
 

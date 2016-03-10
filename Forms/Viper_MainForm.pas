@@ -4,8 +4,9 @@ interface
 
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics,
-  Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, Vcl.ExtCtrls,
-  ImgList, UiTypes, Generics.Collections, Vcl.Menus, ServiceHelper, Vcl.StdCtrls;
+  Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, ExtCtrls,
+  ImgList, UiTypes, Generics.Collections, Menus, ServiceHelper, StdCtrls, ComCtrls,
+  SvcEntry, Viper_ServiceList;
 
 type
  //Service information loaded from Catalogue
@@ -42,30 +43,12 @@ type
   TServiceFolders = array of PNdFolderData;
   PServiceFolders = ^TServiceFolders;
 
- //Running service description
-  TServiceEntry = class
-    ServiceName: string;
-    DisplayName: string;
-    Description: string;
-    Status: SERVICE_STATUS;
-    Config: LPQUERY_SERVICE_CONFIG;
-    ServiceDll: string;
+  TExtServiceEntry = class(TServiceEntry)
     Info: TServiceInfo;
-    destructor Destroy; override;
-    procedure Refresh(); overload;
-    procedure RefreshFromManager(hSC: SC_HANDLE);
-    procedure RefreshFromHandle(hSvc: SC_HANDLE);
-    function GetEffectiveDisplayName: string;
-    function GetExecutableFilename: string;
-    function CanStart: boolean; inline;
-    function CanForceStart: boolean; inline;
-    function CanStop: boolean; inline;
-    function CanPause: boolean; inline;
-    function CanResume: boolean; inline;
+    function GetEffectiveDisplayName: string; override;
+    procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); override;
   end;
 
-  TServiceEntries = array of TServiceEntry;
-  PServiceEntries = ^TServiceEntries;
 
   TMainForm = class(TForm)
     ActionList: TActionList;
@@ -76,127 +59,49 @@ type
     MainMenu: TMainMenu;
     Settings1: TMenuItem;
     cbHideEmptyFolders: TMenuItem;
-    aStartService: TAction;
-    aStopService: TAction;
-    aPauseService: TAction;
-    aResumeService: TAction;
-    aRestartService: TAction;
-    pmServices: TPopupMenu;
-    pmStartService: TMenuItem;
-    Stop1: TMenuItem;
-    Pause1: TMenuItem;
-    Resume1: TMenuItem;
-    Restart1: TMenuItem;
-    N1: TMenuItem;
-    Reload1: TMenuItem;
-    N2: TMenuItem;
-    miStartType: TMenuItem;
-    aStartTypeAutomatic: TAction;
-    aStartTypeManual: TAction;
-    aStartTypeDisabled: TAction;
-    Automatic1: TMenuItem;
-    Manual1: TMenuItem;
-    Disabled1: TMenuItem;
-    aDeleteService: TAction;
-    aExportService: TAction;
-    Advanced1: TMenuItem;
-    Exporttoreg1: TMenuItem;
-    Deleteservice1: TMenuItem;
     aHideEmptyFolders: TAction;
     pmFolders: TPopupMenu;
     Hideemptyfolders1: TMenuItem;
     pnlMain: TPanel;
-    vtServices: TVirtualStringTree;
-    pnlDetails: TPanel;
     Splitter2: TSplitter;
-    mmDetails: TMemo;
-    aColorByStartType: TAction;
     Colorize1: TMenuItem;
     Bystarttype1: TMenuItem;
     File1: TMenuItem;
     Reload2: TMenuItem;
     aShowDrivers: TAction;
     Showdrivers1: TMenuItem;
-    aColorByStatus: TAction;
     Bystatus1: TMenuItem;
-    Copy1: TMenuItem;
-    aCopyServiceName: TAction;
-    aCopyServiceID: TAction;
-    aCopyServiceDescription: TAction;
-    Ident1: TMenuItem;
-    Name1: TMenuItem;
-    Description1: TMenuItem;
-    aCopyServiceShortSummary: TAction;
     aRefresh: TAction;
     Refresh1: TMenuItem;
-    aCopyExecutableFilename: TAction;
-    Executablefilename1: TMenuItem;
-    aJumpToBinary: TAction;
-    aJumpToRegistry: TAction;
-    Jumptobinary1: TMenuItem;
-    Openregistrykey1: TMenuItem;
-    N3: TMenuItem;
-    aForceStartService: TAction;
-    pmForceStartService: TMenuItem;
+    pcBottom: TPageControl;
+    tsDescription: TTabSheet;
+    mmDetails: TMemo;
+    tsDependencies: TTabSheet;
+    tsRequiredBy: TTabSheet;
+    tsOperations: TTabSheet;
+    MainServiceList: TServiceList;
+    N1: TMenuItem;
+    Refresh2: TMenuItem;
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure aReloadExecute(Sender: TObject);
-    procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
-      Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-    procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
-      var NodeDataSize: Integer);
-    procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure vtServicesHeaderClick(Sender: TVTHeader;
-      HitInfo: TVTHeaderHitInfo);
-    procedure vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
-      Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-    procedure vtFoldersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
     procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vtFoldersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
+    procedure vtFoldersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
     procedure vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-      var Ghosted: Boolean; var ImageIndex: Integer);
-    procedure vtServicesGetImageIndex(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
       var Ghosted: Boolean; var ImageIndex: Integer);
     procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
-    procedure vtServicesFocusChanged(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
-    procedure vtServicesBeforeItemErase(Sender: TBaseVirtualTree;
-      TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect;
-      var ItemColor: TColor; var EraseAction: TItemEraseAction);
-    procedure vtServicesPaintText(Sender: TBaseVirtualTree;
-      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      TextType: TVSTTextType);
-    procedure aColorByStartTypeExecute(Sender: TObject);
-    procedure aCopyServiceIDExecute(Sender: TObject);
-    procedure aCopyServiceNameExecute(Sender: TObject);
-    procedure aCopyServiceDescriptionExecute(Sender: TObject);
-    procedure vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-    procedure aCopyServiceShortSummaryExecute(Sender: TObject);
-    procedure aStopServiceExecute(Sender: TObject);
-    procedure aStartServiceExecute(Sender: TObject);
-    procedure aPauseServiceExecute(Sender: TObject);
-    procedure aResumeServiceExecute(Sender: TObject);
-    procedure aRestartServiceExecute(Sender: TObject);
     procedure aRefreshExecute(Sender: TObject);
-    procedure aStartTypeAutomaticExecute(Sender: TObject);
-    procedure aStartTypeManualExecute(Sender: TObject);
-    procedure aStartTypeDisabledExecute(Sender: TObject);
-    procedure aCopyExecutableFilenameExecute(Sender: TObject);
-    procedure aJumpToBinaryExecute(Sender: TObject);
-    procedure aJumpToRegistryExecute(Sender: TObject);
-    procedure vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure aForceStartServiceExecute(Sender: TObject);
-    procedure pmServicesPopup(Sender: TObject);
+    procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -214,30 +119,18 @@ type
     procedure LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
 
   protected
+    FServices: TServiceEntryList;
     iFolder, iService: integer;
-    FServices: TObjectList<TServiceEntry>;
-    procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure FilterServices(AFolder: PNdFolderData);
     procedure FilterServices_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
     procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    procedure InvalidateServiceNode(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    procedure SelectionChanged;
-  public
-    function GetFocusedService: TServiceEntry;
-    function GetSelectedServices: TServiceEntries;
-    function GetFirstSelectedService: TServiceEntry;
-
   public
     procedure Reload;
-    procedure RefreshService(Service: TServiceEntry);
-    procedure InvalidateService(Service: TServiceEntry);
     procedure RefreshAllServices;
-    procedure InvalidateAllServices;
+
 
   end;
 
@@ -260,96 +153,26 @@ begin
     end;
 end;
 
-
-destructor TServiceEntry.Destroy;
-begin
-  if Self.Config <> nil then begin
-    FreeMem(Self.Config);
-    Self.Config := nil;
-  end;
-  inherited;
-end;
-
-procedure TServiceEntry.Refresh();
-var hSC: SC_HANDLE;
-begin
-  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-  try
-    RefreshFromManager(hSC);
-  finally
-    CloseServiceHandle(hSC);
-  end;
-end;
-
-procedure TServiceEntry.RefreshFromManager(hSC: SC_HANDLE);
-var hSvc: SC_HANDLE;
-begin
-  hSvc := OpenService(hSC, Self.ServiceName, SERVICE_READ_ACCESS);
-  try
-    if hSvc <> 0 then
-      RefreshFromHandle(hSvc);
-  finally
-    CloseServiceHandle(hSvc);
-  end;
-end;
-
-procedure TServiceEntry.RefreshFromHandle(hSvc: SC_HANDLE);
-begin
-  Self.Status := QueryServiceStatus(hSvc);
-  Self.Config := QueryServiceConfig(hSvc);
-end;
-
-function TServiceEntry.GetEffectiveDisplayName: string;
+function TExtServiceEntry.GetEffectiveDisplayName: string;
 begin
   if (Info <> nil) and (Info.DisplayName <> '') then
     Result := Info.DisplayName
   else
-    Result := Self.DisplayName;
+    Result := inherited;
 end;
 
-function TServiceEntry.GetExecutableFilename: string;
+procedure TExtServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
 begin
-  if Self.ServiceDll <> '' then
-    Result := Self.ServiceDll
-  else
-  if Config <> nil then
-    Result := Config.lpBinaryPathName
-  else
-    Result := '';
-end;
-
-function TServiceEntry.CanStart: boolean;
-begin
-  Result := (Status.dwCurrentState = SERVICE_STOPPED)
-    and ((Config = nil) or (Config.dwStartType <> SERVICE_DISABLED));
-end;
-
-function TServiceEntry.CanForceStart: boolean;
-begin
-  Result := Status.dwCurrentState = SERVICE_STOPPED;
-end;
-
-function TServiceEntry.CanStop: boolean;
-begin
-  Result := (Status.dwCurrentState <> SERVICE_STOPPED)
-    and (Status.dwCurrentState <> SERVICE_STOP_PENDING);
-end;
-
-function TServiceEntry.CanPause: boolean;
-begin
-  Result := Status.dwCurrentState = SERVICE_RUNNING;
-end;
-
-function TServiceEntry.CanResume: boolean;
-begin
-  Result := Status.dwCurrentState = SERVICE_PAUSED;
+ //TODO: Can make a common service imagelist
+  AImageList := MainForm.ilImages;
+  AIndex := MainForm.iService;
 end;
 
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create({OwnsObjects=}true);
-  FServices := TObjectList<TServiceEntry>.Create;
+  FServices := TServiceEntryList.Create;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -369,11 +192,6 @@ end;
 procedure TMainForm.aReloadExecute(Sender: TObject);
 begin
   Reload;
-end;
-
-procedure TMainForm.aRefreshExecute(Sender: TObject);
-begin
-  RefreshAllServices;
 end;
 
 function TMainForm.LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -407,9 +225,9 @@ var hSC: SC_HANDLE;
   Services, S: PEnumServiceStatus;
   BytesNeeded,ServicesReturned,ResumeHandle: DWORD;
   i: integer;
-  svc: TServiceEntry;
+  svc: TExtServiceEntry;
 begin
-  vtServices.Clear;
+  MainServiceList.Clear;
   FServices.Clear;
 
   ServiceTypes := SERVICE_WIN32;
@@ -433,21 +251,7 @@ begin
         RaiseLastOsError;
       S := Services;
       for i := 0 to ServicesReturned - 1 do begin
-        svc := TServiceEntry.Create;
-        svc.ServiceName := S^.lpServiceName;
-        svc.DisplayName := S^.lpDisplayName;
-        svc.Status := S^.ServiceStatus;
-        svc.Config := QueryServiceConfig(hSC, S^.lpServiceName);
-        svc.Description := QueryServiceDescription(hSC, S^.lpServiceName);
-        if svc.Config <> nil then begin
-          if (pos('svchost.exe', svc.Config.lpBinaryPathName)>0)
-          or (pos('lsass.exe', svc.Config.lpBinaryPathName)>0) then
-         //^ this is not a surefire way to test it's running svchost.exe, but we don't need one
-         // It would be too complicated to check that it really references svchost, and the one
-         // from the system dir and not an impostor.
-         // We just optimize away unneccessary registry checks.
-            svc.ServiceDll := ExpandEnvironmentStrings(QueryServiceServiceDll(svc.ServiceName));
-        end;
+        svc := TExtServiceEntry.CreateFromEnum(hSC, S);
         svc.Info := FServiceCat.Find(svc.ServiceName);
         FServices.Add(svc);
         Inc(S);
@@ -460,31 +264,17 @@ begin
     CloseServiceHandle(hSC);
   end;
 
-  vtServices.RootNodeCount := FServices.Count;
-  FilterFolders; //service list changed, re-test which folders are empty
-  vtServices.SortTree(vtServices.Header.SortColumn, vtServices.Header.SortDirection); //re-apply sort
+  MainServiceList.BeginUpdate;
+  try
+    MainServiceList.Clear;
+    for i := 0 to FServices.Count-1 do
+      MainServiceList.AddService(nil, FServices[i]);
+    FilterFolders; //service list changed, re-test which folders are empty
+  finally
+    MainServiceList.EndUpdate;
+  end;
 end;
 
-//Reload data for a specified service and repaint the node
-procedure TMainForm.RefreshService(Service: TServiceEntry);
-begin
-  Service.Refresh();
-  InvalidateService(Service);
-end;
-
-procedure TMainForm.InvalidateService(Service: TServiceEntry);
-begin
-  vtServices.IterateSubtree(nil, InvalidateServiceNode, Service);
-end;
-
-procedure TMainForm.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Data: Pointer; var Abort: Boolean);
-begin
-  if TServiceEntry(Sender.GetNodeData(Node)^) = Data then
-    Sender.InvalidateNode(Node);
-  if Sender.Selected[Node] then
-    SelectionChanged; //properties of one of the selected nodes changed
-end;
 
 procedure TMainForm.RefreshAllServices;
 var service: TServiceEntry;
@@ -493,214 +283,15 @@ begin
     RefreshService(service);
 end;
 
-procedure TMainForm.InvalidateAllServices;
+procedure TMainForm.aRefreshExecute(Sender: TObject);
 begin
-  vtServices.Invalidate;
+  Self.RefreshAllServices;
 end;
 
-procedure TMainForm.vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
-  var NodeDataSize: Integer);
-begin
-  NodeDataSize := SizeOf(TObject);
-end;
-
-procedure TMainForm.vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
-  Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-begin
-  PObject(Sender.GetNodeData(Node))^ := FServices[Node.Index];
-end;
-
-resourcestring
-  sStatusStopped = 'Остановлена';
-  sStatusStartPending = 'Запускается...';
-  sStatusStopPending = 'Завершается...';
-  sStatusRunning = 'Выполняется';
-  sStatusContinuePending = 'Возобновляется...';
-  sStatusPausePending = 'Приостанавливается...';
-  sStatusPaused = 'Приостановлена';
-  sStatusOther = 'Неясно (%d)';
-
-  sStartTypeAuto = 'Автоматически';
-  sStartTypeDemand = 'Вручную';
-  sStartTypeDisabled = 'Отключена';
-  sStartTypeBoot = 'Авто (загрузка)';
-  sStartTypeSystem = 'Авто (система)';
-
-procedure TMainForm.vtServicesGetText(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var CellText: string);
-var Data: TServiceEntry;
-begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
-  if TextType <> ttNormal then exit;
-  case Column of
-    NoColumn, 0: CellText := Data.ServiceName;
-    1: CellText := Data.GetEffectiveDisplayName;
-    2: case Data.Status.dwCurrentState of
-         SERVICE_STOPPED: CellText := '';
-         SERVICE_START_PENDING: CellText := sStatusStartPending;
-         SERVICE_STOP_PENDING: CellText := sStatusStopPending;
-         SERVICE_RUNNING: CellText := sStatusRunning;
-         SERVICE_CONTINUE_PENDING: CellText := sStatusContinuePending;
-         SERVICE_PAUSE_PENDING: CellText := sStatusPausePending;
-         SERVICE_PAUSED: CellText := sStatusPaused;
-       else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
-       end;
-    3: if Data.Config = nil then
-         CellText := ''
-       else
-       case Data.Config.dwStartType of
-         SERVICE_AUTO_START: CellText := sStartTypeAuto;
-         SERVICE_DEMAND_START: CellText := sStartTypeDemand;
-         SERVICE_DISABLED: CellText := sStartTypeDisabled;
-         SERVICE_BOOT_START: CellText := sStartTypeBoot;
-         SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
-       else CellText := '';
-       end;
-    4: CellText := Data.Description;
-    5: CellText := Data.GetExecutableFilename;
-  end;
-end;
-
-//Customize the background
-procedure TMainForm.vtServicesBeforeItemErase(Sender: TBaseVirtualTree;
-  TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect;
-  var ItemColor: TColor; var EraseAction: TItemEraseAction);
-var Data: TServiceEntry;
-begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
-
-  if (Data.Config <> nil) and aColorByStartType.Checked then
-    case Data.Config.dwStartType of
-      SERVICE_BOOT_START,
-      SERVICE_SYSTEM_START,
-      SERVICE_AUTO_START: begin
-        EraseAction := eaColor;
-        ItemColor := $00FFF7DD;//$00DDF5FF;
-      end;
-    end;
-end;
-
- //Customize the font
-procedure TMainForm.vtServicesPaintText(Sender: TBaseVirtualTree;
-  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType);
-var Data: TServiceEntry;
-begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
-
-  if aColorByStatus.Checked then
-    case Data.Status.dwCurrentState of
-      SERVICE_STOPPED: begin end;
-    else
-      TargetCanvas.Font.Style := [fsBold];
-    end;
-
-  if (Data.Config <> nil) and aColorByStartType.Checked then
-    case Data.Config.dwStartType of
-      SERVICE_BOOT_START,
-      SERVICE_SYSTEM_START,
-      SERVICE_AUTO_START: begin end;
-      SERVICE_DISABLED:
-        TargetCanvas.Font.Color := $AAAAAA;
-    end;
-end;
-
-procedure TMainForm.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
-  Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-var Data1, Data2: TServiceEntry;
-begin
-  Data1 := TServiceEntry(Sender.GetNodeData(Node1)^);
-  Data2 := TServiceEntry(Sender.GetNodeData(Node2)^);
-  case Column of
-    0, NoColumn: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
-    1: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
-    2: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
-    3: if Data1.Config = nil then
-         if Data2.Config = nil then
-           Result := 0
-         else
-           Result := 1
-       else
-         if Data2.Config = nil then
-           Result := -1
-         else
-           Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
-    4: Result := CompareText(Data1.Description, Data2.Description);
-    5: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
-  end;
-end;
-
-procedure TMainForm.vtServicesHeaderClick(Sender: TVTHeader;
-  HitInfo: TVTHeaderHitInfo);
-begin
-  if Sender.SortColumn <> HitInfo.Column then begin
-    Sender.SortColumn := HitInfo.Column;
-    Sender.SortDirection := sdAscending;
-  end else
-    if Sender.SortDirection = sdAscending then
-      Sender.SortDirection := sdDescending
-    else
-    if Sender.SortDirection = sdDescending then
-      Sender.SortColumn := NoColumn;
-  if Sender.SortColumn <> NoColumn then
-    Sender.Treeview.SortTree(Sender.SortColumn, Sender.SortDirection);
-end;
-
-procedure TMainForm.vtServicesGetImageIndex(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-  var Ghosted: Boolean; var ImageIndex: Integer);
-begin
-  if not (Kind in [ikNormal, ikSelected]) then exit;
-  case Column of
-    NoColumn, 0: ImageIndex := iService;
-  end;
-end;
-
-function TMainForm.GetFocusedService: TServiceEntry;
-begin
-  if vtServices.FocusedNode = nil then begin
-    Result := nil;
-    exit;
-  end;
-
-  Result := TServiceEntry(vtServices.GetNodeData(vtServices.FocusedNode)^);
-end;
-
-function TMainForm.GetSelectedServices: TServiceEntries;
-begin
-  SetLength(Result, 0);
-  vtServices.IterateSubtree(nil, Iterate_AddNodeDataToArray, @Result, [vsSelected]);
-end;
-
-procedure TMainForm.Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var entries: PServiceEntries absolute Data;
-  nd: TServiceEntry;
-begin
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
-  SetLength(entries^, Length(entries^)+1);
-  entries^[Length(entries^)-1] := nd;
-end;
-
-function TMainForm.GetFirstSelectedService: TServiceEntry;
-var services: TServiceEntries;
-begin
-  services := GetSelectedServices();
-  if Length(services) < 0 then
-    Result := nil
-  else
-    Result := services[0];
-end;
 
 procedure TMainForm.FilterServices(AFolder: PNdFolderData);
 begin
-  vtServices.BeginUpdate;
-  try
-    vtServices.IterateSubtree(nil, FilterServices_Callback, AFolder, [], {DoInit=}true);
-  finally
-    vtServices.EndUpdate;
-  end;
+  MainServiceList.ApplyFilter(FilterServices_Callback, AFolder);
 end;
 
 procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree;
@@ -721,95 +312,6 @@ begin
     ntAllServices: Sender.IsVisible[Node] := true;
     ntUnknownServices: Sender.IsVisible[Node] := Length(GetServiceFolders(nd)) <= 0;
   end;
-end;
-
-procedure TMainForm.vtServicesFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
-var nd: TServiceEntry;
-begin
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
- //Most availability checking is done in OnChanged, depends on Selection
-
-  mmDetails.Text := nd.Description;
-end;
-
-
-procedure TMainForm.vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-begin
-  SelectionChanged;
-end;
-
-//Call when there's reason to suspect that node selection or the properties of those nodes
-//could have changed;
-procedure TMainForm.SelectionChanged;
-var services: TServiceEntries;
-  service: TServiceEntry;
-  CanStart, CanForceStart, CanStop, CanPause, CanResume: boolean;
-  CommonStartType: cardinal;
-begin
-  services := GetSelectedServices();
-
- //Show an action if any of the selected services allows it
-  CanStart := false;
-  CanForceStart := false;
-  CanStop := false;
-  CanPause := false;
-  CanResume := false;
-  for service in services do begin
-    if service.CanStart then CanStart := true;
-    if service.CanForceStart then CanForceStart := true;
-    if service.CanStop then CanStop := true;
-    if service.CanPause then CanPause := true;
-    if service.CanResume then CanResume := true;
-  end;
-  aStartService.Visible := CanStart;
-  aForceStartService.Visible := CanForceStart;
-  aStopService.Visible := CanStop;
-  aPauseService.Visible := CanPause;
-  aResumeService.Visible := CanResume;
-  aRestartService.Visible := CanStop;
-
-  aJumpToBinary.Visible := Length(services)=1;
-  aJumpToRegistry.Visible := Length(services)=1;
-
- //Check start type item if all selected services share it
-  CommonStartType := cardinal(-1);
-  for service in services do begin
-    if service.Config = nil then begin
-      CommonStartType := cardinal(-1);
-      break; //no chance to find common
-    end;
-
-    if CommonStartType = cardinal(-1) then
-      CommonStartType := service.Config.dwStartType
-    else
-      if CommonStartType <> service.Config.dwStartType then begin
-        CommonStartType := cardinal(-1);
-        break;
-      end;
-  end;
-  aStartTypeAutomatic.Checked := (CommonStartType = SERVICE_AUTO_START);
-  aStartTypeManual.Checked := (CommonStartType = SERVICE_DEMAND_START);
-  aStartTypeDisabled.Checked := (CommonStartType = SERVICE_DISABLED);
-
-  aStartTypeAutomatic.Visible := Length(services)>0;
-  aStartTypeManual.Visible := Length(services)>0;
-  aStartTypeDisabled.Visible := Length(services)>0;
-  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
-end;
-
-procedure TMainForm.vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
-    aCopyServiceShortSummary.Execute;
-end;
-
-procedure TMainForm.pmServicesPopup(Sender: TObject);
-begin
-  pmForceStartService.Visible := aForceStartService.Visible
-    and (Windows.GetKeyState(VK_SHIFT) and $8000 <> 0); //Show extended action only if Shift is pressed
-  pmStartService.Visible := aStartService.Visible
-    and not pmForceStartService.Visible; //normal Start is overriden
 end;
 
 
@@ -909,6 +411,18 @@ begin
   finally
     FreeAndNil(sl);
   end;
+end;
+
+procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var nd: TServiceEntry;
+begin
+  MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
+
+  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+ //Most availability checking is done in OnChanged, depends on Selection
+
+  mmDetails.Text := nd.Description;
 end;
 
 procedure TNdFolderData.LoadDescription(const AFilename: string);
@@ -1084,249 +598,5 @@ begin
     ScanData.List[Length(ScanData.List)-1] := NodeData;
   end;
 end;
-
-procedure TMainForm.aColorByStartTypeExecute(Sender: TObject);
-begin
-  vtServices.Invalidate;
-end;
-
-procedure TMainForm.aCopyServiceIDExecute(Sender: TObject);
-var service: TServiceEntry;
-  str: string;
-begin
-  str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.ServiceName;
-  end;
-  Clipboard.AsText := str;
-end;
-
-procedure TMainForm.aCopyServiceNameExecute(Sender: TObject);
-var Service: TServiceEntry;
-  str: string;
-begin
-  str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.DisplayName;
-  end;
-  Clipboard.AsText := str;
-end;
-
-procedure TMainForm.aCopyServiceShortSummaryExecute(Sender: TObject);
-var service: TServiceEntry;
-  str: string;
-begin
-  str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.ServiceName + ' (' + Service.DisplayName + ')';
-  end;
-  Clipboard.AsText := str;
-end;
-
-procedure TMainForm.aCopyServiceDescriptionExecute(Sender: TObject);
-var service: TServiceEntry;
-  str: string;
-begin
-  str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.Description;
-  end;
-  Clipboard.AsText := str;
-end;
-
-procedure TMainForm.aCopyExecutableFilenameExecute(Sender: TObject);
-var service: TServiceEntry;
-  str: string;
-begin
-  str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.Config.lpBinaryPathName;
-  end;
-  Clipboard.AsText := str;
-end;
-
-
-procedure TMainForm.aStartServiceExecute(Sender: TObject);
-var service: TServiceEntry;
-begin
-  for service in GetSelectedServices() do
-    if service.CanStart then begin
-      StartService(Service.ServiceName);
-      RefreshService(Service);
-    end;
-end;
-
-procedure TMainForm.aForceStartServiceExecute(Sender: TObject);
-var hSC, hSvc: SC_HANDLE;
-  service: TServiceEntry;
-begin
-  hSC := OpenSCManager();
-  try
-    for service in GetSelectedServices() do begin
-      if service.CanStart then
-        StartService(hSC, Service.ServiceName) //works even if Config==nil
-      else
-      if service.CanForceStart and (service.Config <> nil) then begin //or we wouldn't know what to restore
-        hSvc := OpenService(hSC, service.ServiceName, SERVICE_READ_ACCESS or SERVICE_CONTROL_ACCESS or SERVICE_WRITE_ACCESS);
-        try
-          service.Config := QueryServiceConfig(hSvc);
-          ChangeServiceStartType(hSvc, SERVICE_DEMAND_START);
-          StartService(hSvc);
-        finally
-          ChangeServiceStartType(hSvc, service.Config.dwStartType);
-          CloseServiceHandle(hSvc);
-        end;
-      end else
-        continue;
-      Service.RefreshFromManager(hSC);
-      InvalidateService(Service);
-    end;
-  finally
-    CloseServiceHandle(hSC);
-  end;
-end;
-
-procedure TMainForm.aStopServiceExecute(Sender: TObject);
-var service: TServiceEntry;
-begin
-  for service in GetSelectedServices() do
-    if service.CanStop then begin
-      StopService(Service.ServiceName);
-      RefreshService(Service);
-    end;
-end;
-
-procedure TMainForm.aPauseServiceExecute(Sender: TObject);
-var service: TServiceEntry;
-begin
-  for service in GetSelectedServices() do
-    if service.CanPause then begin
-      PauseService(Service.ServiceName);
-      RefreshService(Service);
-    end;
-end;
-
-procedure TMainForm.aResumeServiceExecute(Sender: TObject);
-var service: TServiceEntry;
-begin
-  for service in GetSelectedServices() do
-    if service.CanResume then begin
-      ContinueService(Service.ServiceName);
-      RefreshService(Service);
-    end;
-end;
-
-procedure TMainForm.aRestartServiceExecute(Sender: TObject);
-var services: TServiceEntries;
-  hSC: SC_HANDLE;
-  hSvcs: array of record
-    h: SC_HANDLE;
-    waiting: boolean;
-  end;
-  tmStart: cardinal;
-  i: integer;
-  all_stopped: boolean;
-begin
-  services := GetSelectedServices();
-  if Length(services) <= 0 then exit;
-
-  hSC := OpenSCManager();
-  try
-    SetLength(hSvcs, Length(services));
-
-    for i := 0 to Length(services)-1 do begin
-      hSvcs[i].h := OpenService(hSC, services[i].ServiceName);
-      if hSvcs[i].h = 0 then RaiseLastOsError();
-      if services[i].CanStop then begin
-        services[i].Status := StopService(hSvcs[i].h);
-        RefreshService(services[i]);
-        hSvcs[i].waiting := true;
-      end else
-        hSvcs[i].waiting := false;
-    end;
-
-    tmStart := GetTickCount();
-    repeat
-      all_stopped := true;
-      for i := 0 to Length(hSvcs)-1 do
-        if hSvcs[i].waiting then begin
-          services[i].Status := QueryServiceStatus(hSvcs[i].h);
-          if services[i].Status.dwCurrentState = SERVICE_STOPPED then
-            hSvcs[i].waiting := false
-          else
-            all_stopped := false;
-        end;
-
-      if all_stopped then break;
-      Sleep(50);
-    until GetTickCount() - tmStart > 5000;
-    //TODO: Move ^^ into "Form.WaitForStatusChange()"
-
-    for i := 0 to Length(hSvcs)-1 do
-      if services[i].CanStart then
-        StartService(hSvcs[i].h);
-
-    if not all_stopped then
-      raise Exception.Create('Could not stop some services');
-  finally
-    for i := 0 to Length(hSvcs)-1 do
-      CloseServiceHandle(hSvcs[i].h);
-    CloseServiceHandle(hSC);
-  end;
-
-  Refresh();
-end;
-
-
-procedure TMainForm.aStartTypeAutomaticExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_AUTO_START);
-    RefreshService(Service);
-  end;
-end;
-
-procedure TMainForm.aStartTypeManualExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_DEMAND_START);
-    RefreshService(Service);
-  end;
-end;
-
-procedure TMainForm.aStartTypeDisabledExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
-    RefreshService(Service);
-  end;
-end;
-
-
-procedure TMainForm.aJumpToBinaryExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  Service := GetFirstSelectedService();
-  Assert(Service <> nil);
-  if Service.GetExecutableFilename <> '' then
-    ExplorerAtFile(Service.GetExecutableFilename);
-end;
-
-procedure TMainForm.aJumpToRegistryExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  Service := GetFirstSelectedService();
-  Assert(Service <> nil);
-  RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
-end;
-
 
 end.

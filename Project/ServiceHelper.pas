@@ -163,10 +163,19 @@ begin
   lastSize := 0;
   while not WinSvc.QueryServiceConfig2(hSvc, dwInfoLevel, Result, lastSize, @bufSize) do begin
     err := GetLastError();
-    if err <> ERROR_INSUFFICIENT_BUFFER then
-      RaiseLastOsError(err);
-    if bufSize <= lastSize then //avoid infinite cycle
-      RaiseLastOsError(err);
+    case err of
+      ERROR_INSUFFICIENT_BUFFER: begin
+        if bufSize <= lastSize then //avoid infinite cycle
+          RaiseLastOsError(err);
+       //otherwise fall through and realloc
+      end;
+      ERROR_RESOURCE_TYPE_NOT_FOUND: begin
+       //sometimes happens; means that no such info (description etc) is available
+        Result := nil;
+        break;
+      end;
+    else RaiseLastOsError();
+    end;
     ReallocMem(Result, bufSize);
     lastSize := bufSize;
   end;

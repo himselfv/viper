@@ -541,6 +541,7 @@ end;
 procedure TServiceList.aForceStartServiceExecute(Sender: TObject);
 var hSC, hSvc: SC_HANDLE;
   service: TServiceEntry;
+  oldStartType: cardinal;
 begin
   hSC := OpenSCManager();
   try
@@ -549,18 +550,19 @@ begin
         StartService(hSC, Service.ServiceName) //works even if Config==nil
       else
       if service.CanForceStart and (service.Config <> nil) then begin //or we wouldn't know what to restore
-        hSvc := OpenService(hSC, service.ServiceName, SERVICE_READ_ACCESS or SERVICE_CONTROL_ACCESS or SERVICE_WRITE_ACCESS);
+        hSvc := OpenService(hSC, service.ServiceName, SERVICE_CONTROL_ACCESS or SERVICE_WRITE_ACCESS);
         try
-          service.Config := QueryServiceConfig(hSvc);
+          service.Refresh; //we need actual latest config
+          oldStartType := service.Config.dwStartType;
           ChangeServiceStartType(hSvc, SERVICE_DEMAND_START);
           StartService(hSvc);
         finally
-          ChangeServiceStartType(hSvc, service.Config.dwStartType);
+          ChangeServiceStartType(hSvc, oldStartType);
           CloseServiceHandle(hSvc);
         end;
       end else
         continue;
-      Service.RefreshFromManager(hSC);
+      Service.Refresh;
       InvalidateService(Service);
     end;
   finally

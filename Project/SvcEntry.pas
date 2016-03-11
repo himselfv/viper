@@ -4,19 +4,33 @@ interface
 uses SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections, ImgList;
 
 type
- //Running service description
+ //Actual registered service on a live system
+ //We load a lot of these and querying the info is rather slow, so we do it on-demand.
   TServiceEntry = class
+  protected
+   //Common ServiceManager handle to query basic information. We share this because we fetch info
+   //on demand (=> dissociated queries) and do not want to reopen the manager every request.
+    class var FhSC: SC_HANDLE;
+    class function GetHSC: SC_HANDLE; inline;
+  protected
+    FHandle: SC_HANDLE; //Only to query basic information. Open your own with extended rights for changes
+    FDescriptionQueried: boolean;
+    FDescription: string;
+    FConfigQueried: boolean;
+    FConfig: LPQUERY_SERVICE_CONFIG;
+    FServiceDllQueried: boolean;
+    FServiceDll: string;
+    function GetHandle: SC_HANDLE; inline;
+    function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
+    function GetDescription: string; inline;
+    function GetServiceDll: string; inline;
+  public
     ServiceName: string;
     DisplayName: string;
-    Description: string;
     Status: SERVICE_STATUS;
-    Config: LPQUERY_SERVICE_CONFIG;
-    ServiceDll: string;
     constructor CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatus);
     destructor Destroy; override;
     procedure Refresh(); overload;
-    procedure RefreshFromManager(hSC: SC_HANDLE);
-    procedure RefreshFromHandle(hSvc: SC_HANDLE);
     function GetEffectiveDisplayName: string; virtual;
     function GetExecutableFilename: string;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
@@ -25,6 +39,10 @@ type
     function CanStop: boolean; inline;
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
+    property Handle: SC_HANDLE read GetHandle;
+    property Description: string read GetDescription;
+    property Config: LPQUERY_SERVICE_CONFIG read GetConfig;
+    property ServiceDll: string read GetServiceDll;
   end;
   PServiceEntry = ^TServiceEntry;
 
@@ -50,68 +68,82 @@ procedure InvalidateService(Service: TServiceEntry);
 implementation
 uses WinapiHelper;
 
+class function TServiceEntry.GetHSC: SC_HANDLE;
+begin
+  if FhSC = 0 then
+    FhSC := OpenSCManager(SC_MANAGER_CONNECT);
+  Result := FhSC;
+ //There's no code to destroy the handle. It persists while the application runs,
+ //and there's no real point in closing handles when the app is going down.
+end;
+
+
 constructor TServiceEntry.CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatus);
-var hSvc: SC_HANDLE;
 begin
   inherited Create;
   Self.ServiceName := S^.lpServiceName;
   Self.DisplayName := S^.lpDisplayName;
   Self.Status := S^.ServiceStatus;
-  hSvc := OpenService(hSC, S^.lpServiceName, SERVICE_QUERY_CONFIG);
-  try
-    Self.Config := QueryServiceConfig(hSvc);
-    Self.Description := QueryServiceDescription(hSvc);
-  finally
-    CloseServiceHandle(hSvc);
-  end;
-  if Self.Config <> nil then begin
-    if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
-    or (pos('lsass.exe', Self.Config.lpBinaryPathName)>0) then
-   //^ this is not a surefire way to test it's running svchost.exe, but we don't need one
-   // It would be too complicated to check that it really references svchost, and the one
-   // from the system dir and not an impostor.
-   // We just optimize away unneccessary registry checks.
-      Self.ServiceDll := ExpandEnvironmentStrings(QueryServiceServiceDll(Self.ServiceName));
-  end;
 end;
 
 destructor TServiceEntry.Destroy;
 begin
-  if Self.Config <> nil then begin
-    FreeMem(Self.Config);
-    Self.Config := nil;
+  if Self.FConfig <> nil then begin
+    FreeMem(Self.FConfig);
+    Self.FConfig := nil;
   end;
   inherited;
 end;
 
 procedure TServiceEntry.Refresh();
-var hSC: SC_HANDLE;
 begin
-  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-  try
-    RefreshFromManager(hSC);
-  finally
-    CloseServiceHandle(hSC);
-  end;
+  Self.Status := QueryServiceStatus(Self.Handle);
+  Self.FConfigQueried := false;
+  FreeMem(Self.FConfig);
+  Self.FConfig := nil;
 end;
 
-procedure TServiceEntry.RefreshFromManager(hSC: SC_HANDLE);
-var hSvc: SC_HANDLE;
+function TServiceEntry.GetHandle: SC_HANDLE;
 begin
-  hSvc := OpenService(hSC, Self.ServiceName, SERVICE_READ_ACCESS);
-  try
-    if hSvc <> 0 then
-      RefreshFromHandle(hSvc);
-  finally
-    CloseServiceHandle(hSvc);
-  end;
+  if Self.FHandle = 0 then
+    Self.FHandle := OpenService(Self.GethSC, Self.ServiceName, SERVICE_QUERY_CONFIG or SERVICE_QUERY_STATUS);
+  Result := Self.FHandle;
 end;
 
-procedure TServiceEntry.RefreshFromHandle(hSvc: SC_HANDLE);
+function TServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
-  Self.Status := QueryServiceStatus(hSvc);
-  Self.Config := QueryServiceConfig(hSvc);
+  if not FConfigQueried then begin
+    FConfig := QueryServiceConfig(Self.Handle);
+    FConfigQueried := true;
+  end;
+  Result := FConfig;
 end;
+
+function TServiceEntry.GetDescription: string;
+begin
+  if not FDescriptionQueried then begin
+    FDescription := QueryServiceDescription(Self.Handle);
+    FDescriptionQueried := true;
+  end;
+  Result := FDescription;
+end;
+
+function TServiceEntry.GetServiceDll: string;
+begin
+  if not FServiceDllQueried then begin
+    if Self.Config <> nil then
+      if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
+      or (pos('lsass.exe', Self.Config.lpBinaryPathName)>0) then
+     //^ this is not a surefire way to test it's running svchost.exe, but we don't need one
+     // It would be too complicated to check that it really references svchost, and the one
+     // from the system dir and not an impostor.
+     // We just optimize away unneccessary registry checks.
+      FServiceDll := ExpandEnvironmentStrings(QueryServiceServiceDll(Self.ServiceName));
+    FServiceDllQueried := true;
+  end;
+  Result := FServiceDll;
+end;
+
 
 procedure TServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
 begin

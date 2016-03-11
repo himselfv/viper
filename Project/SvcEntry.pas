@@ -51,13 +51,19 @@ implementation
 uses WinapiHelper;
 
 constructor TServiceEntry.CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatus);
+var hSvc: SC_HANDLE;
 begin
   inherited Create;
   Self.ServiceName := S^.lpServiceName;
   Self.DisplayName := S^.lpDisplayName;
   Self.Status := S^.ServiceStatus;
-  Self.Config := QueryServiceConfig(hSC, S^.lpServiceName);
-  Self.Description := QueryServiceDescription(hSC, S^.lpServiceName);
+  hSvc := OpenService(hSC, S^.lpServiceName, SERVICE_QUERY_CONFIG);
+  try
+    Self.Config := QueryServiceConfig(hSvc);
+    Self.Description := QueryServiceDescription(hSvc);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
   if Self.Config <> nil then begin
     if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
     or (pos('lsass.exe', Self.Config.lpBinaryPathName)>0) then

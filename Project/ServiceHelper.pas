@@ -29,10 +29,11 @@ function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG; overload;
 function QueryServiceConfig(hSC: SC_HANDLE; const AServiceName: string): LPQUERY_SERVICE_CONFIG; overload;
 
 //Result has to be freed
-function QueryServiceConfig2(dwInfoLevel: cardinal; hSvc: SC_HANDLE): PByte; overload;
-function QueryServiceConfig2(hSC: SC_HANDLE; dwInfoLevel: cardinal; const AServiceName: string): PByte; overload;
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload;
+function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte; overload;
 
-function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string;
+function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
+function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
 
 //Opens a configuration key for this service in the registry. The result has to be freed.
@@ -154,7 +155,7 @@ begin
   end;
 end;
 
-function QueryServiceConfig2(dwInfoLevel: cardinal; hSvc: SC_HANDLE): PByte;
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte;
 var lastSize, bufSize: cardinal;
   err: integer;
 begin
@@ -186,7 +187,7 @@ begin
   end;
 end;
 
-function QueryServiceConfig2(hSC: SC_HANDLE; dwInfoLevel: cardinal; const AServiceName: string): PByte;
+function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte;
 var hSvc: SC_HANDLE;
 begin
   hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_CONFIG);
@@ -199,10 +200,22 @@ begin
 end;
 
 
+function QueryServiceDescription(hSvc: SC_HANDLE): string;
+var buf: LPSERVICE_DESCRIPTION;
+begin
+  buf := LPSERVICE_DESCRIPTION(QueryServiceConfig2(hSvc, SERVICE_CONFIG_DESCRIPTION));
+  if buf = nil then begin
+    Result := '';
+    exit;
+  end;
+  Result := buf.lpDescription;
+  FreeMem(buf);
+end;
+
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string;
 var buf: LPSERVICE_DESCRIPTION;
 begin
-  buf := LPSERVICE_DESCRIPTION(QueryServiceConfig2(hSC, SERVICE_CONFIG_DESCRIPTION, AServiceName));
+  buf := LPSERVICE_DESCRIPTION(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_DESCRIPTION));
   if buf = nil then begin
     Result := '';
     exit;
@@ -226,7 +239,8 @@ begin
   end;
 end;
 
-function QueryServiceServiceDll(const AServiceName: string): string;
+//Old version, supposedly slower
+function QueryServiceServiceDll2(const AServiceName: string): string;
 var reg: TRegistry;
 begin
   reg := OpenServiceKey(AServiceName);
@@ -237,6 +251,42 @@ begin
       Result := reg.ReadString('ServiceDll');
   finally
     FreeAndNil(reg);
+  end;
+end;
+
+function RegQueryValueSz(hKey: HKEY; ValueName: string; out Value: string): cardinal;
+var sz: cardinal;
+  valType: cardinal;
+begin
+  sz := MAX_PATH;
+  SetLength(Value, sz);
+
+  Result := RegQueryValueEx(hKey, PChar(ValueName), nil, @valType, @Value[1], @sz);
+  if Result = ERROR_MORE_DATA then begin
+    SetLength(Value, sz);
+    Result := RegQueryValueEx(hKey, PChar(ValueName), nil, @valType, @Value[1], @sz);
+  end;
+
+  if Result = 0 then begin
+    if (valType <> REG_SZ) and (valType <> REG_EXPAND_SZ) then
+      Result := ERROR_INVALID_DATATYPE;
+    SetLength(Value, StrLen(PChar(Value)));
+  end;
+end;
+
+function QueryServiceServiceDll(const AServiceName: string): string;
+var hk: HKEY;
+begin
+  if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar('System\CurrentControlSet\services\'
+    +AServiceName+'\Parameters'), 0, KEY_QUERY_VALUE, hk) <> 0 then begin
+    Result := '';
+    exit;
+  end;
+  try
+    if RegQueryValueSz(hk, 'ServiceDll', Result) <> 0 then
+      Result := '';
+  finally
+    RegCloseKey(HKEY_LOCAL_MACHINE);
   end;
 end;
 

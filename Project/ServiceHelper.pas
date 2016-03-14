@@ -35,6 +35,9 @@ function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoL
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
+function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
+function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;
+
 
 //Opens a configuration key for this service in the registry. The result has to be freed.
 function OpenServiceKey(const AServiceName: string): TRegistry;
@@ -223,6 +226,18 @@ begin
   Result := buf.lpDescription;
   FreeMem(buf);
 end;
+
+
+function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO;
+begin
+  Result := PSERVICE_TRIGGER_INFO(QueryServiceConfig2(hSvc, SERVICE_CONFIG_TRIGGER_INFO));
+end;
+
+function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO;
+begin
+  Result := PSERVICE_TRIGGER_INFO(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO));
+end;
+
 
 
 function OpenServiceKey(const AServiceName: string): TRegistry;

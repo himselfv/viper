@@ -75,11 +75,15 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsDependents
+      ActivePage = tsTriggers
       Align = alBottom
       TabOrder = 0
       object tsDescription: TTabSheet
         Caption = 'Info'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object mmDetails: TMemo
           Left = 0
           Top = 0
@@ -107,7 +111,6 @@ object MainForm: TMainForm
             Width = 849
             Height = 165
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitLeft = 0
             ExplicitWidth = 849
             ExplicitHeight = 165
           end
@@ -130,15 +133,32 @@ object MainForm: TMainForm
             Width = 849
             Height = 165
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitLeft = 0
             ExplicitWidth = 849
             ExplicitHeight = 165
           end
         end
       end
+      object tsTriggers: TTabSheet
+        Caption = 'Triggers'
+        ImageIndex = 4
+        OnShow = tsTriggersShow
+        object lbTriggers: TListBox
+          Left = 0
+          Top = 0
+          Width = 849
+          Height = 165
+          Align = alClient
+          ItemHeight = 13
+          TabOrder = 0
+        end
+      end
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -154,8 +174,8 @@ object MainForm: TMainForm
         Width = 857
         Height = 413
         OnFocusChanged = MainServiceListvtServicesFocusChanged
-        ExplicitLeft = 0
         ExplicitWidth = 857
+        ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
         object N1: TMenuItem

@@ -74,6 +74,9 @@ procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD)
 function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
 
 
+const
+  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6; //missing in headers
+
 implementation
 uses SysUtils;
 

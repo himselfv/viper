@@ -6,7 +6,7 @@ uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics,
   Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, ExtCtrls,
   ImgList, UiTypes, Generics.Collections, Menus, ServiceHelper, StdCtrls, ComCtrls,
-  SvcEntry, Viper_ServiceList;
+  SvcEntry, Viper_ServiceList, Viper_TriggerList;
 
 type
  //Service information loaded from Catalogue
@@ -87,7 +87,7 @@ type
     DependencyList: TServiceList;
     DependentsList: TServiceList;
     tsTriggers: TTabSheet;
-    lbTriggers: TListBox;
+    TriggerList: TTriggerList;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -764,38 +764,11 @@ begin
   ReloadTriggers;
 end;
 
-const
-  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6; //missing in headers
-
-function ServiceTriggerTypeToString(const dwTriggerType: dword): string;
-begin
- //NOTE: Triggers should further be subdivided with action GUIDS
- //See here: https://msdn.microsoft.com/en-us/library/windows/desktop/dd405512%28v=vs.85%29.aspx
-  case dwTriggerType of
-    SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL: Result := 'Device Interface Arrival';
-    SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY: Result := 'IP Address Availability';
-    SERVICE_TRIGGER_TYPE_DOMAIN_JOIN: Result := 'Domain Join';
-    SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT: Result := 'Firewall Port Event';
-    SERVICE_TRIGGER_TYPE_GROUP_POLICY: Result := 'Group Policy';
-    SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: Result := 'Network Endpoint';
-  else Result := 'Trigger('+IntToStr(dwTriggerType)+')';
-  end;
-end;
-
-function ServiceTriggerActionToString(const dwAction: dword): string;
-begin
-  case dwAction of
-    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := 'Start';
-    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := 'Stop';
-  else Result := 'Action '+IntToStr(dwAction);
-  end;
-end;
-
 procedure TMainForm.ReloadTriggers;
 var service: TServiceEntry;
   triggers: PSERVICE_TRIGGER_INFO;
 begin
-  lbTriggers.Clear;
+  TriggerList.Clear;
   service := MainServiceList.GetFocusedService;
   if service = nil then
     exit;
@@ -804,8 +777,7 @@ begin
   if triggers = nil then exit;
   try
     while triggers.cTriggers > 0 do begin
-      lbTriggers.Items.Add('On: '+ServiceTriggerTypeToString(triggers.pTriggers.dwTriggerType)+' --- '
-        +'Do: '+ServiceTriggerActionToString(triggers.pTriggers.dwAction));
+      TriggerList.Add(triggers.pTriggers);
       Inc(triggers.pTriggers);
       Dec(triggers.cTriggers);
     end;

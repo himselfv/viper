@@ -42,9 +42,6 @@ object ServiceList: TServiceList
     OnGetNodeDataSize = vtServicesGetNodeDataSize
     OnHeaderClick = vtServicesHeaderClick
     OnKeyDown = vtServicesKeyDown
-    ExplicitLeft = -165
-    ExplicitWidth = 837
-    ExplicitHeight = 413
     Columns = <
       item
         Position = 0
@@ -172,6 +169,7 @@ object ServiceList: TServiceList
     object aCopyServiceShortSummary: TAction
       Category = 'Copy'
       Caption = 'Short summary'
+      ShortCut = 16451
       OnExecute = aCopyServiceShortSummaryExecute
     end
     object aCopyExecutableFilename: TAction

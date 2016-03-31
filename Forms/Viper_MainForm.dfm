@@ -80,6 +80,10 @@ object MainForm: TMainForm
       TabOrder = 0
       object tsDescription: TTabSheet
         Caption = 'Info'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object mmDetails: TMemo
           Left = 0
           Top = 0
@@ -145,18 +149,17 @@ object MainForm: TMainForm
           Height = 165
           Align = alClient
           TabOrder = 0
-          ExplicitLeft = 221
-          ExplicitTop = -73
+          ExplicitWidth = 849
+          ExplicitHeight = 165
           inherited vtTriggers: TVirtualStringTree
             Width = 849
             Height = 165
-            ExplicitLeft = 0
-            ExplicitWidth = 628
-            ExplicitHeight = 238
+            ExplicitWidth = 849
+            ExplicitHeight = 165
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800280010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800300010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -300,6 +303,10 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -316,6 +323,7 @@ object MainForm: TMainForm
         Height = 413
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         ExplicitWidth = 857
+        ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
         object N1: TMenuItem
@@ -350,6 +358,12 @@ object MainForm: TMainForm
       Caption = 'Show drivers'
       OnExecute = aReloadExecute
     end
+    object aIncludeSubfolders: TAction
+      AutoCheck = True
+      Caption = 'Include subfolders contents'
+      Hint = 'Show each folder with all of its subfolders contents included'
+      OnExecute = aIncludeSubfoldersExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -357,7 +371,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800200010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800280010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -516,6 +530,10 @@ object MainForm: TMainForm
       end
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
+        AutoCheck = True
+      end
+      object Includesubfolderscontents1: TMenuItem
+        Action = aIncludeSubfolders
         AutoCheck = True
       end
       object Colorize1: TMenuItem

@@ -88,6 +88,8 @@ type
     DependentsList: TServiceList;
     tsTriggers: TTabSheet;
     TriggerList: TTriggerList;
+    aIncludeSubfolders: TAction;
+    Includesubfolderscontents1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -111,6 +113,7 @@ type
     procedure tsDependenciesShow(Sender: TObject);
     procedure tsDependentsShow(Sender: TObject);
     procedure tsTriggersShow(Sender: TObject);
+    procedure aIncludeSubfoldersExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -131,12 +134,12 @@ type
     FServices: TServiceEntryList;
     iFolder, iService: integer;
     procedure FilterServices(); overload;
-    procedure FilterServices(AFolder: PNdFolderData); overload;
-    procedure FilterServices_Callback(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure FilterServices(AFolder: PVirtualNode); overload;
+    procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
+    procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function GetServiceFolders(Service: TServiceEntry): TServiceFolders;
-    procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure GetServiceFolders_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure ReloadServiceDependencies;
     procedure LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadServiceDependents;
@@ -301,6 +304,7 @@ begin
     RefreshService(service);
 end;
 
+
 procedure TMainForm.aRefreshExecute(Sender: TObject);
 begin
   Self.RefreshAllServices;
@@ -308,50 +312,63 @@ end;
 
 
 procedure TMainForm.FilterServices();
-var node: PVirtualNode;
-  data: PNdFolderData;
 begin
-  node := vtFolders.FocusedNode;
-  if node = nil then
-    FilterServices(nil)
-  else begin
-    data := PNdFolderData(vtFolders.GetNodeData(node));
-    FilterServices(data);
-  end;
+  FilterServices(vtFolders.FocusedNode);
 end;
 
-procedure TMainForm.FilterServices(AFolder: PNdFolderData);
+procedure TMainForm.FilterServices(AFolder: PVirtualNode);
 begin
   MainServiceList.ApplyFilter(FilterServices_Callback, AFolder);
 end;
 
-procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var nd: TServiceEntry;
+procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var folderNode: PVirtualNode absolute Data;
+  folderData: PNdFolderData;
+  svc: TServiceEntry;
   isService: boolean;
 begin
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
-  Assert(nd <> nil);
+  svc := TServiceEntry(Sender.GetNodeData(Node)^);
+  Assert(svc <> nil);
 
-  isService := (nd.Status.dwServiceType and SERVICE_WIN32 <> 0);
+  isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
   if not isService and not aShowDrivers.Checked then begin
     Sender.IsVisible[Node] := false;
     exit;
   end;
 
-  if Data=nil then begin
+  if folderNode=nil then begin
     Sender.IsVisible[Node] := true;
     exit;
   end;
 
-  case PNdFolderData(Data).NodeType of
-    ntFolder: Sender.IsVisible[Node] := isService and PNdFolderData(Data).ContainsService(nd.ServiceName);
-    ntRunningServices: Sender.IsVisible[Node] := isService and (nd.Status.dwCurrentState <> SERVICE_STOPPED);
+  folderData := PNdFolderData(vtFolders.GetNodeData(folderNode));
+  case folderData.NodeType of
+    ntFolder: Sender.IsVisible[Node] := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
+    ntRunningServices: Sender.IsVisible[Node] := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
     ntAllServices: Sender.IsVisible[Node] :=  isService;
-    ntUnknownServices: Sender.IsVisible[Node] := isService and (Length(GetServiceFolders(nd)) <= 0);
-    ntRunningDrivers: Sender.IsVisible[Node] := (not isService) and (nd.Status.dwCurrentState <> SERVICE_STOPPED);
+    ntUnknownServices: Sender.IsVisible[Node] := isService and (Length(GetServiceFolders(svc)) <= 0);
+    ntRunningDrivers: Sender.IsVisible[Node] := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
     ntAllDrivers: Sender.IsVisible[Node] := not isService;
   end;
+end;
+
+//True if the folder contains service.
+//Handled outside of TNdFolderData inself because we need to support recursion and only the tree knows children.
+function TMainForm.IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
+var AFolderData: PNdFolderData;
+begin
+  AFolderData := PNdFolderData(vtFolders.GetNodeData(AFolder));
+  Result := AFolderData.ContainsService(AService.ServiceName);
+  if (not Result) and ARecursive then
+    Result := vtFolders.IterateSubtree(AFolder, IsFolderContainsService_Callback, pointer(AService)) <> nil;
+end;
+
+//Servant function to IsFolderContainsService.
+//Calls IsFolderContainsService on all nodes, returns first that succeeds. Called for all sub-nodes so no need to call IFCS with recursion
+procedure TMainForm.IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var AService: TServiceEntry absolute Data;
+begin
+  Abort := IsFolderContainsService(Node, AService, {ARecursive=}false);
 end;
 
 
@@ -546,14 +563,8 @@ end;
 
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
-var nd: PNdFolderData;
 begin
-  if Node = nil then
-    FilterServices(nil)
-  else begin
-    nd := PNdFolderData(Sender.GetNodeData(Node));
-    FilterServices(nd);
-  end;
+  FilterServices(Node);
 end;
 
 procedure TMainForm.aHideEmptyFoldersExecute(Sender: TObject);
@@ -603,6 +614,11 @@ begin
     end;
 
   Sender.IsVisible[Node] := (not cbHideEmptyFolders.Checked) or HasAnyServices;
+end;
+
+procedure TMainForm.aIncludeSubfoldersExecute(Sender: TObject);
+begin
+  FilterServices();
 end;
 
 procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;

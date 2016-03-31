@@ -123,8 +123,9 @@ type
     function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
     function vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType; ATitle: string): PVirtualNode;
     procedure FilterFolders();
-    procedure FilterFolders_Callback(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure Folders_HideAll(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure Folders_ShowFiltered(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure NodeMarkVisible(Sender: TBaseVirtualTree; Node: PVirtualNode);
     function LoadServiceInfo(const AFilename: string): TServiceInfo;
   public
     procedure ReloadServiceTree;
@@ -574,24 +575,32 @@ end;
 
 procedure TMainForm.FilterFolders();
 begin
+ //Since we need to show not only folders which contain services, but also their empty parent folders,
+ //we have to do it in two steps.
   vtFolders.BeginUpdate;
   try
-    vtFolders.IterateSubtree(nil, FilterFolders_Callback, nil, [], {DoInit=}true);
+   //First, hide all folders
+    vtFolders.IterateSubtree(nil, Folders_HideAll, nil, [], {DoInit=}true);
+   //Then mark each valid folder (has services) + all of its parents
+    vtFolders.IterateSubtree(nil, Folders_ShowFiltered, nil, [], {DoInit=}true);
   finally
     vtFolders.EndUpdate;
   end;
 end;
 
-procedure TMainForm.FilterFolders_Callback(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+//Hides any node that's passed to it
+procedure TMainForm.Folders_HideAll(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+begin
+  Sender.IsVisible[Node] := false;
+end;
+
+//Shows any folder that must be visible according to current settings, and all its parent folders
+procedure TMainForm.Folders_ShowFiltered(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var nd: PNdFolderData;
   HasAnyServices: boolean;
   service: TServiceEntry;
 begin
-  if Node=nil then begin
-    Sender.IsVisible[Node] := true;
-    exit;
-  end;
+  if Sender.IsVisible[Node] then exit; //don't waste time
 
   nd := PNdFolderData(Sender.GetNodeData(Node));
   Assert(nd <> nil);
@@ -599,8 +608,9 @@ begin
   if nd.NodeType <> ntFolder then begin
     case nd.NodeType of
       ntRunningDrivers,
-      ntAllDrivers: Sender.IsVisible[Node] := aShowDrivers.Checked;
-    else Sender.IsVisible[Node] := true;
+      ntAllDrivers:
+        if aShowDrivers.Checked then NodeMarkVisible(Sender, Node);
+    else NodeMarkVisible(Sender, Node);
     end;
     exit;
   end;
@@ -613,7 +623,18 @@ begin
       break;
     end;
 
-  Sender.IsVisible[Node] := (not cbHideEmptyFolders.Checked) or HasAnyServices;
+  if (not cbHideEmptyFolders.Checked) or HasAnyServices then
+    NodeMarkVisible(Sender, Node);
+end;
+
+//Makes a node and all of its parents Visible. If any of the parents is already visible, the higher-ups
+//are assumed to be visible too.
+procedure TMainForm.NodeMarkVisible(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  while (Node <> nil) and not Sender.IsVisible[Node] do begin
+    Sender.IsVisible[Node] := true;
+    Node := Sender.NodeParent[Node];
+  end;
 end;
 
 procedure TMainForm.aIncludeSubfoldersExecute(Sender: TObject);

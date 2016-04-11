@@ -326,6 +326,11 @@ object MainForm: TMainForm
         ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
+        inherited Advanced1: TMenuItem
+          object Saveserviceconfig2: TMenuItem [0]
+            Action = aSaveSelectedServicesConfig
+          end
+        end
         object N1: TMenuItem
           Caption = '-'
         end
@@ -338,6 +343,10 @@ object MainForm: TMainForm
   object ActionList: TActionList
     Left = 24
     Top = 16
+    object aClose: TAction
+      Caption = 'Close'
+      OnExecute = aCloseExecute
+    end
     object aReload: TAction
       Caption = 'Reload'
       OnExecute = aReloadExecute
@@ -363,6 +372,21 @@ object MainForm: TMainForm
       Caption = 'Include subfolders contents'
       Hint = 'Show each folder with all of its subfolders contents included'
       OnExecute = aIncludeSubfoldersExecute
+    end
+    object aSaveAllServicesConfig: TAction
+      Caption = 'Save service config...'
+      Hint = 'Save the startup configuration of services on this computer'
+      OnExecute = aSaveAllServicesConfigExecute
+    end
+    object aSaveSelectedServicesConfig: TAction
+      Caption = 'Save service config...'
+      Hint = 'Save the startup configuration of selected services'
+      OnExecute = aSaveSelectedServicesConfigExecute
+    end
+    object aRestoreServiceConfig: TAction
+      Caption = 'Restore service config...'
+      Hint = 'Restore the startup configuration of services to a saved one'
+      OnExecute = aRestoreServiceConfigExecute
     end
   end
   object ilImages: TImageList
@@ -521,6 +545,21 @@ object MainForm: TMainForm
       object Reload2: TMenuItem
         Action = aReload
       end
+      object N2: TMenuItem
+        Caption = '-'
+      end
+      object Saveserviceconfig1: TMenuItem
+        Action = aSaveAllServicesConfig
+      end
+      object Restoreserviceconfig1: TMenuItem
+        Action = aRestoreServiceConfig
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object Close1: TMenuItem
+        Action = aClose
+      end
     end
     object Settings1: TMenuItem
       Caption = 'Settings'
@@ -556,5 +595,23 @@ object MainForm: TMainForm
       Action = aHideEmptyFolders
       AutoCheck = True
     end
+  end
+  object OpenServiceConfigDialog: TOpenDialog
+    DefaultExt = '*.svcconf'
+    Filter = 
+      'Service configuration files (*.svcconf)|*.svcconf|All files (*.*' +
+      ')|*.*'
+    Title = 'Open service configuration file'
+    Left = 24
+    Top = 240
+  end
+  object SaveServiceConfigDialog: TSaveDialog
+    DefaultExt = '*.svcconf'
+    Filter = 
+      'Service configuration files (*.svcconf)|*.svcconf|All files (*.*' +
+      ')|*.*'
+    Title = 'Save service configuration file'
+    Left = 24
+    Top = 296
   end
 end

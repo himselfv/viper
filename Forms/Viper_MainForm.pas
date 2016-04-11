@@ -90,6 +90,18 @@ type
     TriggerList: TTriggerList;
     aIncludeSubfolders: TAction;
     Includesubfolderscontents1: TMenuItem;
+    aSaveAllServicesConfig: TAction;
+    aRestoreServiceConfig: TAction;
+    N2: TMenuItem;
+    N3: TMenuItem;
+    Saveserviceconfig1: TMenuItem;
+    Restoreserviceconfig1: TMenuItem;
+    aClose: TAction;
+    Close1: TMenuItem;
+    aSaveSelectedServicesConfig: TAction;
+    Saveserviceconfig2: TMenuItem;
+    OpenServiceConfigDialog: TOpenDialog;
+    SaveServiceConfigDialog: TSaveDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -114,6 +126,10 @@ type
     procedure tsDependentsShow(Sender: TObject);
     procedure tsTriggersShow(Sender: TObject);
     procedure aIncludeSubfoldersExecute(Sender: TObject);
+    procedure aCloseExecute(Sender: TObject);
+    procedure aSaveAllServicesConfigExecute(Sender: TObject);
+    procedure aSaveSelectedServicesConfigExecute(Sender: TObject);
+    procedure aRestoreServiceConfigExecute(Sender: TObject);
 
   protected
     function LoadIcon(const ALibName: string; AResId: integer): integer;
@@ -134,6 +150,7 @@ type
   protected
     FServices: TServiceEntryList;
     iFolder, iService: integer;
+    function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
     procedure FilterServices(); overload;
     procedure FilterServices(AFolder: PVirtualNode); overload;
     procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
@@ -150,6 +167,9 @@ type
     procedure Reload;
     procedure RefreshAllServices;
 
+  protected
+    procedure WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string);
+
 
   end;
 
@@ -157,7 +177,8 @@ var
   MainForm: TMainForm;
 
 implementation
-uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils;
+uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils,
+  Viper_RestoreServiceConfig;
 
 {$R *.dfm}
 
@@ -207,6 +228,11 @@ begin
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
   Reload;
+end;
+
+procedure TMainForm.aCloseExecute(Sender: TObject);
+begin
+  Close;
 end;
 
 procedure TMainForm.aReloadExecute(Sender: TObject);
@@ -311,6 +337,19 @@ begin
   Self.RefreshAllServices;
 end;
 
+
+//Presents all services as a TServiceEntries list (some functions want this).
+//Use FServices directly if you have a choice.
+function TMainForm.AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
+var i: integer;
+begin
+  SetLength(Result, 0);
+  for i := 0 to FServices.Count-1 do
+    if (FServices[i].Config.dwServiceType and ATypeFilter <> 0) then begin
+      SetLength(Result, Length(Result)+1);
+      Result[Length(Result)-1] := FServices[i];
+    end;
+end;
 
 procedure TMainForm.FilterServices();
 begin
@@ -822,6 +861,49 @@ begin
   finally
     FreeMem(triggers);
   end;
+end;
+
+
+procedure TMainForm.WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string);
+var AFailedServices: string;
+begin
+  AFailedServices := Viper_RestoreServiceConfig.WriteServiceConfigFile(AServices, AFilename);
+  if AFailedServices <> '' then
+    MessageBox(Self.Handle,
+      PChar('We didn''t have the rights to query the configuration for the following services:'#13
+        +AFailedServices+#13
+        +'Perhaps you''re not running the application with Administrator rights?'),
+      PChar('Some problems encountered'),
+      MB_OK + MB_ICONERROR);
+end;
+
+procedure TMainForm.aSaveAllServicesConfigExecute(Sender: TObject);
+begin
+  if not SaveServiceConfigDialog.Execute then
+    exit;
+
+  WriteServiceConfigFile(Self.AllServiceEntries, SaveServiceConfigDialog.FileName);
+end;
+
+procedure TMainForm.aSaveSelectedServicesConfigExecute(Sender: TObject);
+var ASelectedServices: TServiceEntries;
+begin
+  ASelectedServices := MainServiceList.GetSelectedServices;
+  if Length(ASelectedServices) <= 0 then exit;
+
+  if not SaveServiceConfigDialog.Execute then
+    exit;
+
+  WriteServiceConfigFile(ASelectedServices, SaveServiceConfigDialog.FileName);
+end;
+
+procedure TMainForm.aRestoreServiceConfigExecute(Sender: TObject);
+begin
+  if not OpenServiceConfigDialog.Execute then
+    exit;
+
+  if IsPositiveResult(RestoreServiceConfigForm.OpenRestore(OpenServiceConfigDialog.Filename)) then
+    Reload(); //all configurations could've changed
 end;
 
 end.

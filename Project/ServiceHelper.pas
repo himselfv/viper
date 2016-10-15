@@ -80,6 +80,9 @@ const
 implementation
 uses SysUtils;
 
+const
+  ERROR_MUI_FILE_NOT_FOUND = 15100;
+
 function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 begin
   Result := WinSvc.OpenSCManager(nil, nil, dwAccess);
@@ -181,7 +184,8 @@ begin
       ERROR_FILE_NOT_FOUND,
       ERROR_RESOURCE_DATA_NOT_FOUND,
       ERROR_RESOURCE_TYPE_NOT_FOUND,
-      ERROR_RESOURCE_NAME_NOT_FOUND: begin
+      ERROR_RESOURCE_NAME_NOT_FOUND,
+      ERROR_MUI_FILE_NOT_FOUND: begin
        //TODO: We can sometimes query the source string ourselves (like Autoruns does).
         Result := nil;
         break;

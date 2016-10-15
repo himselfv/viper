@@ -29,7 +29,7 @@ type
   protected
     FFilename: string;
     FEntries: TStringList;
-    function RestoreServiceConfig: string;
+    procedure RestoreServiceConfig(out ANotFound: string; out AFailed: string);
   public
     function OpenRestore(const AFilename: string): TModalResult;
   end;
@@ -177,14 +177,19 @@ begin
 end;
 
 procedure TRestoreServiceConfigForm.btnOKClick(Sender: TObject);
-var AFailedRestore: string;
+var ANotFound, AFailed: string;
+  AMSg: string;
 begin
-  AFailedRestore := Self.RestoreServiceConfig();
-  if AFailedRestore <> '' then begin
+  Self.RestoreServiceConfig(ANotFound, AFailed);
+  if (ANotFound <> '') or (AFailed <> '') then begin
+    AMsg := 'Could not restore the startup configuration for the following services:';
+    if ANotFound <> '' then
+      AMsg := AMsg + #13'Not found: '+ANotFound;
+    if AFailed <> '' then
+      AMsg := AMSg + #13'Failed: '+AFailed
+        +#13'Perhaps you''re not running the application with Administrator rights?';
     MessageBox(Self.Handle,
-      PChar('Could not restore the startup configuration for the following services:'#13
-        +AFailedRestore+#13
-        +'Perhaps you''re not running the application with Administrator rights?'),
+      PChar(AMsg),
       PChar('Some problems encountered'),
       MB_OK + MB_ICONERROR);
   end else
@@ -202,28 +207,53 @@ end;
 
 //Internal restore operation, the counterpart to WriteServiceConfigFile. Uses the preloaded FEntries
 //list so that we don't re-read the file; it could've changed.
-function TRestoreServiceConfigForm.RestoreServiceConfig: string;
+procedure TRestoreServiceConfigForm.RestoreServiceConfig(out ANotFound: string; out AFailed: string);
 var AService, AStartTypeStr: string;
   AStartType: cardinal;
+  hSC: SC_HANDLE;
+  AConfig: LPQUERY_SERVICE_CONFIG;
   i: integer;
 begin
-  Result := '';
-  for i := 0 to FEntries.Count-1 do begin
-    if not ParseConfigurationLine(FEntries[i], AService, AStartTypeStr) then
-      continue;
-    AStartType := StringToStartType(AStartTypeStr);
-    try
-      ChangeServiceStartType(AService, AStartType);
-    except
-      on EOsError do begin
-        Result := Result + ',' + AService;
+  ANotFound := '';
+  AFailed := '';
+
+  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  try
+
+    for i := 0 to FEntries.Count-1 do begin
+      if not ParseConfigurationLine(FEntries[i], AService, AStartTypeStr) then
         continue;
+      AStartType := StringToStartType(AStartTypeStr);
+      try
+        //Do not bother if it already matches. This way we ignore the services which we can't change, but don't need to.
+        AConfig := QueryServiceConfig(hSC, AService);
+        try
+          if ACOnfig.dwStartType = AStartType then
+            continue;
+        finally
+          FreeMem(AConfig);
+        end;
+
+        ChangeServiceStartType(hSC, AService, AStartType);
+      except
+        on E: EOsError do begin
+          if E.ErrorCode = ERROR_SERVICE_DOES_NOT_EXIST then
+            ANotFound := ANotFound + ',' + AService
+          else
+            AFailed := AFailed + ',' + AService;
+          continue;
+        end;
       end;
     end;
+
+  finally
+    CloseServiceHandle(hSC);
   end;
 
-  if Result <> '' then
-    delete(Result, 1, 1); //remove initial ","
+  if ANotFound <> '' then
+    delete(ANotFound, 1, 1); //remove initial ","
+  if AFailed <> '' then
+    delete(AFailed, 1, 1); //remove initial ","
 end;
 
 

@@ -10,7 +10,9 @@ uses
   Viper_ServiceList in '..\Forms\Viper_ServiceList.pas' {ServiceList: TFrame},
   Viper_TriggerList in '..\Forms\Viper_TriggerList.pas' {TriggerList: TFrame},
   Viper_RestoreServiceConfig in '..\Forms\Viper_RestoreServiceConfig.pas' {RestoreServiceConfigForm},
-  SetupApiHelper in 'SetupApiHelper.pas';
+  SetupApiHelper in 'SetupApiHelper.pas',
+//  SecEdit in 'SecEdit.pas', //TODO:..
+  AclUi in 'AclUi.pas';
 
 {$R *.res}
 

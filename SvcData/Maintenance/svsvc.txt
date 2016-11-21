@@ -1,0 +1,2 @@
+
+Scans for potential damage in the file system.

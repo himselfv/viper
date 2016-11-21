@@ -20,10 +20,13 @@ type
     FConfig: LPQUERY_SERVICE_CONFIG;
     FServiceDllQueried: boolean;
     FServiceDll: string;
+    FLaunchProtectedQueried: boolean;
+    FLaunchProtected: boolean;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
     function GetDescription: string; inline;
     function GetServiceDll: string; inline;
+    function GetLaunchProtected: boolean; inline;
   public
     ServiceName: string;
     DisplayName: string;
@@ -43,6 +46,7 @@ type
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig;
     property ServiceDll: string read GetServiceDll;
+    property LaunchProtected: boolean read GetLaunchProtected;
   end;
   PServiceEntry = ^TServiceEntry;
 
@@ -101,6 +105,7 @@ begin
   Self.FConfigQueried := false;
   FreeMem(Self.FConfig);
   Self.FConfig := nil;
+  Self.FLaunchProtectedQueried := false;
 end;
 
 function TServiceEntry.GetHandle: SC_HANDLE;
@@ -142,6 +147,30 @@ begin
     FServiceDllQueried := true;
   end;
   Result := FServiceDll;
+end;
+
+function TServiceEntry.GetLaunchProtected: boolean;
+var tmp: PSERVICE_LAUNCH_PROTECTED;
+begin
+  if not FLaunchProtectedQueried then begin
+    try
+      tmp := QueryServiceLaunchProtected(Self.Handle);
+      if tmp <> nil then begin
+        FLaunchProtected := tmp.dwLaunchProtected <> SERVICE_LAUNCH_PROTECTED_NONE;
+        FreeMem(tmp);
+      end;
+    except
+      on E: EOsError do begin
+        if E.ErrorCode = ERROR_INVALID_PARAMETER then
+         //Yah whatever
+          FLaunchProtected := false
+        else
+          raise;
+      end;
+    end;
+    FLaunchProtectedQueried := true;
+  end;
+  Result := FLaunchProtected;
 end;
 
 

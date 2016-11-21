@@ -80,10 +80,6 @@ object MainForm: TMainForm
       TabOrder = 0
       object tsDescription: TTabSheet
         Caption = 'Info'
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object mmDetails: TMemo
           Left = 0
           Top = 0
@@ -159,7 +155,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800300010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800340010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -303,10 +299,6 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -326,6 +318,9 @@ object MainForm: TMainForm
         ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
+        inherited Restart1: TMenuItem
+          OnClick = nil
+        end
         inherited Advanced1: TMenuItem
           object Saveserviceconfig2: TMenuItem [0]
             Action = aSaveSelectedServicesConfig
@@ -395,7 +390,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800280010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101020008002C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

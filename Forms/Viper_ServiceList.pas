@@ -53,6 +53,8 @@ type
     Advanced1: TMenuItem;
     Exporttoreg1: TMenuItem;
     Deleteservice1: TMenuItem;
+    miEditSecurity: TMenuItem;
+    ilOverlays: TImageList;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -92,6 +94,7 @@ type
     procedure vtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure aColorByStartTypeExecute(Sender: TObject);
+    procedure miEditSecurityClick(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
@@ -272,9 +275,20 @@ procedure TServiceList.vtServicesGetImageIndexEx(Sender: TBaseVirtualTree; Node:
 var Service: TServiceEntry;
 begin
   Service := TServiceEntry(Sender.GetNodeData(Node)^);
-  if not (Kind in [ikNormal, ikSelected]) then exit;
-  case Column of
-    NoColumn, 0: Service.GetIcon(ImageList, ImageIndex);
+  case Kind of
+  ikNormal, ikSelected:
+    case Column of
+      NoColumn, 0: Service.GetIcon(ImageList, ImageIndex);
+    end;
+  ikOverlay: begin
+    case Column of
+      NoColumn, 0: begin
+        ImageList := ilOverlays;
+        if Service.LaunchProtected then
+          ImageIndex := 16;
+      end;
+    end;
+  end;
   end;
 end;
 
@@ -705,6 +719,17 @@ begin
   Service := GetFirstSelectedService();
   Assert(Service <> nil);
   RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
+end;
+
+
+procedure TServiceList.miEditSecurityClick(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  for Service in GetSelectedServices() do begin
+    //EditServiceSecurity(Service.ServiceName);
+    //TODO:..
+    RefreshService(Service);
+  end;
 end;
 
 

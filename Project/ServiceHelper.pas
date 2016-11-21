@@ -15,7 +15,6 @@ const
 
   SERVICE_WRITE_ACCESS = SERVICE_CHANGE_CONFIG;
 
-
 function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 
 function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
@@ -28,6 +27,21 @@ function QueryServiceStatus(const AServiceName: string): SERVICE_STATUS; overloa
 function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG; overload;
 function QueryServiceConfig(hSC: SC_HANDLE; const AServiceName: string): LPQUERY_SERVICE_CONFIG; overload;
 
+const
+  SERVICE_CONFIG_LAUNCH_PROTECTED = 12; //Since windows 8
+
+const
+  SERVICE_LAUNCH_PROTECTED_NONE = 0;
+  SERVICE_LAUNCH_PROTECTED_WINDOWS = 1;
+  SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT = 2;
+  SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT = 3;
+
+type
+  PSERVICE_LAUNCH_PROTECTED = ^SERVICE_LAUNCH_PROTECTED;
+  SERVICE_LAUNCH_PROTECTED = record
+    dwLaunchProtected: DWORD;
+  end;
+
 //Result has to be freed
 function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload;
 function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte; overload;
@@ -37,6 +51,9 @@ function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): st
 
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;
+
+function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED; overload;
+function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED; overload;
 
 
 //Opens a configuration key for this service in the registry. The result has to be freed.
@@ -243,6 +260,16 @@ end;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO;
 begin
   Result := PSERVICE_TRIGGER_INFO(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO));
+end;
+
+function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED;
+begin
+  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED));
+end;
+
+function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED;
+begin
+  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_LAUNCH_PROTECTED));
 end;
 
 

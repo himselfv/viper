@@ -532,7 +532,7 @@ begin
   if err <> 0 then
     RaiseLastOsError(err);
   try
-    err := RegSetValue(hk, PChar('LaunchProtected'), REG_DWORD, PChar(@dwLaunchProtection), SizeOf(dwLaunchProtection));
+    err := RegSetValueEx(hk, PChar('LaunchProtected'), 0, REG_DWORD, @dwLaunchProtection, SizeOf(dwLaunchProtection));
     if err <> 0 then
       RaiseLastOsError(err);
   finally

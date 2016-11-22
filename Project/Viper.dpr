@@ -12,7 +12,8 @@ uses
   ShellUtils in 'ShellUtils.pas',
   SvcEntry in 'SvcEntry.pas',
   SetupApiHelper in 'SetupApiHelper.pas',
-  AclUi in 'AclUi.pas';
+  AclUi in 'AclUi.pas',
+  SecEdit in 'SecEdit.pas';
 
 {$R *.res}
 

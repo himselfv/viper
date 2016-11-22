@@ -130,7 +130,7 @@ type
   end;
 
 implementation
-uses StrUtils, Clipbrd, ServiceHelper, ShellUtils;
+uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit;
 
 {$R *.dfm}
 
@@ -789,8 +789,7 @@ procedure TServiceList.miEditSecurityClick(Sender: TObject);
 var Service: TServiceEntry;
 begin
   for Service in GetSelectedServices() do begin
-    //EditServiceSecurity(Service.ServiceName);
-    //TODO:..
+    EditServiceSecurity(Self.Handle, Service.ServiceName);
     RefreshService(Service);
   end;
 end;

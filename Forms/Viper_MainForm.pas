@@ -132,9 +132,6 @@ type
     procedure aRestoreServiceConfigExecute(Sender: TObject);
 
   protected
-    function LoadIcon(const ALibName: string; AResId: integer): integer;
-
-  protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
     function vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
     function vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType; ATitle: string): PVirtualNode;
@@ -149,7 +146,6 @@ type
 
   protected
     FServices: TServiceEntryList;
-    iFolder, iService: integer;
     function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
     procedure FilterServices(); overload;
     procedure FilterServices(AFolder: PVirtualNode); overload;
@@ -178,7 +174,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils,
-  Viper_RestoreServiceConfig;
+  CommonResources, Viper_RestoreServiceConfig;
 
 {$R *.dfm}
 
@@ -203,9 +199,8 @@ end;
 
 procedure TExtServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
 begin
- //TODO: Can make a common service imagelist
-  AImageList := MainForm.ilImages;
-  AIndex := MainForm.iService;
+  AImageList := CommonRes.ilImages;
+  AIndex := CommonRes.iService;
 end;
 
 
@@ -223,8 +218,6 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
-  iFolder := LoadIcon('shell32.dll', 4); //Folder icon from Explorer
-  iService := LoadIcon('filemgmt.dll', 0); //Service icon in services.msc
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
   Reload;
@@ -238,30 +231,6 @@ end;
 procedure TMainForm.aReloadExecute(Sender: TObject);
 begin
   Reload;
-end;
-
-function TMainForm.LoadIcon(const ALibName: string; AResId: integer): integer;
-var res: integer;
-  hSmallIcon, hLargeIcon: HICON;
-  icon: TIcon;
-begin
-  res := ExtractIconEx(PChar(ALibName), AResId, hLargeIcon, hSmallIcon, 1);
-  if (res=1) or (res=2) then begin
-    DestroyIcon(hLargeIcon);
-  end else
-    RaiseLastOsError();
-
- //Загружаем хитрым образом, чтобы сохранить прозрачность. Все более простые
- //ведут к "битым краям".
-  icon := TIcon.Create;
-  try
-    icon.Handle := hSmallIcon;
-    icon.Transparent := true;
-   //ImageList's ColorDepth has to be 32 bit, DrawingStyle transparent.
-    Result := ilImages.AddIcon(icon);
-  finally
-    FreeAndNil(icon);
-  end;
 end;
 
 //Загружает список служб с их состояниями
@@ -598,7 +567,7 @@ procedure TMainForm.vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
   var Ghosted: Boolean; var ImageIndex: Integer);
 begin
   if not (Kind in [ikNormal, ikSelected]) then exit;
-  ImageIndex := iFolder;
+  ImageIndex := CommonRes.iFolder;
 end;
 
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree;

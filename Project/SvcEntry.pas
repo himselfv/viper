@@ -20,13 +20,13 @@ type
     FConfig: LPQUERY_SERVICE_CONFIG;
     FServiceDllQueried: boolean;
     FServiceDll: string;
-    FLaunchProtectedQueried: boolean;
-    FLaunchProtected: boolean;
+    FLaunchProtectionQueried: boolean;
+    FLaunchProtection: cardinal;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
     function GetDescription: string; inline;
     function GetServiceDll: string; inline;
-    function GetLaunchProtected: boolean; inline;
+    function GetLaunchProtection: cardinal; inline;
   public
     ServiceName: string;
     DisplayName: string;
@@ -42,11 +42,12 @@ type
     function CanStop: boolean; inline;
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
+    function IsLaunchProtected: boolean; inline;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig;
     property ServiceDll: string read GetServiceDll;
-    property LaunchProtected: boolean read GetLaunchProtected;
+    property LaunchProtection: cardinal read GetLaunchProtection;
   end;
   PServiceEntry = ^TServiceEntry;
 
@@ -105,7 +106,7 @@ begin
   Self.FConfigQueried := false;
   FreeMem(Self.FConfig);
   Self.FConfig := nil;
-  Self.FLaunchProtectedQueried := false;
+  Self.FLaunchProtectionQueried := false;
 end;
 
 function TServiceEntry.GetHandle: SC_HANDLE;
@@ -149,28 +150,28 @@ begin
   Result := FServiceDll;
 end;
 
-function TServiceEntry.GetLaunchProtected: boolean;
+function TServiceEntry.GetLaunchProtection: cardinal;
 var tmp: PSERVICE_LAUNCH_PROTECTED;
 begin
-  if not FLaunchProtectedQueried then begin
+  if not FLaunchProtectionQueried then begin
     try
       tmp := QueryServiceLaunchProtected(Self.Handle);
       if tmp <> nil then begin
-        FLaunchProtected := tmp.dwLaunchProtected <> SERVICE_LAUNCH_PROTECTED_NONE;
+        FLaunchProtection := tmp.dwLaunchProtected;
         FreeMem(tmp);
       end;
     except
       on E: EOsError do begin
-        if E.ErrorCode = ERROR_INVALID_PARAMETER then
+        if E.ErrorCode = ERROR_INVALID_LEVEL then
          //Yah whatever
-          FLaunchProtected := false
+          FLaunchProtection := SERVICE_LAUNCH_PROTECTED_NONE
         else
           raise;
       end;
     end;
-    FLaunchProtectedQueried := true;
+    FLaunchProtectionQueried := true;
   end;
-  Result := FLaunchProtected;
+  Result := FLaunchProtection;
 end;
 
 
@@ -221,6 +222,11 @@ end;
 function TServiceEntry.CanResume: boolean;
 begin
   Result := Status.dwCurrentState = SERVICE_PAUSED;
+end;
+
+function TServiceEntry.IsLaunchProtected: boolean;
+begin
+  Result := Self.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE;
 end;
 
 

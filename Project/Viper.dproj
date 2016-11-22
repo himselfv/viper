@@ -74,23 +74,25 @@
             <Form>MainForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="ServiceHelper.pas"/>
-        <DCCReference Include="WinApiHelper.pas"/>
-        <DCCReference Include="ShellUtils.pas"/>
-        <DCCReference Include="SvcEntry.pas"/>
+        <DCCReference Include="CommonResources.pas">
+            <Form>CommonRes</Form>
+            <DesignClass>TDataModule</DesignClass>
+        </DCCReference>
         <DCCReference Include="..\Forms\Viper_ServiceList.pas">
             <Form>ServiceList</Form>
-            <FormType>dfm</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper_TriggerList.pas">
             <Form>TriggerList</Form>
-            <FormType>dfm</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper_RestoreServiceConfig.pas">
             <Form>RestoreServiceConfigForm</Form>
         </DCCReference>
+        <DCCReference Include="ServiceHelper.pas"/>
+        <DCCReference Include="WinApiHelper.pas"/>
+        <DCCReference Include="ShellUtils.pas"/>
+        <DCCReference Include="SvcEntry.pas"/>
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <BuildConfiguration Include="Release">

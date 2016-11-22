@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
-  Actions, ActnList, VirtualTrees, SvcEntry, ImgList, Vcl.Menus;
+  Actions, ActnList, VirtualTrees, SvcEntry, ImgList, Vcl.Menus, CommonResources;
 
 type
   TServiceList = class(TFrame)
@@ -54,7 +54,16 @@ type
     Exporttoreg1: TMenuItem;
     Deleteservice1: TMenuItem;
     miEditSecurity: TMenuItem;
-    ilOverlays: TImageList;
+    N1: TMenuItem;
+    miProtectionType: TMenuItem;
+    miSetProtectionNone: TMenuItem;
+    miSetProtectionWindows: TMenuItem;
+    miSetProtectionWindowsLight: TMenuItem;
+    miSetProtectionAntimalwareLight: TMenuItem;
+    aProtectionNone: TAction;
+    aProtectionWindows: TAction;
+    aProtectionWindowsLight: TAction;
+    aProtectionAntimalwareLight: TAction;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -95,6 +104,7 @@ type
       Column: TColumnIndex);
     procedure aColorByStartTypeExecute(Sender: TObject);
     procedure miEditSecurityClick(Sender: TObject);
+    procedure aProtectionNoneExecute(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
@@ -103,6 +113,8 @@ type
       Data: Pointer; var Abort: Boolean);
     procedure ServiceInvalidated(Sender: TObject);
     procedure SelectionChanged;
+    function GetCommonStartType(const Services: TServiceEntries): DWORD;
+    function GetCommonProtectionType(const Services: TServiceEntries): DWORD;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -189,6 +201,11 @@ resourcestring
   sStartTypeBoot = 'Авто (загрузка)';
   sStartTypeSystem = 'Авто (система)';
 
+  sProtectionNone = '';
+  sProtectionWindows = 'ОС (полная)';
+  sProtectionWindowsLight = 'ОС (лёгкая)';
+  sProtectionAntimalwareLight = 'Частичная';
+
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -222,6 +239,13 @@ begin
        end;
     4: CellText := Data.Description;
     5: CellText := Data.GetExecutableFilename;
+    6: case Data.LaunchProtection of
+         SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
+         SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
+         SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sProtectionWindowsLight;
+         SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sProtectionAntimalwareLight;
+       else CellText := '';
+       end;
   end;
 end;
 
@@ -279,13 +303,17 @@ begin
   ikNormal, ikSelected:
     case Column of
       NoColumn, 0: Service.GetIcon(ImageList, ImageIndex);
+      6: if Service.IsLaunchProtected then begin
+        ImageList := CommonRes.ilImages;
+        ImageIndex := CommonRes.iShield;
+      end;
     end;
   ikOverlay: begin
     case Column of
       NoColumn, 0: begin
-        ImageList := ilOverlays;
-        if Service.LaunchProtected then
-          ImageIndex := 16;
+        ImageList := CommonRes.ilOverlays;
+        if Service.IsLaunchProtected then
+          ImageIndex := CommonRes.iShieldOverlay;
       end;
     end;
   end;
@@ -358,6 +386,7 @@ var services: TServiceEntries;
   service: TServiceEntry;
   CanStart, CanForceStart, CanStop, CanPause, CanResume: boolean;
   CommonStartType: cardinal;
+  CommonProtectionType: cardinal;
 begin
   services := Self.GetSelectedServices();
 
@@ -385,21 +414,7 @@ begin
   aJumpToRegistry.Visible := Length(services)=1;
 
  //Check start type item if all selected services share it
-  CommonStartType := cardinal(-1);
-  for service in services do begin
-    if service.Config = nil then begin
-      CommonStartType := cardinal(-1);
-      break; //no chance to find common
-    end;
-
-    if CommonStartType = cardinal(-1) then
-      CommonStartType := service.Config.dwStartType
-    else
-      if CommonStartType <> service.Config.dwStartType then begin
-        CommonStartType := cardinal(-1);
-        break;
-      end;
-  end;
+  CommonStartType := GetCommonStartType(services);
   aStartTypeAutomatic.Checked := (CommonStartType = SERVICE_AUTO_START);
   aStartTypeManual.Checked := (CommonStartType = SERVICE_DEMAND_START);
   aStartTypeDisabled.Checked := (CommonStartType = SERVICE_DISABLED);
@@ -408,8 +423,57 @@ begin
   aStartTypeManual.Visible := Length(services)>0;
   aStartTypeDisabled.Visible := Length(services)>0;
   miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
+
+  CommonProtectionType := GetCommonProtectionType(services);
+  aProtectionNone.Checked := (CommonProtectionType = SERVICE_LAUNCH_PROTECTED_NONE);
+  aProtectionWindows.Checked := (CommonProtectionType = SERVICE_LAUNCH_PROTECTED_WINDOWS);
+  aProtectionWindowsLight.Checked := (CommonProtectionType = SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT);
+  aProtectionAntimalwareLight.Checked := (CommonProtectionType = SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT);
+
+  aProtectionNone.Visible := Length(services)>0;
+  aProtectionWindows.Visible := Length(services)>0;
+  aProtectionWindowsLight.Visible := Length(services)>0;
+  aProtectionAntimalwareLight.Visible := Length(services)>0;
+  miProtectionType.Visible := aProtectionNone.Visible or aProtectionWindows.Visible
+    or aProtectionWindowsLight.Visible or aProtectionAntimalwareLight.Visible;
 end;
 
+//Returns a StartType common for all listed services, or -1 if there's variation
+function TServiceList.GetCommonStartType(const Services: TServiceEntries): DWORD;
+var service: TServiceEntry;
+begin
+  Result := cardinal(-1);
+  for service in services do begin
+    if service.Config = nil then begin
+      Result := cardinal(-1);
+      break; //no chance to find common
+    end;
+
+    if Result = cardinal(-1) then
+      Result := service.Config.dwStartType
+    else
+      if Result <> service.Config.dwStartType then begin
+        Result := cardinal(-1);
+        break;
+      end;
+  end;
+end;
+
+//Returns a LaunchProtectionType common for all listed services, or -1 if there's variation
+function TServiceList.GetCommonProtectionType(const Services: TServiceEntries): DWORD;
+var service: TServiceEntry;
+begin
+  Result := cardinal(-1);
+  for service in services do begin
+    if Result = cardinal(-1) then
+      Result := Service.LaunchProtection
+    else
+      if Result <> Service.LaunchProtection then begin
+        Result := cardinal(-1);
+        break;
+      end;
+  end;
+end;
 
 
 procedure TServiceList.ServiceInvalidated(Sender: TObject);
@@ -721,7 +785,6 @@ begin
   RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
 end;
 
-
 procedure TServiceList.miEditSecurityClick(Sender: TObject);
 var Service: TServiceEntry;
 begin
@@ -732,5 +795,48 @@ begin
   end;
 end;
 
+
+resourcestring
+  sConfirmSettingProtection = 'You''re about to set a launch protection for a service.'#13
+    +'Once you protect a service, it cannot be reconfigured. You will not be able to uninstall it, '
+    +'stop it or remove protection by normal means.'#13
+    +'Do you still want to continue?';
+  sProtectionNeedToReboot = 'You have overwritten the service protection level. You will likely '
+    +'need to reboot before the changes are applied.';
+
+procedure TServiceList.aProtectionNoneExecute(Sender: TObject);
+var Services: TServiceEntries;
+  Service: TServiceEntry;
+  protectionValue, oldValue: cardinal;
+begin
+  Services := GetSelectedServices();
+  if Length(Services) <= 0 then exit;
+
+  case TComponent(Sender).Tag of
+    0: protectionValue := SERVICE_LAUNCH_PROTECTED_NONE;
+    1: protectionValue := SERVICE_LAUNCH_PROTECTED_WINDOWS;
+    2: protectionValue := SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT;
+    3: protectionValue := SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT;
+  else exit;
+  end;
+
+  oldValue := GetCommonProtectionType(services);
+
+  if protectionValue <> SERVICE_LAUNCH_PROTECTED_NONE then
+    if MessageBox(Self.Handle, PChar(sConfirmSettingProtection), PChar(Self.Caption),
+      MB_ICONQUESTION or MB_YESNO) <> ID_YES then
+      exit;
+
+  for Service in GetSelectedServices() do begin
+    if oldValue = SERVICE_LAUNCH_PROTECTED_NONE then
+     //We can do this the supported way
+      ChangeServiceLaunchProtected(Service.ServiceName, protectionValue)
+    else
+      OverwriteServiceLaunchProtection(Service.ServiceName, protectionValue);
+    RefreshService(Service);
+  end;
+
+  MessageBox(Self.Handle, PChar(sProtectionNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
+end;
 
 end.

@@ -49,6 +49,9 @@ function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoL
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
+const
+  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6; //missing in headers
+
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;
 
@@ -87,12 +90,14 @@ procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
 procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
 procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
 
+procedure ChangeServiceLaunchProtected(hSvc: SC_HANDLE; dwLaunchProtection: DWORD); overload;
+procedure ChangeServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string; dwLaunchProtection: DWORD); overload;
+procedure ChangeServiceLaunchProtected(const AServiceName: string; dwLaunchProtection: DWORD); overload;
+
+procedure OverwriteServiceLaunchProtection(const AServiceName: string; dwLaunchProtection: DWORD);
 
 function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
 
-
-const
-  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6; //missing in headers
 
 implementation
 uses SysUtils;
@@ -479,6 +484,62 @@ begin
   end;
 end;
 
+procedure ChangeServiceLaunchProtected(hSvc: SC_HANDLE; dwLaunchProtection: DWORD);
+var lp: SERVICE_LAUNCH_PROTECTED;
+begin
+  lp.dwLaunchProtected := dwLaunchProtection;
+  if not ChangeServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED, @lp) then
+    RaiseLastOsError();
+end;
+
+procedure ChangeServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string; dwLaunchProtection: DWORD);
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_CHANGE_CONFIG);
+  if hSvc = 0 then RaiseLastOsError() else
+  try
+    ChangeServiceLaunchProtected(hSvc, dwLaunchProtection);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+procedure ChangeServiceLaunchProtected(const AServiceName: string; dwLaunchProtection: DWORD);
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  try
+    ChangeServiceStartType(hSC, AServiceName, dwLaunchProtection);
+  finally
+    CloseServiceHandle(hSC);
+  end;
+end;
+
+{
+https://msdn.microsoft.com/en-us/library/windows/desktop/dn313124(v=vs.85).aspx
+
+After the service has been configured to launch protected, you cannot change it back.
+
+This circumvents the "feature" by writing directly to registry service configuration. You have to
+have appropriate access rights to that key.
+You'll probably have to reboot.
+}
+procedure OverwriteServiceLaunchProtection(const AServiceName: string; dwLaunchProtection: DWORD);
+var hk: HKEY;
+  err: integer;
+begin
+  err := RegOpenKey(HKEY_LOCAL_MACHINE, PChar('SYSTEM\CurrentControlSet\Services\'+AServiceName), hk);
+  if err <> 0 then
+    RaiseLastOsError(err);
+  try
+    err := RegSetValue(hk, PChar('LaunchProtected'), REG_DWORD, PChar(@dwLaunchProtection), SizeOf(dwLaunchProtection));
+    if err <> 0 then
+      RaiseLastOsError(err);
+  finally
+    RegCloseKey(hk);
+  end;
+end;
+
 
 //Returns the list of services dependent on a given service. The list has to be freed.
 function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
@@ -500,6 +561,9 @@ begin
    //We could've adjusted again but risk going into an endless loop
     RaiseLastOsError();
 end;
+
+
+
 
 
 end.

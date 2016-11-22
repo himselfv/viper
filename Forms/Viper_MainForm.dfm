@@ -37,8 +37,9 @@ object MainForm: TMainForm
     Header.Font.Name = 'Tahoma'
     Header.Font.Style = []
     Header.MainColumn = -1
-    Images = ilImages
+    Images = CommonRes.ilImages
     PopupMenu = pmFolders
+    StateImages = CommonRes.ilOverlays
     TabOrder = 0
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
@@ -155,7 +156,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800340010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C0101020008003C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -318,9 +319,6 @@ object MainForm: TMainForm
         ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
-        inherited Restart1: TMenuItem
-          OnClick = nil
-        end
         inherited Advanced1: TMenuItem
           object Saveserviceconfig2: TMenuItem [0]
             Action = aSaveSelectedServicesConfig
@@ -390,7 +388,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C0101020008002C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800340010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

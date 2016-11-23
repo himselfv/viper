@@ -13,7 +13,8 @@ uses
   SvcEntry in 'SvcEntry.pas',
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
-  SecEdit in 'SecEdit.pas';
+  SecEdit in 'SecEdit.pas',
+  Viper.Log in 'Viper.Log.pas' {LogForm};
 
 {$R *.res}
 
@@ -23,5 +24,6 @@ begin
   Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TCommonRes, CommonRes);
   Application.CreateForm(TRestoreServiceConfigForm, RestoreServiceConfigForm);
+  Application.CreateForm(TLogForm, LogForm);
   Application.Run;
 end.

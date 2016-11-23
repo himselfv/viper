@@ -34,6 +34,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_UnitSearchPath>$(CBSENUM);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <Icon_MainIcon>Viper_Icon.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -96,6 +97,10 @@
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <DCCReference Include="SecEdit.pas"/>
+        <DCCReference Include="Viper.Log.pas">
+            <Form>LogForm</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

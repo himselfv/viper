@@ -1,17 +1,17 @@
 unit SecEdit;
 
 interface
-uses Windows, AclUi, WinSvc, ServiceHelper, SvcEntry;
+uses Windows, AclUi, AclHelpers, WinSvc, ServiceHelper, SvcEntry;
 
 type
   TServiceSecurityInformation = class(TInterfacedObject, ISecurityInformation)
   class var
     ServiceAccessMasks: array of SI_ACCESS;
+    ServiceAccessNames: array of string;
     class constructor Create;
   protected
     FServiceName: string;
     hSC: SC_HANDLE;
-    hSvc: SC_HANDLE;
   public
     constructor Create(const AServiceName: string);
     destructor Destroy; override;
@@ -44,7 +44,7 @@ SetServiceObjectSecurity:
   https://msdn.microsoft.com/en-us/library/windows/desktop/aa379589(v=vs.85).aspx
 
 ISecurityInformation:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/aa379105(v=vs.85).aspx
+  https://msdn.microsoft.com/en-us/library/windows/desktop/gg983193(v=vs.85).aspx
 
 All authorization functions:
   https://msdn.microsoft.com/en-us/library/windows/desktop/aa375742(v=vs.85).aspx
@@ -60,69 +60,91 @@ const
 
 
 implementation
-uses SysUtils;
+uses SysUtils, Viper.Log;
 
-type
-  TAccessParam = record
-    m: ACCESS_MASK;
-    t: string;
-    f: DWORD;
-  end;
+resourcestring
+  sSvcAccessAll       = 'Полный доступ';
+  sSvcAccessRead      = 'Чтение';
+  sSvcAccessExecute   = 'Пуск, стоп и пауза';
+  sSvcAccessWrite     = 'Запись';
 
-const
-  SERVICE_ACCESS_PARAMS: array[0..17] of TAccessParam = (
-    (m: SERVICE_ALL_ACCESS;            t: 'All access';            f: SI_ACCESS_GENERAL),
+  sSvcAccessQueryConfig    = 'Чтение настроек';
+  sSvcAccessChangeConfig   = 'Изменение настроек';
+  sSvcAccessQueryStatus    = 'Запрос состояния';
+  sSvcAccessEnumDependents = 'Перечисление зависимостей';
+  sSvcAccessStart          = 'Пуск';
+  sSvcAccessStop           = 'Стоп';
+  sSvcAccessPauseContinue  = 'Пауза и возобновление';
+  sSvcAccessInterrogate    = 'Опрос';
+  sSvcAccessUserDefinedCtl = 'Иные команды';
 
-    (m: STANDARD_RIGHTS_READ;          t: 'Read';                  f: SI_ACCESS_GENERAL),
-    (m: STANDARD_RIGHTS_WRITE;         t: 'Write';                 f: SI_ACCESS_GENERAL),
-    (m: STANDARD_RIGHTS_EXECUTE;       t: 'Execute';               f: SI_ACCESS_GENERAL),
-
-    (m: SERVICE_CHANGE_CONFIG;         t: 'Change config';         f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_ENUMERATE_DEPENDENTS;  t: 'Enumerate dependents';  f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_INTERROGATE;           t: 'Interrogate';           f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_PAUSE_CONTINUE;        t: 'Pause/Continue';        f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_QUERY_CONFIG;          t: 'Query config';          f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_QUERY_STATUS;          t: 'Query status';          f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_START;                 t: 'Start';                 f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_STOP;                  t: 'Stop';                  f: SI_ACCESS_SPECIFIC),
-    (m: SERVICE_USER_DEFINED_CONTROL;  t: 'User defined control';  f: SI_ACCESS_SPECIFIC),
-
-    (m: ACCESS_SYSTEM_SECURITY;        t: 'Access system security'; f: SI_ACCESS_SPECIFIC),
-    (m: _DELETE;                       t: 'Delete';                f: SI_ACCESS_SPECIFIC),
-    (m: READ_CONTROL;                  t: 'Read control';          f: SI_ACCESS_SPECIFIC),
-    (m: WRITE_DAC;                     t: 'Write DAC';             f: SI_ACCESS_SPECIFIC),
-    (m: WRITE_OWNER;                   t: 'Write owner';           f: SI_ACCESS_SPECIFIC)
-  );
+  sCmnAccessRead           = 'Чтение разрешений';
+  sCmnAccessWriteDac       = 'Смена разрешений';
+  sCmnAccessWriteOwner     = 'Смена владельца';
+  sCmnAccessDelete         = 'Удаление';
 
 class constructor TServiceSecurityInformation.Create;
 var i: integer;
-begin
-  SetLength(ServiceAccessMasks, Length(SERVICE_ACCESS_PARAMS));
-  for i := 0 to Length(SERVICE_ACCESS_PARAMS) do begin
+  procedure Push(m: ACCESS_MASK; const t: string; f: DWORD);
+  begin
+    ServiceAccessNames[i] := t; //we have to keep this somewhere or it'll be freed
     ServiceAccessMasks[i].pguid := nil;
-    ServiceAccessMasks[i].mask := SERVICE_ACCESS_PARAMS[i].m;
-    ServiceAccessMasks[i].pszName := PChar(SERVICE_ACCESS_PARAMS[i].t);
-    ServiceAccessMasks[i].dwFlags := SERVICE_ACCESS_PARAMS[i].f;
+    ServiceAccessMasks[i].mask := m;
+    ServiceAccessMasks[i].pszName := PChar(ServiceAccessNames[i]);
+    ServiceAccessMasks[i].dwFlags := f;
+    Inc(i);
   end;
+
+begin
+  SetLength(ServiceAccessNames, 17);
+  SetLength(ServiceAccessMasks, 17);
+  i := 0;
+ //We'd prefer to have a static precompiled table, but alas, resourcestrings cannot be referenced correctly in static
+  Push(SERVICE_ALL_ACCESS,            sSvcAccessAll,              SI_ACCESS_GENERAL or SI_ACCESS_SPECIFIC);
+
+  Push(STANDARD_RIGHTS_READ,          sSvcAccessRead,             SI_ACCESS_GENERAL);
+  Push(STANDARD_RIGHTS_EXECUTE,       sSvcAccessExecute,          SI_ACCESS_GENERAL);
+  Push(STANDARD_RIGHTS_WRITE,         sSvcAccessWrite,            SI_ACCESS_GENERAL);
+
+  Push(SERVICE_QUERY_CONFIG,          sSvcAccessQueryConfig,      SI_ACCESS_SPECIFIC);
+  Push(SERVICE_CHANGE_CONFIG,         sSvcAccessChangeConfig,     SI_ACCESS_SPECIFIC);
+  Push(SERVICE_QUERY_STATUS,          sSvcAccessQueryStatus,      SI_ACCESS_SPECIFIC);
+  Push(SERVICE_ENUMERATE_DEPENDENTS,  sSvcAccessEnumDependents,   SI_ACCESS_SPECIFIC);
+  Push(SERVICE_START,                 sSvcAccessStart,            SI_ACCESS_SPECIFIC);
+  Push(SERVICE_STOP,                  sSvcAccessStop,             SI_ACCESS_SPECIFIC);
+  Push(SERVICE_PAUSE_CONTINUE,        sSvcAccessPauseContinue,    SI_ACCESS_SPECIFIC);
+  Push(SERVICE_INTERROGATE,           sSvcAccessInterrogate,      SI_ACCESS_SPECIFIC);
+  Push(SERVICE_USER_DEFINED_CONTROL,  sSvcAccessUserDefinedCtl,   SI_ACCESS_SPECIFIC);
+  Push(_DELETE,                       sCmnAccessDelete,             SI_ACCESS_GENERAL or SI_ACCESS_SPECIFIC);
+
+  Push(READ_CONTROL,                  sCmnAccessRead,             SI_ACCESS_SPECIFIC);
+  Push(WRITE_DAC,                     sCmnAccessWriteDac,         SI_ACCESS_SPECIFIC);
+  Push(WRITE_OWNER,                   sCmnAccessWriteOwner,       SI_ACCESS_SPECIFIC);
+
+ //This one cannot be set as access right... I think
+//  Push(ACCESS_SYSTEM_SECURITY,        'Access system security',   SI_ACCESS_SPECIFIC),
 end;
 
 constructor TServiceSecurityInformation.Create(const AServiceName: string);
 begin
   inherited Create;
-  hSC := OpenSCManager();
-  hSvc := OpenService(hSC, AServiceName);
+  Log('SecurityInformation.Create('+AServiceName+')');
+  FServiceName := AServiceName;
+  hSC := OpenSCManager(SC_MANAGER_CONNECT);
 end;
 
 destructor TServiceSecurityInformation.Destroy;
 begin
-  if hSvc <> 0 then CloseServiceHandle(hSvc);
   if hSC <> 0 then CloseServiceHandle(hSC);
+  Log('SecurityInformation.Destroy');
   inherited;
 end;
 
 function TServiceSecurityInformation.GetObjectInformation(out pObjectInfo: SI_OBJECT_INFO): HRESULT;
 begin
+  Log('SecurityInformation.GetObjectInformation');
   pObjectInfo.dwFlags := SI_ADVANCED or SI_EDIT_ALL;
+  pObjectInfo.pszObjectName := PChar(FServiceName);
   Result := S_OK;
 end;
 
@@ -131,40 +153,99 @@ function TServiceSecurityInformation.GetSecurity(RequestedInformation: SECURITY_
 var err: integer;
   buf: NativeUInt;
   bufSz, bufNeeded: cardinal;
+  hSvc: SC_HANDLE;
 begin
-  bufSz := 512;
-  buf := LocalAlloc(LMEM_FIXED, bufSz);
-  while true do begin
-    if QueryServiceObjectSecurity(hSvc, RequestedInformation, pointer(buf), bufSz, bufNeeded) then begin
-      ppSecurityDescriptor := PSECURITY_DESCRIPTOR(buf);
-      Result := S_OK;
-      exit;
+  Log('SecurityInformation.GetSecurity');
+  hSvc := OpenService(hSC, FServiceName, READ_CONTROL);
+  if hSvc = 0 then begin
+    Result := HResultFromWin32(GetLastError());
+    Log('SecurityInformation.GetSecurity: 0x'+IntToHex(Result, 8)+' on OpenService');
+    exit;
+  end;
+  try
+
+    bufSz := 512;
+    buf := LocalAlloc(LMEM_FIXED, bufSz);
+    while true do begin
+      if QueryServiceObjectSecurity(hSvc, RequestedInformation, pointer(buf), bufSz, bufNeeded) then begin
+        ppSecurityDescriptor := PSECURITY_DESCRIPTOR(buf);
+        Log('SecurityInformation.GetSecurity: S_OK');
+        Result := S_OK;
+        exit;
+      end;
+
+      err := GetLastError();
+      if (err <> ERROR_INSUFFICIENT_BUFFER) or (bufNeeded <= bufSz) then
+        break;
+
+      bufSz := bufNeeded;
+      buf := LocalRealloc(buf, bufNeeded, LMEM_FIXED);
     end;
 
-    err := GetLastError();
-    if (err <> ERROR_INSUFFICIENT_BUFFER) or (bufNeeded <= bufSz) then
-      break;
+    LocalFree(buf);
+    Result := HResultFromWin32(err);
+    Log('SecurityInformation.GetSecurity: 0x'+IntToHex(Result, 8));
 
-    bufSz := bufNeeded;
-    buf := LocalRealloc(buf, bufNeeded, LMEM_FIXED);
+  finally
+    if hSvc <> 0 then CloseServiceHandle(hSvc);
   end;
-
-  LocalFree(buf);
-  Result := HResultFromWin32(err);
 end;
 
 function TServiceSecurityInformation.SetSecurity(SecurityInformation: SECURITY_INFORMATION;
   pSecurityDescriptor: PSECURITY_DESCRIPTOR): HRESULT;
+var hProcToken: THandle;
+  hSvc: SC_HANDLE;
+  requiredRights: DWORD;
 begin
-  if SetServiceObjectSecurity(hSvc, SecurityInformation, pSecurityDescriptor) then
-    Result := S_OK
-  else
-    Result := HResultFromWin32(GetLastError());
+  Log('SecurityInformation.SetSecurity...');
+  hProcToken := 0;
+  hSvc := 0;
+  try
+    case SecurityInformation of
+      OWNER_SECURITY_INFORMATION,
+      GROUP_SECURITY_INFORMATION:
+        requiredRights := WRITE_OWNER;
+      DACL_SECURITY_INFORMATION,
+      SACL_SECURITY_INFORMATION:
+        requiredRights := WRITE_DAC;
+    else requiredRights := WRITE_OWNER or WRITE_DAC; //tiny future proofing
+    end;
+
+    if requiredRights and WRITE_OWNER <> 0 then
+      //Auto-try to get SE_TAKE_OWNERSHIP_NAME just in case we don't have WRITE_OWNER
+      if not OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, hProcToken)
+      or not SetPrivilege(hProcToken, SE_TAKE_OWNERSHIP_NAME, true) then begin
+        CloseHandle(hProcToken);
+        hProcToken := 0; //or we'll try to clear the privilege
+        Log('SecurityInformation.SetSecurity: Cannot get SE_TAKE_OWNERSHIP: '+IntToStr(GetLastError()));
+      end;
+
+    hSvc := OpenService(hSC, FServiceName, requiredRights);
+    if hSvc = 0 then begin
+      Result := HResultFromWin32(GetLastError());
+      Log('SecurityInformation.GetSecurity: 0x'+IntToHex(Result, 8)+' on OpenService');
+      exit;
+    end;
+
+    if SetServiceObjectSecurity(hSvc, SecurityInformation, pSecurityDescriptor) then
+      Result := S_OK
+    else
+      Result := HResultFromWin32(GetLastError());
+    Log('SecurityInformation.SetSecurity: 0x'+IntToHex(Result, 8));
+
+  finally
+    if hProcToken <> 0 then begin
+      SetPrivilege(hProcToken, SE_TAKE_OWNERSHIP_NAME, false);
+      CloseHandle(hProcToken);
+    end;
+    if hSvc <> 0 then CloseServiceHandle(hSvc);
+  end;
 end;
 
 function TServiceSecurityInformation.GetAccessRights(pguidObjectType: PGUID; dwFlags: DWORD;
   out ppAccess: PSI_ACCESS; out pcAccesses, piDefaultAccess: ULONG): HRESULT;
 begin
+  Log('SecurityInformation.GetAccessRights');
   ppAccess := @Self.ServiceAccessMasks[0];
   pcAccesses := Length(Self.ServiceAccessMasks);
   piDefaultAccess := 0; //index of SERVICE_ALL_ACCESS
@@ -174,6 +255,7 @@ end;
 function TServiceSecurityInformation.MapGeneric(pguidObjectType: PGUID; pAceFlags: PUCHAR;
   pMask: PACCESS_MASK): HRESULT;
 begin
+  Log('SecurityInformation.MapGeneric');
   MapGenericMask(pMask^, SERVICE_ACCESS_MAP);
   Result := S_OK;
 end;
@@ -181,14 +263,16 @@ end;
 function TServiceSecurityInformation.GetInheritTypes(out ppInheritTypes: PSI_INHERIT_TYPE;
   out pcInheritTypes: ULONG): HRESULT;
 begin
+  Log('SecurityInformation.GetInheritTypes');
   ppInheritTypes := nil;
   pcInheritTypes := 0;
-  Result := S_OK;
+  Result := E_NOTIMPL;
 end;
 
 function TServiceSecurityInformation.PropertySheetPageCallback(hwnd: HWND; uMsg: UINT;
   uPage: SI_PAGE_TYPE): HRESULT;
 begin
+  Log('SecurityInformation.PropertySheetPageCallback');
   Result := S_OK;
 end;
 

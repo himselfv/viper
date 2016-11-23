@@ -102,6 +102,8 @@ type
     Saveserviceconfig2: TMenuItem;
     OpenServiceConfigDialog: TOpenDialog;
     SaveServiceConfigDialog: TSaveDialog;
+    Debug1: TMenuItem;
+    miShowLog: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -130,6 +132,7 @@ type
     procedure aSaveAllServicesConfigExecute(Sender: TObject);
     procedure aSaveSelectedServicesConfigExecute(Sender: TObject);
     procedure aRestoreServiceConfigExecute(Sender: TObject);
+    procedure miShowLogClick(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -174,7 +177,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils,
-  CommonResources, Viper_RestoreServiceConfig;
+  CommonResources, Viper_RestoreServiceConfig, Viper.Log;
 
 {$R *.dfm}
 
@@ -306,6 +309,10 @@ begin
   Self.RefreshAllServices;
 end;
 
+procedure TMainForm.miShowLogClick(Sender: TObject);
+begin
+  LogForm.Show;
+end;
 
 //Presents all services as a TServiceEntries list (some functions want this).
 //Use FServices directly if you have a choice.

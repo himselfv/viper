@@ -777,10 +777,16 @@ end;
 
 procedure TServiceList.miEditSecurityClick(Sender: TObject);
 var Service: TServiceEntry;
+  hPriv: TPrivToken;
 begin
-  for Service in GetSelectedServices() do begin
-    EditServiceSecurity(Self.Handle, Service.ServiceName);
-    RefreshService(Service);
+  ClaimPrivilege(SE_SECURITY_NAME, hPriv); //it's okay if we don't
+  try
+    for Service in GetSelectedServices() do begin
+      EditServiceSecurity(Self.Handle, Service.ServiceName, [efEditSacl]);
+      RefreshService(Service);
+    end;
+  finally
+    ReleasePrivilege(hPriv);
   end;
 end;
 

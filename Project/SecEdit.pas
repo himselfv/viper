@@ -9,6 +9,12 @@ interface
 uses Windows, AclUi, AclHelpers, WinSvc, ServiceHelper, SvcEntry;
 
 type
+  TEditSecurityFlag = (
+    efEditSacl    //Opens service with ACCESS_SYSTEM_SECURITY flag (you need to have SE_SECURITY_NAME).
+                  //This lets you edit SACL (Audit) settings
+  );
+  TEditSecurityFlags = set of TEditSecurityFlag;
+
   TServiceSecurityInformation = class(TInterfacedObject, ISecurityInformation)
   class var
     ServiceAccessMasks: array of SI_ACCESS;
@@ -16,10 +22,12 @@ type
     class constructor Create;
   protected
     FServiceName: string;
+    FFlags: TEditSecurityFlags;
     hSC: SC_HANDLE;
   public
     constructor Create(const AServiceName: string);
     destructor Destroy; override;
+    property Flags: TEditSecurityFlags read FFlags write FFlags;
 
   public
     function GetObjectInformation(out pObjectInfo: SI_OBJECT_INFO): HRESULT; stdcall;
@@ -37,7 +45,7 @@ type
       uPage: SI_PAGE_TYPE): HRESULT; stdcall;
   end;
 
-function EditServiceSecurity(hwndOwner: HWND; const ServiceName: String): boolean;
+function EditServiceSecurity(hwndOwner: HWND; const ServiceName: String; Flags: TEditSecurityFlags = []): boolean;
 
 {
 Sources:
@@ -159,9 +167,13 @@ var err: integer;
   buf: NativeUInt;
   bufSz, bufNeeded: cardinal;
   hSvc: SC_HANDLE;
+  requiredRights: DWORD;
 begin
   Log('SecurityInformation.GetSecurity');
-  hSvc := OpenService(hSC, FServiceName, READ_CONTROL);
+  requiredRights := READ_CONTROL;
+  if (efEditSacl in Flags) and (RequestedInformation = SACL_SECURITY_INFORMATION) then
+    requiredRights := requiredRights or ACCESS_SYSTEM_SECURITY;
+  hSvc := OpenService(hSC, FServiceName, requiredRights);
   if hSvc = 0 then begin
     Result := HResultFromWin32(GetLastError());
     Log('SecurityInformation.GetSecurity: 0x'+IntToHex(Result, 8)+' on OpenService');
@@ -215,6 +227,8 @@ begin
         requiredRights := WRITE_DAC;
     else requiredRights := WRITE_OWNER or WRITE_DAC; //tiny future proofing
     end;
+    if (efEditSacl in Flags) and (SecurityInformation = SACL_SECURITY_INFORMATION) then
+      requiredRights := requiredRights or ACCESS_SYSTEM_SECURITY;
 
     if requiredRights and WRITE_OWNER <> 0 then
       //Auto-try to get SE_TAKE_OWNERSHIP_NAME just in case we don't have WRITE_OWNER
@@ -281,10 +295,11 @@ begin
   Result := S_OK;
 end;
 
-function EditServiceSecurity(hwndOwner: HWND; const ServiceName: String): boolean;
+function EditServiceSecurity(hwndOwner: HWND; const ServiceName: String; Flags: TEditSecurityFlags): boolean;
 var secInfo: TServiceSecurityInformation;
 begin
   secInfo := TServiceSecurityInformation.Create(ServiceName);
+  secInfo.Flags := Flags;
   Result := EditSecurity(hwndOwner, secInfo);
 end;
 

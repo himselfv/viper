@@ -1,4 +1,9 @@
 unit SecEdit;
+{
+Security editor interface for services.
+Usage:
+  EditServiceSecurity(ParentHwnd, ServiceName);
+}
 
 interface
 uses Windows, AclUi, AclHelpers, WinSvc, ServiceHelper, SvcEntry;

@@ -64,6 +64,9 @@ type
     aProtectionWindows: TAction;
     aProtectionWindowsLight: TAction;
     aProtectionAntimalwareLight: TAction;
+    Security1: TMenuItem;
+    miUnlockSecurity: TMenuItem;
+    N4: TMenuItem;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -105,6 +108,7 @@ type
     procedure aColorByStartTypeExecute(Sender: TObject);
     procedure miEditSecurityClick(Sender: TObject);
     procedure aProtectionNoneExecute(Sender: TObject);
+    procedure miUnlockSecurityClick(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
@@ -130,7 +134,8 @@ type
   end;
 
 implementation
-uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit;
+uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
+  Viper.Log;
 
 {$R *.dfm}
 
@@ -768,22 +773,7 @@ begin
 end;
 
 
-procedure TServiceList.aJumpToBinaryExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  Service := GetFirstSelectedService();
-  Assert(Service <> nil);
-  if Service.GetExecutableFilename <> '' then
-    ExplorerAtFile(Service.GetExecutableFilename);
-end;
-
-procedure TServiceList.aJumpToRegistryExecute(Sender: TObject);
-var Service: TServiceEntry;
-begin
-  Service := GetFirstSelectedService();
-  Assert(Service <> nil);
-  RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
-end;
+// Security
 
 procedure TServiceList.miEditSecurityClick(Sender: TObject);
 var Service: TServiceEntry;
@@ -793,7 +783,6 @@ begin
     RefreshService(Service);
   end;
 end;
-
 
 resourcestring
   sConfirmSettingProtection = 'You''re about to set a launch protection for a service.'#13
@@ -837,5 +826,97 @@ begin
 
   MessageBox(Self.Handle, PChar(sProtectionNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
 end;
+
+resourcestring
+  sUnlockNeedToReboot = 'Some of the services had launch protection. It was disabled, but you need '
+    +'to reboot and do unlock on them again to take ownership.';
+  sUnlockDone = 'Done.';
+  sNothingToChange = 'Nothing to change.';
+
+procedure TServiceList.miUnlockSecurityClick(Sender: TObject);
+var Services: TServiceEntries;
+  Service: TServiceEntry;
+  hPriv: TPrivToken;
+  pSidAdmin, pSidPreviousOwner: PSID;
+  pPreviousDesc: PSECURITY_DESCRIPTOR;
+  hadLaunchProt: boolean;
+  hadOwnershipChanged: boolean;
+  err: integer;
+begin
+  Services := GetSelectedServices();
+  if Length(Services) <= 0 then exit;
+
+  hadLaunchProt := false;
+  hadOwnershipChanged := false;
+  pSidAdmin := nil;
+
+  AclHelpers.OnLog := LogForm.Log;
+
+  //Try to claim SE_TAKE_OWNERSHIP_NAME but tolerate if it's unavailable
+  ClaimPrivilege(SE_TAKE_OWNERSHIP_NAME, hPriv);
+  try
+
+    pSidAdmin := AllocateSidBuiltinAdministrators();
+
+    for Service in GetSelectedServices() do begin
+      Log('Trying '+Service.ServiceName+'...');
+      if Service.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE then begin
+        Log('Resetting launch protection for '+Service.ServiceName+'...');
+        OverwriteServiceLaunchProtection(Service.ServiceName, SERVICE_LAUNCH_PROTECTED_NONE);
+        hadLaunchProt := false;
+        continue; //Launch protection reset requires reboot, do not touch ownership or we'll fail with ACCESS_DENIED
+      end;
+
+      Log('Checking ownership for '+Service.ServiceName+'...');
+      err := SwitchOwnership(Service.ServiceName, SE_SERVICE, pSidAdmin, pSidPreviousOwner, pPreviousDesc);
+      if err <> 0 then
+        RaiseLastOsError(err);
+
+      if pSidPreviousOwner <> nil then begin
+        Log('Ownership changed for '+Service.ServiceName+', giving the original owner all permissions...');
+        hadOwnershipChanged := true;
+        AddExplicitPermissions(Service.ServiceName, SE_SERVICE, pSidPreviousOwner, SERVICE_ALL_ACCESS);
+        if pPreviousDesc <> nil then
+          LocalFree(NativeUInt(pPreviousDesc));
+      end;
+
+      RefreshService(Service);
+    end;
+
+  finally
+    ReleasePrivilege(hPriv);
+    if pSIDAdmin <> nil then
+      FreeSid(pSIDAdmin);
+  end;
+
+  if hadLaunchProt then
+    MessageBox(Self.Handle, PChar(sUnlockNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+  else
+  if hadOwnershipChanged then
+    MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+  else
+    MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
+end;
+
+
+// Misc
+
+procedure TServiceList.aJumpToBinaryExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFirstSelectedService();
+  Assert(Service <> nil);
+  if Service.GetExecutableFilename <> '' then
+    ExplorerAtFile(Service.GetExecutableFilename);
+end;
+
+procedure TServiceList.aJumpToRegistryExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFirstSelectedService();
+  Assert(Service <> nil);
+  RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
+end;
+
 
 end.

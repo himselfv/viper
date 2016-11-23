@@ -319,13 +319,13 @@ object MainForm: TMainForm
         ExplicitHeight = 413
       end
       inherited pmServices: TPopupMenu
+        object N1: TMenuItem [13]
+          Caption = '-'
+        end
         inherited Advanced1: TMenuItem
           object Saveserviceconfig2: TMenuItem [0]
             Action = aSaveSelectedServicesConfig
           end
-        end
-        object N1: TMenuItem
-          Caption = '-'
         end
         object Refresh2: TMenuItem
           Action = aRefresh

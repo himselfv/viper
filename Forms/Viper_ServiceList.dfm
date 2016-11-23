@@ -275,7 +275,7 @@ object ServiceList: TServiceList
       Caption = '-'
     end
     object miStartType: TMenuItem
-      Caption = 'Start type'
+      Caption = 'Start mode'
       object Automatic1: TMenuItem
         Action = aStartTypeAutomatic
         AutoCheck = True
@@ -295,39 +295,53 @@ object ServiceList: TServiceList
         RadioItem = True
       end
     end
-    object miProtectionType: TMenuItem
-      Caption = 'Protection'
-      object miSetProtectionNone: TMenuItem
-        Action = aProtectionNone
-        AutoCheck = True
-        GroupIndex = 2
-        RadioItem = True
+    object Security1: TMenuItem
+      Caption = 'Security'
+      object miEditSecurity: TMenuItem
+        Caption = 'Edit...'
+        Hint = 'Edit the service access permissions'
+        OnClick = miEditSecurityClick
       end
-      object miSetProtectionWindows: TMenuItem
-        Tag = 1
-        Action = aProtectionWindows
-        AutoCheck = True
-        GroupIndex = 2
-        RadioItem = True
+      object miProtectionType: TMenuItem
+        Caption = 'Protection'
+        object miSetProtectionNone: TMenuItem
+          Action = aProtectionNone
+          AutoCheck = True
+          GroupIndex = 2
+          RadioItem = True
+        end
+        object miSetProtectionWindows: TMenuItem
+          Tag = 1
+          Action = aProtectionWindows
+          AutoCheck = True
+          GroupIndex = 2
+          RadioItem = True
+        end
+        object miSetProtectionWindowsLight: TMenuItem
+          Tag = 2
+          Action = aProtectionWindowsLight
+          AutoCheck = True
+          GroupIndex = 2
+          RadioItem = True
+        end
+        object miSetProtectionAntimalwareLight: TMenuItem
+          Tag = 3
+          Action = aProtectionAntimalwareLight
+          AutoCheck = True
+          GroupIndex = 2
+          RadioItem = True
+        end
       end
-      object miSetProtectionWindowsLight: TMenuItem
-        Tag = 2
-        Action = aProtectionWindowsLight
-        AutoCheck = True
-        GroupIndex = 2
-        RadioItem = True
+      object N4: TMenuItem
+        Caption = '-'
       end
-      object miSetProtectionAntimalwareLight: TMenuItem
-        Tag = 3
-        Action = aProtectionAntimalwareLight
-        AutoCheck = True
-        GroupIndex = 2
-        RadioItem = True
+      object miUnlockSecurity: TMenuItem
+        Caption = 'Unlock'
+        Hint = 
+          'Remove protection and take ownership as neccessary to access the' +
+          ' service'
+        OnClick = miUnlockSecurityClick
       end
-    end
-    object miEditSecurity: TMenuItem
-      Caption = 'Security...'
-      OnClick = miEditSecurityClick
     end
     object Advanced1: TMenuItem
       Caption = 'Advanced'

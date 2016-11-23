@@ -834,7 +834,7 @@ begin
 end;
 
 resourcestring
-  sUnlockNeedToReboot = 'Some of the services had launch protection. It was disabled, but you need '
+  sUnlockNeedToReboot = 'Some of the services had launch protection. It has been disabled, but you need '
     +'to reboot and do unlock on them again to take ownership.';
   sUnlockDone = 'Done.';
   sNothingToChange = 'Nothing to change.';
@@ -869,7 +869,7 @@ begin
       if Service.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE then begin
         Log('Resetting launch protection for '+Service.ServiceName+'...');
         OverwriteServiceLaunchProtection(Service.ServiceName, SERVICE_LAUNCH_PROTECTED_NONE);
-        hadLaunchProt := false;
+        hadLaunchProt := true;
         continue; //Launch protection reset requires reboot, do not touch ownership or we'll fail with ACCESS_DENIED
       end;
 

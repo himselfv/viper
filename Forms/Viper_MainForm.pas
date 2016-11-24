@@ -104,6 +104,7 @@ type
     SaveServiceConfigDialog: TSaveDialog;
     Debug1: TMenuItem;
     miShowLog: TMenuItem;
+    edtQuickFilter: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -133,6 +134,7 @@ type
     procedure aSaveSelectedServicesConfigExecute(Sender: TObject);
     procedure aRestoreServiceConfigExecute(Sender: TObject);
     procedure miShowLogClick(Sender: TObject);
+    procedure edtQuickFilterChange(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -342,30 +344,40 @@ var folderNode: PVirtualNode absolute Data;
   folderData: PNdFolderData;
   svc: TServiceEntry;
   isService: boolean;
+  isVisible: boolean;
+  filterText: string;
 begin
   svc := TServiceEntry(Sender.GetNodeData(Node)^);
   Assert(svc <> nil);
 
   isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
-  if not isService and not aShowDrivers.Checked then begin
-    Sender.IsVisible[Node] := false;
-    exit;
+  isVisible := true;
+
+  //Filter by folder
+  if folderNode <> nil then begin
+    folderData := PNdFolderData(vtFolders.GetNodeData(folderNode));
+    case folderData.NodeType of
+      ntFolder: isVisible := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
+      ntRunningServices: isVisible := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
+      ntAllServices: isVisible :=  isService;
+      ntUnknownServices: isVisible := isService and (Length(GetServiceFolders(svc)) <= 0);
+      ntRunningDrivers: isVisible := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
+      ntAllDrivers: isVisible := not isService;
+    end;
   end;
 
-  if folderNode=nil then begin
-    Sender.IsVisible[Node] := true;
-    exit;
-  end;
+  //Filter out drivers if disabled
+  if not isService and not aShowDrivers.Checked then
+    isVisible := false;
 
-  folderData := PNdFolderData(vtFolders.GetNodeData(folderNode));
-  case folderData.NodeType of
-    ntFolder: Sender.IsVisible[Node] := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
-    ntRunningServices: Sender.IsVisible[Node] := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
-    ntAllServices: Sender.IsVisible[Node] :=  isService;
-    ntUnknownServices: Sender.IsVisible[Node] := isService and (Length(GetServiceFolders(svc)) <= 0);
-    ntRunningDrivers: Sender.IsVisible[Node] := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
-    ntAllDrivers: Sender.IsVisible[Node] := not isService;
-  end;
+  //Quickfilter
+  filterText := AnsiLowerCase(string(edtQuickfilter.Text).Trim());
+  if filterText <> '' then
+    if not AnsiLowerCase(svc.ServiceName).Contains(filterText)
+    and not AnsiLowerCase(svc.DisplayName).Contains(filterText) then
+      isVisible := false;
+
+  Sender.IsVisible[Node] := isVisible;
 end;
 
 //True if the folder contains service.
@@ -385,6 +397,11 @@ procedure TMainForm.IsFolderContainsService_Callback(Sender: TBaseVirtualTree; N
 var AService: TServiceEntry absolute Data;
 begin
   Abort := IsFolderContainsService(Node, AService, {ARecursive=}false);
+end;
+
+procedure TMainForm.edtQuickFilterChange(Sender: TObject);
+begin
+  FilterServices();
 end;
 
 

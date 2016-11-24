@@ -40,7 +40,7 @@ object MainForm: TMainForm
     Images = CommonRes.ilImages
     PopupMenu = pmFolders
     StateImages = CommonRes.ilOverlays
-    TabOrder = 0
+    TabOrder = 1
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
@@ -59,7 +59,7 @@ object MainForm: TMainForm
     Height = 609
     Align = alClient
     BevelOuter = bvNone
-    TabOrder = 1
+    TabOrder = 0
     object Splitter2: TSplitter
       Left = 0
       Top = 413
@@ -78,7 +78,7 @@ object MainForm: TMainForm
       Height = 193
       ActivePage = tsTriggers
       Align = alBottom
-      TabOrder = 0
+      TabOrder = 2
       object tsDescription: TTabSheet
         Caption = 'Info'
         object mmDetails: TMemo
@@ -156,7 +156,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800400010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800440010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -304,16 +304,16 @@ object MainForm: TMainForm
     end
     inline MainServiceList: TServiceList
       Left = 0
-      Top = 0
+      Top = 21
       Width = 857
-      Height = 413
+      Height = 392
       Align = alClient
       TabOrder = 1
       ExplicitWidth = 857
       ExplicitHeight = 413
       inherited vtServices: TVirtualStringTree
         Width = 857
-        Height = 413
+        Height = 392
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         ExplicitWidth = 857
         ExplicitHeight = 413
@@ -331,6 +331,18 @@ object MainForm: TMainForm
           Action = aRefresh
         end
       end
+    end
+    object edtQuickFilter: TEdit
+      Left = 0
+      Top = 0
+      Width = 857
+      Height = 21
+      Align = alTop
+      TabOrder = 0
+      OnChange = edtQuickFilterChange
+      ExplicitLeft = 472
+      ExplicitTop = 328
+      ExplicitWidth = 121
     end
   end
   object ActionList: TActionList
@@ -388,7 +400,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800380010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101020008003C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

@@ -191,25 +191,25 @@ begin
 end;
 
 resourcestring
-  sStatusStopped = 'Остановлена';
-  sStatusStartPending = 'Запускается...';
-  sStatusStopPending = 'Завершается...';
-  sStatusRunning = 'Выполняется';
-  sStatusContinuePending = 'Возобновляется...';
-  sStatusPausePending = 'Приостанавливается...';
-  sStatusPaused = 'Приостановлена';
-  sStatusOther = 'Неясно (%d)';
+  sStatusStopped = 'Stopped';
+  sStatusStartPending = 'Starting...';
+  sStatusStopPending = 'Stopping...';
+  sStatusRunning = 'Running';
+  sStatusContinuePending = 'Resuming...';
+  sStatusPausePending = 'Pausing...';
+  sStatusPaused = 'Paused';
+  sStatusOther = 'Other (%d)';
 
-  sStartTypeAuto = 'Автоматически';
-  sStartTypeDemand = 'Вручную';
-  sStartTypeDisabled = 'Отключена';
-  sStartTypeBoot = 'Авто (загрузка)';
-  sStartTypeSystem = 'Авто (система)';
+  sStartTypeAuto = 'Auto';
+  sStartTypeDemand = 'Manual';
+  sStartTypeDisabled = 'Disabled';
+  sStartTypeBoot = 'Auto (boot)';
+  sStartTypeSystem = 'Auto (system)';
 
   sProtectionNone = '';
-  sProtectionWindows = 'ОС (полная)';
-  sProtectionWindowsLight = 'ОС (лёгкая)';
-  sProtectionAntimalwareLight = 'Частичная';
+  sProtectionWindows = 'OS (full)';
+  sProtectionWindowsLight = 'OS (light)';
+  sProtectionAntimalwareLight = 'Antimalware';
 
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
@@ -683,6 +683,9 @@ begin
     end;
 end;
 
+resourcestring
+  eCouldNotStopSomeServices = 'Could not stop some services';
+
 procedure TServiceList.aRestartServiceExecute(Sender: TObject);
 var services: TServiceEntries;
   hSC: SC_HANDLE;
@@ -736,7 +739,7 @@ begin
       end;
 
     if not all_stopped then
-      raise Exception.Create('Could not stop some services');
+      raise Exception.Create(eCouldNotStopSomeServices);
   finally
     for i := 0 to Length(hSvcs)-1 do
       CloseServiceHandle(hSvcs[i].h);

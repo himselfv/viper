@@ -52,32 +52,32 @@ object ServiceList: TServiceList
       item
         Position = 1
         Width = 500
-        WideText = #1053#1072#1079#1074#1072#1085#1080#1077
+        WideText = 'Name'
       end
       item
         Position = 2
         Width = 150
-        WideText = #1057#1086#1089#1090#1086#1103#1085#1080#1077
+        WideText = 'Status'
       end
       item
         Position = 3
         Width = 150
-        WideText = #1058#1080#1087' '#1079#1072#1087#1091#1089#1082#1072
+        WideText = 'Start mode'
       end
       item
         Position = 4
         Width = 200
-        WideText = #1054#1087#1080#1089#1072#1085#1080#1077
+        WideText = 'Description'
       end
       item
         Position = 5
         Width = 200
-        WideText = #1048#1089#1087#1086#1083#1085#1103#1077#1084#1099#1081' '#1092#1072#1081#1083
+        WideText = 'Filename'
       end
       item
         Position = 6
         Width = 100
-        WideText = #1047#1072#1097#1080#1090#1072
+        WideText = 'Protection'
       end>
   end
   object ActionList: TActionList

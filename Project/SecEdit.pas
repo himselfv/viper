@@ -3,6 +3,11 @@ unit SecEdit;
 Security editor interface for services.
 Usage:
   EditServiceSecurity(ParentHwnd, ServiceName);
+
+References:
+  Service security and access rights:  https://msdn.microsoft.com/en-us/library/windows/desktop/ms685981(v=vs.85).aspx
+  SetServiceObjectSecurity:            https://msdn.microsoft.com/en-us/library/windows/desktop/aa379589(v=vs.85).aspx
+  ISecurityInformation:                https://msdn.microsoft.com/en-us/library/windows/desktop/gg983193(v=vs.85).aspx
 }
 
 interface
@@ -47,21 +52,6 @@ type
 
 function EditServiceSecurity(hwndOwner: HWND; const ServiceName: String; Flags: TEditSecurityFlags = []): boolean;
 
-{
-Sources:
-
-Service security and access rights:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/ms685981(v=vs.85).aspx
-
-SetServiceObjectSecurity:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/aa379589(v=vs.85).aspx
-
-ISecurityInformation:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/gg983193(v=vs.85).aspx
-
-All authorization functions:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/aa375742(v=vs.85).aspx
-}
 
 const
   SERVICE_ACCESS_MAP: TGenericMapping = (
@@ -76,25 +66,25 @@ implementation
 uses SysUtils, Viper.Log;
 
 resourcestring
-  sSvcAccessAll       = 'Полный доступ';
-  sSvcAccessRead      = 'Чтение';
-  sSvcAccessExecute   = 'Пуск, стоп и пауза';
-  sSvcAccessWrite     = 'Запись';
+  sSvcAccessAll       = 'Full access';
+  sSvcAccessRead      = 'Read';
+  sSvcAccessExecute   = 'Start, stop and pause';
+  sSvcAccessWrite     = 'Write';
 
-  sSvcAccessQueryConfig    = 'Чтение настроек';
-  sSvcAccessChangeConfig   = 'Изменение настроек';
-  sSvcAccessQueryStatus    = 'Запрос состояния';
-  sSvcAccessEnumDependents = 'Перечисление зависимостей';
-  sSvcAccessStart          = 'Пуск';
-  sSvcAccessStop           = 'Стоп';
-  sSvcAccessPauseContinue  = 'Пауза и возобновление';
-  sSvcAccessInterrogate    = 'Опрос';
-  sSvcAccessUserDefinedCtl = 'Иные команды';
+  sSvcAccessQueryConfig    = 'Read configuration';
+  sSvcAccessChangeConfig   = 'Write configuration';
+  sSvcAccessQueryStatus    = 'Query status';
+  sSvcAccessEnumDependents = 'Enumerate dependencies';
+  sSvcAccessStart          = 'Start';
+  sSvcAccessStop           = 'Stop';
+  sSvcAccessPauseContinue  = 'Pause and continue';
+  sSvcAccessInterrogate    = 'Interrogate';
+  sSvcAccessUserDefinedCtl = 'Other commands';
 
-  sCmnAccessRead           = 'Чтение разрешений';
-  sCmnAccessWriteDac       = 'Смена разрешений';
-  sCmnAccessWriteOwner     = 'Смена владельца';
-  sCmnAccessDelete         = 'Удаление';
+  sCmnAccessRead           = 'Read permissions';
+  sCmnAccessWriteDac       = 'Change permissions';
+  sCmnAccessWriteOwner     = 'Change owner';
+  sCmnAccessDelete         = 'Delete';
 
 class constructor TServiceSecurityInformation.Create;
 var i: integer;

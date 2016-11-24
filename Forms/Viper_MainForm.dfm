@@ -1,7 +1,7 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  Caption = #1057#1083#1091#1078#1073#1099
+  Caption = 'Services'
   ClientHeight = 609
   ClientWidth = 1040
   Color = clBtnFace
@@ -81,6 +81,10 @@ object MainForm: TMainForm
       TabOrder = 2
       object tsDescription: TTabSheet
         Caption = 'Info'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object mmDetails: TMemo
           Left = 0
           Top = 0
@@ -156,7 +160,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800440010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800580010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -300,6 +304,10 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -309,14 +317,15 @@ object MainForm: TMainForm
       Height = 392
       Align = alClient
       TabOrder = 1
+      ExplicitTop = 21
       ExplicitWidth = 857
-      ExplicitHeight = 413
+      ExplicitHeight = 392
       inherited vtServices: TVirtualStringTree
         Width = 857
         Height = 392
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         ExplicitWidth = 857
-        ExplicitHeight = 413
+        ExplicitHeight = 392
       end
       inherited pmServices: TPopupMenu
         object N1: TMenuItem [13]
@@ -340,9 +349,6 @@ object MainForm: TMainForm
       Align = alTop
       TabOrder = 0
       OnChange = edtQuickFilterChange
-      ExplicitLeft = 472
-      ExplicitTop = 328
-      ExplicitWidth = 121
     end
   end
   object ActionList: TActionList
@@ -400,7 +406,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C0101020008003C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800500010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

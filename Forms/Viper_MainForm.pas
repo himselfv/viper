@@ -168,10 +168,6 @@ type
     procedure Reload;
     procedure RefreshAllServices;
 
-  protected
-    procedure WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string);
-
-
   end;
 
 var
@@ -238,7 +234,7 @@ begin
   Reload;
 end;
 
-//Загружает список служб с их состояниями
+//Loads the list of services with their status
 procedure TMainForm.Reload;
 var hSC: SC_HANDLE;
   ServiceTypes: dword;
@@ -408,13 +404,13 @@ end;
 
 
 resourcestring
-  sFolderUnknownServices = 'Необычные';
-  sFolderRunningServices = 'Работающие';
-  sFolderAllServices = 'Все';
-  sFolderAllDrivers = 'Драйверы';
-  sFolderRunningDrivers = 'Работающие';
+  sFolderUnknownServices = 'Unknown';
+  sFolderRunningServices = 'Running';
+  sFolderAllServices = 'All';
+  sFolderAllDrivers = 'Drivers';
+  sFolderRunningDrivers = 'Running';
 
-//Перезагружает структуру папок со службами
+//Reloads services and their folder structure
 procedure TMainForm.ReloadServiceTree;
 var section: PVirtualNode;
 begin
@@ -700,7 +696,7 @@ type
   end;
   PGetServiceFoldersData = ^TGetServiceFoldersData;
 
-//Возвращает список всех папок, в которые включена служба
+//Returns a list of folders which contain the service
 function TMainForm.GetServiceFolders(Service: TServiceEntry): TServiceFolders;
 var Data: TGetServiceFoldersData;
 begin
@@ -742,6 +738,10 @@ begin
   end;
 end;
 
+resourcestring
+  eServiceDependencyNotFound = 'Service %s is not found in a general list.';
+  eServiceDependentNotFound = 'Service %s is not found in a general list.';
+
 //Works with DependencyList. Adds child nodes for service dependencies to the node given by ParentNode.
 //Call ReloadServiceDependencies if you need to reload the whole DependencyList.
 procedure TMainForm.LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
@@ -761,7 +761,7 @@ begin
    //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
    //(as we do now), or to ignore failed matches.
     if depService = nil then
-      raise Exception.Create('Service '+string(dep)+' not found in a general list.');
+      raise Exception.CreateFmt(eServiceDependencyNotFound, [dep]);
     depNode := DependencyList.AddService(AParentNode, depService);
     LoadServiceDependencyNodes(depService, depNode);
   end;
@@ -813,7 +813,7 @@ begin
     while depntCount > 0 do begin
       depService := FServices.Find(depnt.lpServiceName);
       if depService = nil then
-        raise Exception.Create('Service '+string(depnt.lpServiceName)+' not found in a general list.');
+        raise Exception.CreateFmt(eServiceDependentNotFound, [depnt.lpServiceName]);
       depNode := DependentsList.AddService(AParentNode, depService);
       LoadServiceDependentsNodes(hSC, depService, depNode);
 
@@ -857,25 +857,12 @@ begin
 end;
 
 
-procedure TMainForm.WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string);
-var AFailedServices: string;
-begin
-  AFailedServices := Viper_RestoreServiceConfig.WriteServiceConfigFile(AServices, AFilename);
-  if AFailedServices <> '' then
-    MessageBox(Self.Handle,
-      PChar('We didn''t have the rights to query the configuration for the following services:'#13
-        +AFailedServices+#13
-        +'Perhaps you''re not running the application with Administrator rights?'),
-      PChar('Some problems encountered'),
-      MB_OK + MB_ICONERROR);
-end;
-
 procedure TMainForm.aSaveAllServicesConfigExecute(Sender: TObject);
 begin
   if not SaveServiceConfigDialog.Execute then
     exit;
 
-  WriteServiceConfigFile(Self.AllServiceEntries, SaveServiceConfigDialog.FileName);
+  SaveServiceConfig(Self.Handle, Self.AllServiceEntries, SaveServiceConfigDialog.FileName);
 end;
 
 procedure TMainForm.aSaveSelectedServicesConfigExecute(Sender: TObject);
@@ -887,7 +874,7 @@ begin
   if not SaveServiceConfigDialog.Execute then
     exit;
 
-  WriteServiceConfigFile(ASelectedServices, SaveServiceConfigDialog.FileName);
+  SaveServiceConfig(Self.Handle, ASelectedServices, SaveServiceConfigDialog.FileName);
 end;
 
 procedure TMainForm.aRestoreServiceConfigExecute(Sender: TObject);

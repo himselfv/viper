@@ -1,11 +1,4 @@
 unit Viper_RestoreServiceConfig;
-
-interface
-
-uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  SvcEntry;
-
 {
 Saves the startup configuration of all services, or selected services, to a file so that it can
 later be restored:
@@ -14,6 +7,12 @@ later be restored:
 
 Restores the configuration.
 }
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
+  SvcEntry;
 
 type
   TRestoreServiceConfigForm = class(TForm)
@@ -37,12 +36,20 @@ type
 var
   RestoreServiceConfigForm: TRestoreServiceConfigForm;
 
+//Just writes the file
 function WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string): string;
+
+//Has minimal ui
+procedure SaveServiceConfig(AParent: HWND; AServices: TServiceEntries; const AFilename: string);
 
 implementation
 uses WinSvc, ServiceHelper;
 
 {$R *.dfm}
+
+resourcestring
+  eInvalidConfigurationLine = 'Invalid configuration line: %s';
+  eInvalidStartupType = '%s is not a valid startup type.';
 
 //Returns false if it's a valid comment line or empty line
 function ParseConfigurationLine(ALine: string; out AService: string; out AStartType: string): boolean;
@@ -61,7 +68,7 @@ begin
 
   i_pos := pos('=', ALine);
   if i_pos < 0 then
-    raise Exception.Create('Invalid configuration line: '+ALine);
+    raise Exception.CreateFmt(eInvalidConfigurationLine, [ALine]);
 
   AService := copy(ALine, 1, i_pos-1);
   AStartType := copy(ALine, i_pos+1, MaxInt);
@@ -111,7 +118,7 @@ end;
 function StringToStartType(const AString: string): cardinal;
 begin
   if not TryStringToStartType(AString, Result) then
-    raise EConvertError.Create(AString + ' is not a valid startup type.');
+    raise EConvertError.CreateFmt(eInvalidStartupType, [AString]);
 end;
 
 //Returns the list of services for which we couldn't query the startup configuration
@@ -138,6 +145,25 @@ begin
 
   if Result <> '' then
     delete(Result, 1, 1); //remove initial ","
+end;
+
+resourcestring
+  sSuccess = 'Success';
+  sHadProblems = 'Some problems encountered';
+  sConfigurationSaveFailed =
+    'We didn''t have the rights to query the configuration for the following services:'#13
+    +'%s'#13
+    +'Perhaps you''re not running the application with Administrator rights?';
+
+procedure SaveServiceConfig(AParent: HWND; AServices: TServiceEntries; const AFilename: string);
+var AFailedServices: string;
+begin
+  AFailedServices := Viper_RestoreServiceConfig.WriteServiceConfigFile(AServices, AFilename);
+  if AFailedServices <> '' then
+    MessageBox(AParent,
+      PChar(Format(sConfigurationSaveFailed, [AFailedServices])),
+      PChar(sHadProblems),
+      MB_OK + MB_ICONERROR);
 end;
 
 
@@ -176,26 +202,29 @@ begin
   FreeAndNil(FEntries);
 end;
 
+resourcestring
+  sConfigurationRestored = 'Startup configuration restored successfully.';
+  sConfigurationRestoreFailed =
+    'Could not restore the startup configuration for the following services: %s'#13
+    +'Perhaps you''re not running the application with Administrator rights?';
+  sServicesNotFound = 'Not found: %s';
+  sServicesFailed = 'Failed: %s';
+
 procedure TRestoreServiceConfigForm.btnOKClick(Sender: TObject);
 var ANotFound, AFailed: string;
-  AMSg: string;
 begin
   Self.RestoreServiceConfig(ANotFound, AFailed);
   if (ANotFound <> '') or (AFailed <> '') then begin
-    AMsg := 'Could not restore the startup configuration for the following services:';
-    if ANotFound <> '' then
-      AMsg := AMsg + #13'Not found: '+ANotFound;
     if AFailed <> '' then
-      AMsg := AMSg + #13'Failed: '+AFailed
-        +#13'Perhaps you''re not running the application with Administrator rights?';
+      AFailed := #13 + Format(sServicesFailed, [AFailed]);
+    if ANotFound <> '' then
+      AFailed := #13 + Format(sServicesNotFound, [ANotFound]) + AFailed;
     MessageBox(Self.Handle,
-      PChar(AMsg),
-      PChar('Some problems encountered'),
+      PChar(Format(sConfigurationRestoreFailed, [AFailed])),
+      PChar(sHadProblems),
       MB_OK + MB_ICONERROR);
   end else
-    MessageBox(Self.Handle,
-      PChar('Startup configuration restored successfully.'),
-      PChar('Success'),
+    MessageBox(Self.Handle, PChar(sConfigurationRestored), PChar(sSuccess),
       MB_OK + MB_ICONINFORMATION);
   ModalResult := mrOK;
 end;

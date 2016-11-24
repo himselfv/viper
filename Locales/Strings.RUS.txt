@@ -1,0 +1,59 @@
+sFolderUnknownServices = 'Необычные';
+sFolderRunningServices = 'Работающие';
+sFolderAllServices = 'Все';
+sFolderAllDrivers = 'Драйверы';
+sFolderRunningDrivers = 'Работающие';
+
+ServiceList.Columns[0]=ID
+ServiceList.Columns[1]=Название
+ServiceList.Columns[2]=Состояние
+ServiceList.Columns[3]=Тип запуска
+ServiceList.Columns[4]=Описание
+ServiceList.Columns[5]=Исполняемый файл
+ServiceList.Columns[6]=Защита
+
+
+//Service list
+
+sStatusStopped = 'Остановлена';
+sStatusStartPending = 'Запускается...';
+sStatusStopPending = 'Завершается...';
+sStatusRunning = 'Выполняется';
+sStatusContinuePending = 'Возобновляется...';
+sStatusPausePending = 'Приостанавливается...';
+sStatusPaused = 'Приостановлена';
+sStatusOther = 'Неясно (%d)';
+
+sStartTypeAuto = 'Автоматически';
+sStartTypeDemand = 'Вручную';
+sStartTypeDisabled = 'Отключена';
+sStartTypeBoot = 'Авто (загрузка)';
+sStartTypeSystem = 'Авто (система)';
+
+sProtectionNone = '';
+sProtectionWindows = 'ОС (полная)';
+sProtectionWindowsLight = 'ОС (лёгкая)';
+sProtectionAntimalwareLight = 'Частичная';
+
+
+//Service security edit
+
+sSvcAccessAll       = 'Полный доступ';
+sSvcAccessRead      = 'Чтение';
+sSvcAccessExecute   = 'Пуск, стоп и пауза';
+sSvcAccessWrite     = 'Запись';
+
+sSvcAccessQueryConfig    = 'Чтение настроек';
+sSvcAccessChangeConfig   = 'Изменение настроек';
+sSvcAccessQueryStatus    = 'Запрос состояния';
+sSvcAccessEnumDependents = 'Перечисление зависимостей';
+sSvcAccessStart          = 'Пуск';
+sSvcAccessStop           = 'Стоп';
+sSvcAccessPauseContinue  = 'Пауза и возобновление';
+sSvcAccessInterrogate    = 'Опрос';
+sSvcAccessUserDefinedCtl = 'Иные команды';
+
+sCmnAccessRead           = 'Чтение разрешений';
+sCmnAccessWriteDac       = 'Смена разрешений';
+sCmnAccessWriteOwner     = 'Смена владельца';
+sCmnAccessDelete         = 'Удаление';

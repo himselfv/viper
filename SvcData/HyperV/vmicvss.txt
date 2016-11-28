@@ -1,0 +1,2 @@
+# Hyper-V Volume Shadow Copy Requestor
+# Coordinates the communications that are required to use Volume Shadow Copy Service to back up applications and data on this virtual machine from the operating system on the physical computer.

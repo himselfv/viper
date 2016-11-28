@@ -1,7 +1,8 @@
-Telemetry\Data Collection and Publishing (Crowdsourcing Service)
-TELEMETRY
+# Data Collection and Publishing (Crowdsourcing Service)
+# The DCP (Data Collection and Publishing) service supports first party apps to upload data to cloud.
 
-> The DCP (Data Collection and Publishing) service supports first party apps to upload data to cloud.
+TITLE: Telemetry\%1
+TELEMETRY
 
 Seems to be related to Windows Phone and "crowdsourcing", telemetry. Contains URLs below.
 

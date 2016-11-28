@@ -2,5 +2,4 @@
 Probably Bluetooth-related.
 
 Enables pairing between the system and wired or wireless devices.
-Additional Information
 “Pairing” usually indicates a Bluetooth device. Not sure why “wired” is included in the description.

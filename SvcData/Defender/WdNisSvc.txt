@@ -1,1 +1,2 @@
-Служба проверки сети Защитника Windows
+# Windows Defender Network Inspection Service
+# Helps guard against intrusion attempts targeting known and newly discovered vulnerabilities in network protocols

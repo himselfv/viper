@@ -1,3 +1,2 @@
-Сервер
-
-Поддерживает общий доступ к файлам, принтерам и именованным каналам для данного компьютера через сетевое подключение. Если служба остановлена, такие функции не удастся выполнить. Если данная служба отключена, не удастся запустить любые явно зависимые службы.
+# Server
+# Supports file, print, and named-pipe sharing over the network for this computer. If this service is stopped, these functions will be unavailable. If this service is disabled, any services that explicitly depend on it will fail to start.

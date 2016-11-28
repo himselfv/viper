@@ -1,4 +1,5 @@
-Служба времени Windows
+# Windows Time
+# Maintains date and time synchronization on all clients and servers in the network. If this service is stopped, date and time synchronization will be unavailable. If this service is disabled, any services that explicitly depend on it will fail to start.
 
 The service itself is not required, but time must be kept synchronized finely enough because the following depends on it:
 * Cryptography (various handshakes)
@@ -6,5 +7,3 @@ The service itself is not required, but time must be kept synchronized finely en
 * HTTPS / SSL / TLS / Secure connections
 
 Can be set to manual.
-
-ru:Управляет синхронизацией даты и времени на всех клиентах и серверах в сети. Если эта служба остановлена, синхронизация даты и времени не будет доступна.

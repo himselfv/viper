@@ -1,3 +1,2 @@
-»нтерфейс гостевой службы Hyper-V
-
-»нтерфейс дл€ взаимодействи€ узла Hyper-V с определенными службами, которые выполн€ютс€ на виртуальной машине.
+# Hyper-V Guest Service Interface
+# Provides an interface for the Hyper-V host to interact with specific services running inside the virtual machine.

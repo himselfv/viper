@@ -1,10 +1,9 @@
-Обслуживание компьютера с целью сохранить его в оптимальной производительности, предотвратить потерю данных, обеспечить
+Computer maintenance. Includes:
+* Defragmentation
+* Release of unused resources
+* Backup
+* Restore points
+* Previous versions
+* Shadow copy
 
-Сюда входят:
-* Дефрагментация
-* Освобождение незанятых ресурсов
-* Бэкап
-* Создание точек восстановления
-* Предыдущие версии
-
-Сюда не входят службы, призванные обеспечить нетривиальный дополнительный функционал (например, синхронизацию файлов или поддержку связей между ними). Для этого нужна отдельная категория.
+Does not include services which provide non-trivial additional functions, such as synchronization or link tracking. These should have their own categories.

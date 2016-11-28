@@ -1,3 +1,9 @@
-MMCSS (ѕланировщик классов мультимедиа)
+# Multimedia Class Scheduler service
 
-–азрешает устанавливать относительную приоритетность заданий на основе системных приоритетов задач. Ёто предназначено, в основном, дл€ приложений мультимедиа.  ≈сли эта служба остановлена, отдельным задачам возвращаетс€ их приоритет по умолчанию.
+Can be safely stopped, multimedia apps will work with default scheduling.
+
+Enables multimedia applications to ensure that their time-sensitive processing receives prioritized access to CPU resources. This service enables multimedia applications to utilize as much of the CPU as possible without denying CPU resources to lower-priority applications.
+
+MMCSS uses information stored in the registry to identify supported tasks and determine the relative priority of threads performing these tasks. Each thread that is performing work related to a particular task calls the AvSetMmMaxThreadCharacteristics or AvSetMmThreadCharacteristics function to inform MMCSS that it is working on that task. 
+
+https://msdn.microsoft.com/en-us/library/windows/desktop/ms684247(v=vs.85).aspx

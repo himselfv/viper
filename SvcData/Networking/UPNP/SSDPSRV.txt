@@ -1,3 +1,2 @@
-Обнаружение SSDP
-
-Обнаруживает сетевые устройства и службы, использующие протокол обнаружения SSDP, такие как устройства UPnP. Также объявляет устройства и службы SSDP, работающие на локальном компьютере. Если эта служба остановлена, обнаружение устройств, использующих SSDP, не будет выполняться. Если данная служба отключена, все явно зависящие от нее службы запустить не удастся.
+# SSDP Discovery
+# Discovers networked devices and services that use the SSDP discovery protocol, such as UPnP devices. Also announces SSDP devices and services running on the local computer. If this service is stopped, SSDP-based devices will not be discovered. If this service is disabled, any services that explicitly depend on it will fail to start.

@@ -1,3 +1,3 @@
-Службы подключений удалённого доступа и VPN
+Remote access and VPN connections
 
-Подключения VPN обслуживаются во многом аналогично подключениям удалённого доступа, поскольку тоже являются устанавливаемыми подключениями, образующими при соединении новую сеть.
+VPN connections are managed in many ways similarly to dial-up connections because they are also remote connections which provide access to a network when established.

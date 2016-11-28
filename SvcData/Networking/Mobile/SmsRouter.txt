@@ -1,3 +1,3 @@
+# SMS Router
 
-
-Похоже, действительно принимает и раздаёт подписчикам SMS, поскольку в сети можно найти слова об эвентах от этой службы при получении SMS в эвентлоге.
+Seems to indeed recieve and dispatch SMS to subscrivers since you can google up discussions about eventlog events from this service when receiving SMS.

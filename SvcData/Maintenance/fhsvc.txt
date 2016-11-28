@@ -1,4 +1,2 @@
-Служба истории файлов
-en:File History Service
-
-Защищает файлы пользователя от случайной потери за счет их копирования в резервное расположение
+# File History Service
+# Protects user files from accidental loss by copying them to a backup location

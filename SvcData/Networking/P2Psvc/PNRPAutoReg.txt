@@ -1,3 +1,2 @@
-—лужба публикации имен компьютеров PNRP
-
-Ёта служба публикует им€ компьютера посредством протокола однорангового разрешени€ имен (Peer Name Resolution Protocol).   онфигураци€ управл€етс€ посредством команды netsh с контекстом "p2p pnrp peer" 
+# PNRP Machine Name Publication
+# This service publishes a machine name using the Peer Name Resolution Protocol. Configuration is managed via the netsh context Сp2p pnrp peerТ

@@ -1,3 +1,2 @@
-Брандмауэр Windows
-
-Брандмауэр Windows помогает предотвратить несанкционированный доступ к вашему компьютеру через Интернет или сеть.
+# Windows Firewall
+# Windows Firewall helps protect your computer by preventing unauthorized users from gaining access to your computer through the Internet or a network.

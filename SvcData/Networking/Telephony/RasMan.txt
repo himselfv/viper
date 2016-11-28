@@ -1,7 +1,4 @@
-Remote Access Connection Manager
-ru:Диспетчер подключений удаленного доступа
-
-Управляет подключениями удаленного доступа и виртуальной частной сети (VPN) с данного компьютера к Интернету или другим удаленным сетям. Если данная служба отключена, все явно зависящие от нее службы запустить не удастся.
+# Remote Access Connection Manager
 
 The Remote Access Connection Manager (RasMan) service manages dial-up and VPN connections from your computer to the Internet or other remote networks. When you double-click a connection in the Network Connections folder and then click the Connect button, the Remote Access Connection Manager service either dials the connection or sends a VPN connection request and handles subsequent negotiations with the remote access server to set up the connection.
 

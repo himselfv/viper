@@ -1,3 +1,2 @@
-Рабочая станция
-
-Создает и поддерживает клиентские сетевые подключения к удаленным серверам по протоколу SMB. Если данная служба будет остановлена, эти подключения станут недоступными. Если данная служба отключена, все явно зависящие от нее службы запустить не удастся.
+# Workstation
+# Supports file, print, and named-pipe sharing over the network for this computer. If this service is stopped, these functions will be unavailable. If this service is disabled, any services that explicitly depend on it will fail to start.

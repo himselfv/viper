@@ -1,3 +1,2 @@
-Узел универсальных PNP-устройств
-
-Позволяет размещать устройства UPnP на этом компьютере. Если эта служба остановлена, все UPnP-устройства прекратят работу, и добавить дополнительные устройства будет невозможно. Если данная служба отключена, все явно зависящие от нее службы запустить не удастся.
+# UPnP Device Host
+# Allows UPnP devices to be hosted on this computer. If this service is stopped, any hosted UPnP devices will stop functioning and no additional hosted devices can be added. If this service is disabled, any services that explicitly depend on it will fail to start.

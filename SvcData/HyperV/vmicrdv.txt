@@ -1,3 +1,2 @@
-Служба виртуализации удаленных рабочих столов Hyper-V
-
-Эта служба предоставляет платформу для обмена данными между виртуальной машиной и операционной системой физического компьютера.
+# Hyper-V Remote Desktop Virtualization Session
+# Provides a platform for communication between the virtual machine and the operating system running on the physical computer.

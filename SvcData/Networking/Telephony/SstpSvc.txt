@@ -1,3 +1,2 @@
-Служба SSTP
-
-Обеспечивает поддержку протокола SSTP (Secure Socket Tunneling Protocol) для подключения к удаленным компьютерам с помощью VPN. Если эта служба отключена, пользователи не смогут использовать SSTP для доступа к удаленным серверам.
+# Secure Socket Tunneling Protocol Service
+# Provides support for the Secure Socket Tunneling Protocol (SSTP) to connect to remote computers using VPN. If this service is disabled, users will not be able to use SSTP to access remote servers.

@@ -1,9 +1,9 @@
-NAP\Health Key and Certificate Management
-ru:Управление сертификатами и ключом работоспособности
-pref:nap\
+# Health Key and Certificate Management
+
+TITLE: NAP\%1
 
 The Health Key and Certificate Management (hkmsvc) service provides X.509 certificate and key management services for the Network Access Protection Agent service as part of the Network Access Protection (NAP) platform. Enforcement technologies that use X.509 certificates may not function properly if this service is not installed or is disabled.
 
 The NAP platform helps administrators validate and enforce compliance with system health policies for network access and communication. Administrators can create solutions for validating computers that connect to or communicate on their networks, provide needed updates or access to needed resources, and limit the network access of computers that are noncompliant.
 
-Related to: NAPAgent
+RELATED: NAPAgent

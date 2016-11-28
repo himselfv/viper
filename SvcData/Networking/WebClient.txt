@@ -1,6 +1,7 @@
-Веб-клиент
-
-ru:Позволяет Windows-программам создавать, получать доступ и изменять файлы, хранящиеся в Интернете. Если эта служба остановлена, эти функции не доступны. Если эта служба отключена, любые службы, которые явно зависят от нее, не могут быть запущены.
+# WebClient
+# Enables Windows-based programs to create, access, and modify Internet-based files.
 
 The WebClient (WebClient) service enables Win32 applications to access documents on the Internet. The service extends the network capability of Windows by allowing standard Win32 applications to create, read, and write files on Internet file servers through the use of WebDAV, a file-access protocol that is described in XML and uses HTTP for communication. Because it uses standard HTTP, WebDAV communicates using existing Internet infrastructure, such as firewalls and routers.
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_webclient
+
+Can be disabled, unless you want the functionality (you rarely do).

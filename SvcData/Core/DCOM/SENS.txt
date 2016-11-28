@@ -1,5 +1,6 @@
-SENS\System Event Notification Service
+# System Event Notification Service
+# Monitors system events and notifies subscribers to COM+ Event System of these events.
 
-Monitors system events and notifies subscribers to COM+ Event System of these events.
+TITLE: SENS\System Event Notification Service
 
-Требуется для работы профилей пользователей, или кроме администраторов никто не залогинится.
+CRITICAL: Reqired for user profiles to work, or no one except Administrators will be able to log in.

@@ -1,1 +1,1 @@
-Средство построения конечных точек Windows Audio
+# Windows Audio Endpoint Builder

@@ -1,5 +1,5 @@
-Служба помощника по совместимости программ
+# Program Compability Assistant Service
+# This service provides support for the Program Compatibility Assistant (PCA).
+# PCA monitors programs installed and run by the user and detects known compatibility problems. If this service is stopped, PCA will not function properly.
 
-Обеспечивает поддержку помощника по совместимости программ. Он следит за программами, устанавливаемыми и запускаемыми пользователем, и обнаруживает известные проблемы, связанные с совместимостью. Если остановить данную службу, то помощник по совместимости программ будет работать неправильно.
-
-Note: отключение не влияет на прямо переданные шимы (напр. AppLocale или шимы, заданные в переменных окружения)
+Disabling does not affect explicitly enforced shims (i.e. AppLocale or shims configred in the environment variables)

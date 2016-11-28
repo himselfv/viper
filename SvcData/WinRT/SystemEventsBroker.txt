@@ -1,3 +1,2 @@
-Брокер системных событий
-
-Координирует выполнение фоновой работы для приложения WinRT. Если эта служба остановлена или отключена, фоновую работу невозможно инициировать.
+# System Events Broker
+# Coordinates execution of background work for WinRT application. If this service is stopped or disabled, then background work might not be triggered.

@@ -1,5 +1,5 @@
-ehSched (Служба планировщика Windows Media Center)
+# Windows Media Center Scheduler Service
 
-Начало и остановка записи телепрограмм в Windows Media Center
+Starts and stops TV broadcast recording in Windows Media Center.
 
 +Windows 7

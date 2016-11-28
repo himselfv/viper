@@ -1,3 +1,2 @@
-Защита программного обеспечения
-
-Разрешает скачивание, установку и принудительное применение цифровых лицензий для Windows и приложений Windows. Если служба отключена, возможно, операционная система и лицензированные приложения будут работать в режиме уведомления. Настоятельно рекомендуется не отключать службу защиты программного обеспечения.
+# Software Protection
+# Enables the download, installation and enforcement of digital licenses for Windows and Windows applications. If the service is disabled, the operating system and licensed applications may run in a notification mode. It is strongly recommended that you not disable the Software Protection service.

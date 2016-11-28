@@ -1,0 +1,4 @@
+# Windows Installer
+# Adds, modifies, and removes applications provided as a Windows Installer (*.msi, *.msp) package. If this service is disabled, any services that explicitly depend on it will fail to start.
+
+Manages *.msi installations. Low-level installation of assemblies is done by Trusted Installer, but msiserver overlooks the higher, package level.

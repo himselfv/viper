@@ -1,3 +1,2 @@
-Хост поставщика функции обнаружения
-
-В службе FDPHOST размещаются поставщики обнаружения сетевых ресурсов компонента обнаружения функций. Эти поставщики обнаружения функций обеспечивают службы обнаружения сетевых ресурсов для протоколов SSDP и WS-D. Остановка или отключение службы FDPHOST приведет к отключению обнаружения сетевых ресурсов для этих протоколов при использовании обнаружения функций. Если эта служба недоступна, сетевые службы, работа которых зависит от компонента обнаружения функций и данных протоколов обнаружения, не смогут находить сетевые устройства или ресурсы.
+# Function Discovery Provider Host
+# The FDPHOST service hosts the Function Discovery (FD) network discovery providers. These FD providers supply network discovery services for the Simple Services Discovery Protocol (SSDP) and Web Services – Discovery (WS-D) protocol. Stopping or disabling the FDPHOST service will disable network discovery for these protocols when using FD. When this service is unavailable, network services using FD and relying on these discovery protocols will be unable to find network devices or resources.

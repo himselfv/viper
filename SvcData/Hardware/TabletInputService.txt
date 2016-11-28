@@ -1,1 +1,2 @@
-Служба сенсорной клавиатуры и панели рукописного ввода
+# Touch Keyboard and Handwriting Panel Service
+# Enables Touch Keyboard and Handwriting Panel pen and ink functionality

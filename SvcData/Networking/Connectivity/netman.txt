@@ -1,0 +1,2 @@
+# Network Connections
+# Manages objects in the Network and Dial-Up Connections folder, in which you can view both local area network and remote connections.

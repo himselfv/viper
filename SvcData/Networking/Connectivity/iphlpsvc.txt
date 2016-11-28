@@ -1,3 +1,2 @@
-Вспомогательная служба IP
-
-Обеспечивает возможность туннельного подключения с помощью технологий туннелирования для IP версии 6 (6to4, ISATAP, порты прокси и Teredo), а также IP-HTTPS. Если остановить эту службу, компьютер не сможет использовать дополнительные возможности подключения, предоставляемые этими технологиями.
+# IP Helper
+# Provides tunnel connectivity using IPv6 transition technologies (6to4, ISATAP, Port Proxy, and Teredo), and IP-HTTPS. If this service is stopped, the computer will not have the enhanced connectivity benefits that these technologies offer.

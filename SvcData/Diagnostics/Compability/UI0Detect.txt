@@ -1,5 +1,4 @@
-Обнаружение интерактивных служб
+# Interactive Services Detection
+# Enables user notification of user input for interactive services, which enables access to dialogs created by interactive services when they appear. If this service is stopped, notifications of new interactive service dialogs will no longer function and there might not be access to interactive service dialogs. If this service is disabled, both notifications of and access to new interactive service dialogs will no longer function.
 
-Включает уведомление пользователя о необходимости пользовательского ввода для интерактивных служб, которое предоставляет доступ к диалоговым окнам, созданным интерактивными службами, по мере их появления. Если данная служба будет остановлена, уведомления новых диалоговых окон интерактивных служб не будут работать, и доступ к диалоговым окнам интерактивных служб станет невозможен. Если данная служба отключена, ни уведомления новых диалоговых окон интерактивных служб, ни доступ к этим окнам не будут работать.
-
-Note: Если на компьютере не используются интерактивные службы, можно оставить вручную.
+Can be safely set to manual if you don't use interactive services.

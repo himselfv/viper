@@ -1,1 +1,1 @@
-Диспетчер удостоверения сетевых участников
+# Peer Networking Identity Manager

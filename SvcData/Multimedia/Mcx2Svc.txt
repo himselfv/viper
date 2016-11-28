@@ -1,3 +1,2 @@
-Служба медиаприставки Media Center
-
-Позволяет медиаприставке Media Center находить компьютер и подключаться к нему.
+# Media Center Extender Service
+# Allows Media Center Extenders to locate and connect to the computer.

@@ -1,3 +1,2 @@
-Служба синхронизации времени Hyper-V
-
-Служба синхронизует таймеры этой виртуальной машины и физического компьютера.
+# Hyper-V Time Synchronization Service
+# Synchronizes the system time of this virtual machine with the system time of the physical computer.

@@ -1,4 +1,4 @@
-Диспетчер локальных сеансов
-FORCED
+# Local Session Manager
+# Core Windows Service that manages local user sessions. Stopping or disabling this service will result in system instability.
 
-Основная служба Windows, которая управляет локальными сеансами пользователей. Остановка или отключение этой службы приведет к нестабильной работе системы.
+CRITICAL: Won't log in.

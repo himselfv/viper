@@ -1,3 +1,2 @@
-Установщик ActiveX (AxInstSV)
-
-ru:Обеспечивает проверку контроля учетных записей для установки элементов ActiveX из Интернета и разрешает управление установкой элементов ActiveX в зависимости от параметров групповой политики. Эта служба запускается по требованию и, если она отключена, установка элементов ActiveX будет выполняться в соответствии с настройками браузера по умолчанию.
+# ActiveX Installer (AxInstSV)
+# Provides User Account Control validation for the installation of ActiveX controls from the Internet and enables management of ActiveX control installation based on Group Policy settings. This service is started on demand and if disabled the installation of ActiveX controls will behave according to default browser settings.

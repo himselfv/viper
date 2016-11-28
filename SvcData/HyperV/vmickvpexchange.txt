@@ -1,3 +1,2 @@
-Служба обмена данными (Hyper-V)
-
-Служба предоставляет механизм обмена данными между виртуальной машиной и операционной системой физического компьютера.
+# Hyper-V Data Exchange Service
+# Provides a mechanism to exchange data between the virtual machine and the operating system running on the physical computer.

@@ -1,5 +1,4 @@
-Windows Activation Technologies Service
-ru:Служба технологий активации Windows
+# Windows Activation Technologies Service
 
 Microsoft service that periodically determines if your Windows Product ID is valid, and if not, displays warnings that your copy of Windows may not be Genuine.
 

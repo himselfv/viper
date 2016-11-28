@@ -1,3 +1,2 @@
-Локатор удаленного вызова процедур (RPC)
-
-В Windows 2003 и более ранних версиях Windows служба "Локатор удаленного вызова процедур (RPC)" управляла базой данных службы имен RPC. В Windows Vista и более поздних версиях Windows эта служба не выполняет каких-либо функций и присутствует для обеспечения совместимости с устаревшими приложениями.
+# Remote Procedure Call (RPC) Locator
+# In Windows 2003 and earlier versions of Windows, the Remote Procedure Call (RPC) Locator service manages the RPC name service database. In Windows Vista and later versions of Windows, this service does not provide any functionality and is present for application compatibility.

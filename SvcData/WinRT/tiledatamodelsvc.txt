@@ -1,3 +1,2 @@
-Сервер моделей данных плиток
-
-Сервер плиток для обновления плиток.
+# Tile Data model server
+# Tile Server for tile updates.

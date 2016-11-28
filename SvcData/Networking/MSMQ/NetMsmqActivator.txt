@@ -1,7 +1,4 @@
-Net.Msmq Listener Adapter
-ru:Адаптер прослушивателя Net.Msmq
-
-ru:Получает запросы на активацию по протоколам net.msmq и msmq.formatname и передает их Службе активации процессов Windows.
+# Net.Msmq Listener Adapter
 
 Related to WSA, MSMQ.
 

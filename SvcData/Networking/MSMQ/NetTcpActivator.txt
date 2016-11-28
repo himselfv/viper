@@ -1,7 +1,4 @@
-Net.Tcp Listener Adapter
-ru:Адаптер прослушивателя Net.Tcp
-
-ru:Получает запросы на активацию по протоколу net.tcp и передает их Службе активации процессов Windows.
+# Net.Tcp Listener Adapter
 
 Related to WSA.
 Not to be confused with NetTcpPortSharing, which is mostly unrelated to WSA.

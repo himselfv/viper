@@ -1,7 +1,4 @@
 Net.Pipe Listener Adapter
-ru:Адаптер прослушивателя Net.Pipe
-
-ru:Получает запросы на активацию по протоколу net.pipe и передает их Службе активации процессов Windows.
 
 Related to WSA.
 

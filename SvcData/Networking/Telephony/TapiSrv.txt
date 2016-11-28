@@ -1,3 +1,2 @@
-Телефония
-
-Обеспечивает поддержку Telephony API (TAPI) для программ, управляющих телефонным оборудованием на этом компьютере, а также через ЛВС - на серверах, где запущена соответствующая служба.
+# Telephony
+# Provides support for the Secure Socket Tunneling Protocol (SSTP) to connect to remote computers using VPN. If this service is disabled, users will not be able to use SSTP to access remote servers.

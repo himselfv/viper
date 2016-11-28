@@ -1,3 +1,2 @@
-—лужба пульса (Hyper-V)
-
-Ёта служба следит за состо€нием виртуальной машины и регул€рно генерирует пульс. ќна помогает вы€вл€ть выполн€ющиес€ виртуальные машины, которые перестали отвечать.
+# Hyper-V Heartbeat Service
+# Monitors the state of this virtual machine by reporting a heartbeat at regular intervals. This service helps you identify running virtual machines that have stopped responding.

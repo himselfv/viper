@@ -1,3 +1,2 @@
-ѕеренаправитель портов пользовательского режима служб удаленных рабочих столов
-
-ѕозвол€ет выполнить перенаправление принтеров, драйверов или портов дл€ подключений к удаленному рабочему столу
+# Remote Desktop Services UserMode Port Redirector service
+# Allows the redirection of Printers/Drives/Ports for RDP connections.

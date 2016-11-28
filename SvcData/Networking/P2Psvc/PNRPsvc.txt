@@ -1,1 +1,2 @@
-Протокол PNRP
+# Peer Name Resolution Protocol
+# Enables serverless peer name resolution over the Internet using the Peer Name Resolution Protocol (PNRP). If disabled, some peer-to-peer and collaborative applications, such as Remote Assistance, may not function.

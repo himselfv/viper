@@ -1,3 +1,2 @@
-Служба завершения работы в качестве гостя (Hyper-V)
-
-Она также предоставляет механизм завершения работы операционной системы этой виртуальной машины с помощью интерфейса управления физического компьютера.
+# Hyper-V Guest Shutdown Service
+# Provides a mechanism to shut down the operating system of this virtual machine from the management interfaces on the physical computer.

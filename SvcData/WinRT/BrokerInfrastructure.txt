@@ -1,4 +1,2 @@
-Служба инфраструктуры фоновых задач.
-FORCED
-
-Служба инфраструктуры Windows, контролирующая возможность выполнения фоновых задач в системе.
+# Broker Infrastructure
+# Windows infrastructure service that controls which background tasks can run on the system.

@@ -1,3 +1,2 @@
-Служба сеансов виртуальных машин Hyper-V
-
-Обеспечивает механизм управления виртуальной машиной через PowerShell с помощью сеанса виртуальной машины без виртуальной сети.
+# Hyper-V PowerShell Direct Service
+# Provides a mechanism to manage virtual machine with PowerShell via VM session without a virtual network.

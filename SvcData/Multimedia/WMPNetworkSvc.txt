@@ -1,7 +1,4 @@
-Windows Media Player Network Sharing Service
-ru:Служба общих сетевых ресурсов проигрывателя Windows Media
-
-Shares Windows Media Player libraries to other networked players and media devices using Universal Plug and Play.
-ru: Общий доступ к библиотекам проигрывателя Windows Media к другим сетевым проигрывателям и самонастраиваемым устройствам.
+# Windows Media Player Network Sharing Service
+# Shares Windows Media Player libraries to other networked players and media devices using Universal Plug and Play.
 
 Can be added or removed from "Turn Windows Features on or off".

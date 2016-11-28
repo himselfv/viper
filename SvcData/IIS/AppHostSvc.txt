@@ -1,3 +1,5 @@
-Служба поддержки узла приложений
+# IIS Application Host Helper Service
 
-Является административной службой IIS. Например, она предоставляет журнал конфигураций и сопоставление учетных записей пула приложений. Если эту службу остановить, не будут работать журнал конфигураций и блокировка файлов и каталогов с помощью определенных элементов управления доступом к пулу приложений.
+Enables IIS configuration history and application pool SID (security identifier) mapping. It enables the configuration history functionality by saving the ApplicationHost.config file to separate configuration history subdirectories at set intervals. 
+
+https://technet.microsoft.com/en-us/library/cc735036(v=ws.10).aspx

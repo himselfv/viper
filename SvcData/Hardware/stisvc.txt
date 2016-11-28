@@ -1,4 +1,4 @@
-WIA\Windows Image Acquisition
-ru:Служба загрузки изображений Windows (WIA)
+# Windows Image Acquisition (WIA)
+# Provides image acquisition services for scanners and cameras
 
-Обеспечивает службы получения изображений со сканеров и цифровых камер.
+TITLE: WIA\%1

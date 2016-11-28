@@ -1,5 +1,5 @@
-ehRecvr (Служба ресивера Windows Media Center)
+# Windows Media Center Receiver Service
 
-Служба Windows Media Center для приема ТВ и FM-передач
+Windows Media Center Service to receive TV and FM broadcasts.
 
 +Windows 7

@@ -1,3 +1,2 @@
-Сведения о приложении
-
-Обеспечивает выполнение интерактивных приложений с дополнительными административными привилегиями.  Если эта служба будет остановлена, пользователи не смогут запускать приложения с дополнительными административными привилегиями, которые могут потребоваться для выполнения нужных пользовательских заданий.
+# Application Information
+# Facilitates the running of interactive applications with additional administrative privileges.  If this service is stopped, users will be unable to launch applications with the additional administrative privileges they may require to perform desired user tasks.

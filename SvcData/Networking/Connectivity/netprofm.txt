@@ -1,3 +1,2 @@
-Служба списка сетей
-
-Определяет сети, к которым подключен компьютер, собирает и хранит данные о свойствах этих сетей и оповещает приложения об изменении этих свойств.
+# Network List Service
+# Identifies the networks to which the computer has connected, collects and stores properties for these networks, and notifies applications when these properties change.

@@ -1,4 +1,2 @@
-Служба лицензий клиента
-FORCED MANUAL
-
-Обеспечивает поддержку инфраструктуры для Microsoft Store. Эта служба запускается по требованию, и при ее отключении приложения, приобретенные с помощью Магазина Windows, не будут работать правильно.
+# ClipSVC
+# Provides infrastructure support for the Microsoft Store. This service is started on demand and if disabled applications bought using Windows Store will not behave correctly.

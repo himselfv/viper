@@ -1,3 +1,2 @@
-DHCP-клиент
-
-Регистрирует и обновляет IP-адреса и DNS-записи для этого компьютера. Если данная служба остановлена, этот компьютер не сможет получать динамические IP-адреса и выполнять обновления DNS. Если эта служба отключена, любые службы, которые явно зависят от нее, не могут быть запущены.
+# DHCP Client
+# Registers and updates IP addresses and DNS records for this computer. If this service is stopped, this computer will not receive dynamic IP addresses and DNS updates. If this service is disabled, any services that explicitly depend on it will fail to start.

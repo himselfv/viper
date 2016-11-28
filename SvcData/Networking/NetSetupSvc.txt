@@ -1,3 +1,2 @@
-Служба настройки сети
-
-Служба настройки сети управляет установкой сетевых драйверов и разрешает конфигурацию низкоуровневых параметров сети. В случае остановки этой службы все выполняемые установки драйверов могут быть отменены.
+# Network Setup Service
+# The Network Setup Service manages the installation of network drivers and permits the configuration of low-level network settings.  If this service is stopped, any driver installations that are in-progress may be cancelled.

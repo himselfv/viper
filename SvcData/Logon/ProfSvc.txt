@@ -1,1 +1,2 @@
-Служба профилей пользователей
+# User Profile Service
+# This service is responsible for loading and unloading user profiles. If this service is stopped or disabled, users will no longer be able to successfully sign in or sign out, apps might have problems getting to users' data, and components registered to receive profile event notifications won't receive them.

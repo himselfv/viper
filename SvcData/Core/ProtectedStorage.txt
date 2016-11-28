@@ -1,4 +1,4 @@
-Provides protected storage for sensitive data, such as passwords, to prevent access by unauthorized services, processes, or users.
+# Provides protected storage for sensitive data, such as passwords, to prevent access by unauthorized services, processes, or users.
 
 Not to be confused with VaultSvc. Seems to be unrelated to saved passwords from "Manage your credentials" (see VaultSvc for that).
 

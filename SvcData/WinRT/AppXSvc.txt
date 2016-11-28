@@ -1,3 +1,2 @@
-Служба развертывания AppX (AppXSVC)
-
-Обеспечивает поддержку инфраструктуры для Магазина Windows. Эта служба запускается по требованию. Если она отключена, приложения из Магазина не будут развертываться в системе и могут работать неправильно.
+# AppX Deployment Service
+# Provides infrastructure support for deploying Store applications. This service is started on demand and if disabled Store applications will not be deployed to the system, and may not function properly.

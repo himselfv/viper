@@ -1,3 +1,3 @@
-Модуль запуска процессов DCOM-сервера
-FORCED
-CORE
+# DCOM Server Process Launcher
+
+CRITICAL: Most of the OS won't work.

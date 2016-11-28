@@ -1,4 +1,6 @@
-WIA\Still Image Acquisition Events
-События получения неподвижных изображений
+# Still Image Acquisition Events
+# Launches applications associated with still image acquisition events.
 
-Запуск приложений, связанных с событиями загрузки неподвижных изображений.
+TITLE: WIA\%1
+
+RELATED: WIA

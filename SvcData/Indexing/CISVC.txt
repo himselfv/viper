@@ -1,4 +1,4 @@
-Indexing Service
+# Indexing Service
 
 Replaced by: Windows Search.
 

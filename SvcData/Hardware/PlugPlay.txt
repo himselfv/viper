@@ -1,0 +1,4 @@
+# Plug and Play
+# Enables a computer to recognize and adapt to hardware changes with little or no user input. Stopping or disabling this service will result in system instability.
+
+CRITICAL: The system will not boot.

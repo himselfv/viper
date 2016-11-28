@@ -1,3 +1,2 @@
-Тополог канального уровня
-
-Создает карту сети, содержащую сведения о топологии компьютеров и устройств (подключений), а также метаданные, описывающие каждый компьютер и устройство.  Если эта служба отключена, карта сети будет работать неправильно.
+# Link-Layer Topology Discovery Mapper
+# Creates a Network Map, consisting of PC and device topology (connectivity) information, and metadata describing each PC and device.  If this service is disabled, the Network Map will not function properly.

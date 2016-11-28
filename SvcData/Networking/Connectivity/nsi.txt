@@ -1,6 +1,4 @@
-Служба интерфейса сохранения сети
-CORE
+# Network Store Interface
+# This service delivers network notifications (e.g. interface addition/deleting etc) to user mode clients. Stopping this service will cause loss of network connectivity. If this service is disabled, any other services that explicitly depend on this service will fail to start.
 
-This service delivers network notifications (e.g. interface addition/deleting etc) to user mode clients. Stopping this service will cause loss of network connectivity. If this service is disabled, any other services that explicitly depend on this service will fail to start.
-
-От неё зависит целая куча сетевых служб, так что видимо, правда core.
+Whole bunch of network services depends on this so it is probably indeed critical.

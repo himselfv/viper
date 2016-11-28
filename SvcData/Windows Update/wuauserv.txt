@@ -1,3 +1,4 @@
-Центр обновления Windows
+# Windows Update
+# Enables the detection, download, and installation of updates for Windows and other programs. If this service is disabled, users of this computer will not be able to use Windows Update or its automatic updating feature, and programs will not be able to use the Windows Update Agent (WUA) API.
 
-Включает обнаружение, скачивание и установку обновлений для Windows и других программ. Если эта служба отключена, пользователи данного компьютера не смогут использовать службу Центра обновления Windows либо возможности автоматического обновления и программы не смогут использовать API агента Центра обновления Windows (WUA).
+Titular service for the Update engine. Queries Microsoft Update for new updates, uses BITS to dowload them, then uses UsoSvc to orchestrate their installation on reboot, which is done via TrustedInstaller which installs packages and assemblies.

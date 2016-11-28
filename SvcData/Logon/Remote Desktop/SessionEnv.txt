@@ -1,3 +1,2 @@
-Настройка сервера удаленных рабочих столов
-
-Служба настройки сервера удаленных рабочих столов (RDCS) отвечает за все действия, связанные с настройкой и обслуживанием сеансов служб удаленных рабочих столов и удаленного доступа, для которых необходим контекст SYSTEM. Это касается временных папок сеансов, тем и сертификатов удаленных рабочих столов.
+# Remote Desktop Configuration service
+# Remote Desktop Configuration service (RDCS) is responsible for all Remote Desktop Services and Remote Desktop related configuration and session maintenance activities that require SYSTEM context. These include per-session temporary folders, RD themes, and RD certificates.

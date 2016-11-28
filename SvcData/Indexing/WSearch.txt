@@ -1,0 +1,2 @@
+# Windows Search
+# Provides content indexing, property caching, and search results for files, e-mail, and other content.

@@ -1,10 +1,9 @@
-Volume Shadow Copy
+# Volume Shadow Copy
+# Manages and implements Volume Shadow Copies used for backup and other purposes.
 
 The Volume Shadow Copy (VSS) service manages and implements volume shadow copies, which are used for backup and other purposes, and manages the volume snapshots.
 
 Needed mostly when creating System Restore points, and for any third-party backup solutions which use it.
-
------
 
 When a backup application attempts to start a backup with the new snapshots infrastructure, the backup application determines the number of writers that are currently active on the service and then queries each writer to gather the required metadata. The backup application can then collect the volumes that require a shadow copy to ensure a successful backup session. The volumes are presented to the shadow copy coordinator and a shadow copy is created. The shadow copy creates volumes that match the original volumes at the shadow copy point in time.
 

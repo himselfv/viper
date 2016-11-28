@@ -1,3 +1,2 @@
-Диспетчер настройки устройств
-
-Enables the detection, download and installation of device-related software. If this service is disabled, devices may be configured with outdated software, and may not work correctly.
+# Device Setup Manager
+# Enables the detection, download and installation of device-related software. If this service is disabled, devices may be configured with outdated software, and may not work correctly.

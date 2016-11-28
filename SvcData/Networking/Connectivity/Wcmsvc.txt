@@ -1,6 +1,4 @@
-Диспетчер подключений Windows
+# Windows Connection Manager
+# Makes automatic connect/disconnect decisions based on the network connectivity options currently available to the PC and enables management of network connectivity based on Group Policy settings.
 
-Принимает решения об автоматическом подключении или отключении, исходя из доступных для ПК параметров подключения к сети, и позволяет управлять подключениями к сети с помощью параметров групповой политики.
-
-
-Похоже, что требуется для правильной работы в Windows 10 значка сетевого подключения. Без него значок будет всегда показывать отсутствие сети, а во всплывающем списке над ним не будет подключений.
+Win10: Apparently required for proper functioning of network connections tray icon. Without it, tray icon will always show lack of connectivity, and its popup network list will be empty.

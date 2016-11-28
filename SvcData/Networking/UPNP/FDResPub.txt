@@ -1,3 +1,2 @@
-Публикация ресурсов обнаружения функции
-
-Публикует этот компьютер с его ресурсами, так что их можно будет обнаружить в сети.  Если эта служба остановлена, то сетевые ресурсы уже не будут публиковаться и не будут обнаруживаться другими компьютерами в сети.
+# Function Discovery Resource Publication
+# Publishes this computer and resources attached to this computer so they can be discovered over the network.  If this service is stopped, network resources will no longer be published and they will not be discovered by other computers on the network.

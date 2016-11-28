@@ -1,9 +1,7 @@
-ru:Служба уведомления SPP
-
-ru:Обеспечение активации и уведомлений лицензирования программного обеспечения.
+# SPP Notification Service
 
 The SPP Notification Service (sppuinotify) provides software licensing activation and notification.
 
 Default: Manual
 
-Probably related to: sppsvc
+RELATED: sppsvc

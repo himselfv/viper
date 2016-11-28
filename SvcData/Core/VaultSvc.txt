@@ -1,4 +1,4 @@
-Provides secure storage and retrieval of credentials to users, applications and security service packages.
+# Provides secure storage and retrieval of credentials to users, applications and security service packages.
 
 Manages saved passwords and credentials from "Manage your credentials". Starts on demand.
 

@@ -1,3 +1,2 @@
-Служба репозитория состояний
-
-Обеспечивает поддержку требуемой инфраструктуры для модели приложения.
+# State Repository Service
+# Provides required infrastructure support for the application model.

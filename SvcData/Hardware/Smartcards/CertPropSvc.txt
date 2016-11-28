@@ -1,6 +1,5 @@
-Certificate Propagation
-
-Copies user certificates and root certificates from smart cards into the current user’s certificate store, detects when a smart card is inserted into a smart card reader, and, if needed, installs the smart card Plug and Play minidriver.
+# Certificate Propagation
+# Copies user certificates and root certificates from smart cards into the current user’s certificate store, detects when a smart card is inserted into a smart card reader, and, if needed, installs the smart card Plug and Play minidriver.
 
 Smart Cards are credit card sized with embedded microchips with encoded information to include anything desired, but usually access privledges. If you do not use Smart Cards on your computer, this service can safely be disabled.
 

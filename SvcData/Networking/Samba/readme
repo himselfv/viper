@@ -1,5 +1,5 @@
-Samba или SMB, также известен как Lanman - сетевой протокол для общего доступа к расшаренным папкам и принтерам. Если компьютер в локальной сети один, или общий доступ к файлам и принтерам не используется, то большинство компонент можно отключить.
+Samba or SMB, also known as Lanman, is a network protocol for sharing access to files and printers. If the PC is not connected to the local area network, or shared file and printer access is not used, most components can be disabled.
 
-Особое внимание стоит уделить lmhosts (модуль поддержки NetBIOS через TCP/IP), поскольку он влияет не только на SMB.
+lmhosts is of particular importance, as it may be required not only to SMB.
 
-Не имеет отношения к домашним группам (Home Group).
+Unrelated to Home Groups.

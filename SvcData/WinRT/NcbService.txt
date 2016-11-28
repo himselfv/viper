@@ -1,4 +1,2 @@
-Network Connection Broker
-ru:Посредник подключений к сети
-
-Подключения к посредникам, позволяющие приложениям Магазина Windows получать уведомления из Интернета.
+# Network Connection Broker
+# Brokers connections that allow Windows Store Apps to receive notifications from the internet.

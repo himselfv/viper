@@ -1,4 +1,4 @@
-Windows Error Reporting Service
+# Windows Error Reporting Service
 
 The Windows Error Reporting Service (WerSvc) reports errors when programs stop working or responding and enables existing solutions to be delivered. It also generates logs for the Problem Reports and Solutions diagnostic and repair service. If this service is stopped, programs and services that rely on this service will not report errors correctly, and the results of diagnostic services and repairs for those programs and services will not be displayed.
 

@@ -1,0 +1,32 @@
+Description file format:
+
+All information should be in English at the moment.
+
+Each service must have at most one description file at the moment. Multi-filing is not supported for a variety of reasons.
+
+By default the information is valid for all versions of the OS where the service is present. Version-dependent comments are in developement, not standardized at the moment.
+
+# Comments
+# Use to store additional information which is nice to have around,
+# but not required in the UI.
+
+# It's a good idea to have English-language display name and description # in the first two comment lines of the file.
+
+Special notes in the file:
+
+TITLE: Overrides display title for the service (useful for services with totally non-descriptive titles). Do not abuse. %1 is replaced with original title (to preserve localized titles).
+
+CRITICAL: This service is required for a core system functionality to work. If you disable it, you will not be able to boot/log on/run most applications.
+CRITICAL: Description may explains the consequences of disabling. There may be several CRITICAL entries.
+
+REQUIRES: Additional requirements for this service when they are not specified in the OS dependencies.
+RELATED: Lists related services, comma-separated.
+
+TELEMETRY: This service phones home.
+
+What to note:
+- Does Manual mode break anything or will it properly run when needed?
+- Does Disabled mode break anything?
+- Does it always run anyway when in Manual mode? (E.g. ShellHWDetection). Under which conditions? (E.g. Explorer starts some, others autorun under more basic conditions)
+- Does it auto-reenable itself when disabled? Does something else (e.g. a task, another system component) reenable it?
+- Does it indeed auto-shutdown after completing its work? (There are such nice services)

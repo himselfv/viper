@@ -1,6 +1,4 @@
-Помощник по подключению к сети
-TODO
+# Network Connectivity Assistant
+# Provides DirectAccess status notification for UI components
 
-Вывод уведомления о состоянии DirectAccess для компонентов пользовательского интерфейса
-
-Win10: Похоже, не влияет на иконку подключений. Однако если стоит "Вручную", то пытается запуститься при запуске.
+Win10: Doesn't seem to affect connections icon. But if set to Manual, tries to auto-start.

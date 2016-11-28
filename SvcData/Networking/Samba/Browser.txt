@@ -1,6 +1,5 @@
-Браузер компьютеров
-
-Обслуживает список компьютеров в сети, предоставляющих расшаренные ресурсы, и выдает его программам по запросу. Достаточно, чтобы один компьютер в сети выполнял такую службу. Если служба запущена на нескольких, то при выключении одного другой автоматически возьмёт на себя его функции.
+# Computer Browser
+# Maintains an updated list of computers on the network and supplies this list to computers designated as browsers. If this service is stopped, this list will not be updated or maintained. If this service is disabled, any services that explicitly depend on it will fail to start.
 
 http://smallvoid.com/article/winnt-services-browser.html
 Enables the computer to participate in the election for maintaining the browser list.

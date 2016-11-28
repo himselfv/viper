@@ -1,1 +1,5 @@
-Агент политики IPSec
+# IPsec Policy Agent
+# Internet Protocol security (IPsec) supports network-level peer authentication, data origin authentication, data integrity, data confidentiality (encryption), and replay protection.
+# This service enforces IPsec policies created through the IP Security Policies snap-in or the command-line tool "netsh ipsec".
+# If you stop this service, you may experience network connectivity issues if your policy requires that connections use IPsec.
+# Also,remote management of Windows Firewall is not available when this service is stopped.

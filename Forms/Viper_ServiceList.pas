@@ -484,6 +484,7 @@ end;
 procedure TServiceList.ServiceInvalidated(Sender: TObject);
 begin
   vtServices.IterateSubtree(nil, InvalidateServiceNode, TServiceEntry(Sender));
+  SelectionChanged; //in case it was selected
 end;
 
 procedure TServiceList.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;

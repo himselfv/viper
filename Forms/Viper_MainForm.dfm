@@ -76,23 +76,41 @@ object MainForm: TMainForm
       Top = 416
       Width = 857
       Height = 193
-      ActivePage = tsTriggers
+      ActivePage = tsDescription
       Align = alBottom
       TabOrder = 2
       object tsDescription: TTabSheet
         Caption = 'Info'
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
+        object Label1: TLabel
+          Left = 0
+          Top = 49
+          Width = 849
+          Height = 13
+          Align = alTop
+          Caption = 'Additional info:'
+          ExplicitWidth = 72
+        end
         object mmDetails: TMemo
           Left = 0
           Top = 0
           Width = 849
-          Height = 165
-          Align = alClient
+          Height = 49
+          Align = alTop
+          BorderStyle = bsNone
+          ParentColor = True
           ReadOnly = True
           TabOrder = 0
+        end
+        object mmAdditionalInfo: TMemo
+          Left = 0
+          Top = 62
+          Width = 849
+          Height = 103
+          Align = alClient
+          BorderStyle = bsNone
+          ParentColor = True
+          ReadOnly = True
+          TabOrder = 1
         end
       end
       object tsDependencies: TTabSheet
@@ -160,7 +178,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800580010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800680010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -406,7 +424,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800500010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800600010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

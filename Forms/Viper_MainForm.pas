@@ -10,11 +10,15 @@ uses
 
 type
  //Service information loaded from Catalogue
+  TServiceFlag = (sfCritical, sfTelemetry);
+  TServiceFlags = set of TServiceFlag;
   TServiceInfo = class
   public
     ServiceName: string;
     DisplayName: string;
     Description: string;
+    CriticalText: string;
+    Flags: TServiceFlags;
   end;
 
   TServiceCatalogue = class(TObjectList<TServiceInfo>)
@@ -105,6 +109,8 @@ type
     Debug1: TMenuItem;
     miShowLog: TMenuItem;
     edtQuickFilter: TEdit;
+    Label1: TLabel;
+    mmAdditionalInfo: TMemo;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -193,7 +199,7 @@ end;
 function TExtServiceEntry.GetEffectiveDisplayName: string;
 begin
   if (Info <> nil) and (Info.DisplayName <> '') then
-    Result := Info.DisplayName
+    Result := Info.DisplayName.Replace('%1', inherited)
   else
     Result := inherited;
 end;
@@ -480,6 +486,8 @@ end;
 function TMainForm.LoadServiceInfo(const AFilename: string): TServiceInfo;
 var ServiceName: string;
   sl: TStringList;
+  ln: string;
+  i: integer;
 begin
   ServiceName := ChangeFileExt(ExtractFilename(AFilename), '');
   Result := FServiceCat.Find(ServiceName);
@@ -492,13 +500,32 @@ begin
   sl := TStringList.Create;
   try
     sl.LoadFromFile(AFilename);
-    if (sl.Count > 0) and (sl[0] <> '') and (Result.DisplayName = '') then begin
-      Result.DisplayName := sl[0]; //TODO: This would better work per-folder
-      sl.Delete(0);
+    i := sl.Count;
+    while i > 0 do begin
+      Dec(i);
+      ln := Trim(sl[i]);
+      if (ln='') or (ln[1]='#') then begin
+        sl.Delete(i);
+        continue;
+      end;
+      if ln.StartsWith('TITLE:') then begin
+        Result.DisplayName := Trim(Copy(ln, 7, MaxInt));
+        sl.Delete(i);
+        continue;
+      end;
+      if ln.StartsWith('CRITICAL') then begin
+        Result.Flags := Result.Flags + [sfCritical];
+        Result.CriticalText := Result.CriticalText + Trim(Copy(ln, 10, MaxInt)) + #13;
+        sl.Delete(i);
+        continue;
+      end;
+      if ln.StartsWith('TELEMETRY') then begin
+        Result.Flags := Result.Flags + [sfTelemetry];
+        sl.Delete(i);
+        continue;
+      end;
     end;
-    if Result.Description <> '' then
-      Result.Description := Result.Description + #13;
-    Result.Description := Result.Description + sl.Text;
+    Result.Description := Result.Description + Trim(sl.Text);
   finally
     FreeAndNil(sl);
   end;
@@ -672,14 +699,20 @@ end;
 
 procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
-var nd: TServiceEntry;
+var nd: TExtServiceEntry;
 begin
   MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
 
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+  nd := TExtServiceEntry(Sender.GetNodeData(Node)^);
  //Most availability checking is done in OnChanged, depends on Selection
 
   mmDetails.Text := nd.Description;
+
+  if nd.Info <> nil then
+    mmAdditionalInfo.Text := nd.Info.Description
+  else
+    mmAdditionalInfo.Text := '';
+
   if pcBottom.ActivePage = tsDependencies then
     ReloadServiceDependencies;
   if pcBottom.ActivePage = tsDependents then

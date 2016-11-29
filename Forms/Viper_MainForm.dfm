@@ -376,10 +376,6 @@ object MainForm: TMainForm
       Caption = 'Close'
       OnExecute = aCloseExecute
     end
-    object aReload: TAction
-      Caption = 'Reload'
-      OnExecute = aReloadExecute
-    end
     object aRefresh: TAction
       Caption = 'Refresh'
       ShortCut = 116
@@ -394,7 +390,6 @@ object MainForm: TMainForm
     object aShowDrivers: TAction
       AutoCheck = True
       Caption = 'Show drivers'
-      OnExecute = aReloadExecute
     end
     object aIncludeSubfolders: TAction
       AutoCheck = True
@@ -570,9 +565,6 @@ object MainForm: TMainForm
       Caption = 'File'
       object Refresh1: TMenuItem
         Action = aRefresh
-      end
-      object Reload2: TMenuItem
-        Action = aReload
       end
       object N2: TMenuItem
         Caption = '-'

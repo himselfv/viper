@@ -56,6 +56,7 @@ type
 
   TServiceEntryList = class(TObjectList<TServiceEntry>)
   public
+    function FindIndex(const AServiceName: string): integer;
     function Find(const AServiceName: string): TServiceEntry;
   end;
 
@@ -230,15 +231,25 @@ begin
 end;
 
 
+function TServiceEntryList.FindIndex(const AServiceName: string): integer;
+var i: integer;
+begin
+  Result := -1;
+  for i := 0 to Self.Count-1 do
+    if SameText(Self[i].ServiceName, AServiceName) then begin
+      Result := i;
+      break;
+    end;
+end;
+
 function TServiceEntryList.Find(const AServiceName: string): TServiceEntry;
 var i: integer;
 begin
-  Result := nil;
-  for i := 0 to Self.Count-1 do
-    if SameText(Self[i].ServiceName, AServiceName) then begin
-      Result := Self[i];
-      break;
-    end;
+  i := FindIndex(AServiceName);
+  if i >= 0 then
+    Result := Self[i]
+  else
+    Result := nil;
 end;
 
 

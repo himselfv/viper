@@ -58,7 +58,6 @@ type
 
   TMainForm = class(TForm)
     ActionList: TActionList;
-    aReload: TAction;
     Splitter1: TSplitter;
     vtFolders: TVirtualStringTree;
     ilImages: TImageList;
@@ -73,7 +72,6 @@ type
     Colorize1: TMenuItem;
     Bystarttype1: TMenuItem;
     File1: TMenuItem;
-    Reload2: TMenuItem;
     aShowDrivers: TAction;
     Showdrivers1: TMenuItem;
     Bystatus1: TMenuItem;
@@ -114,7 +112,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure aReloadExecute(Sender: TObject);
+    procedure aCloseExecute(Sender: TObject);
+    procedure aRefreshExecute(Sender: TObject);
     procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -128,14 +127,12 @@ type
     procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
-    procedure aRefreshExecute(Sender: TObject);
     procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure tsDependenciesShow(Sender: TObject);
     procedure tsDependentsShow(Sender: TObject);
     procedure tsTriggersShow(Sender: TObject);
     procedure aIncludeSubfoldersExecute(Sender: TObject);
-    procedure aCloseExecute(Sender: TObject);
     procedure aSaveAllServicesConfigExecute(Sender: TObject);
     procedure aSaveSelectedServicesConfigExecute(Sender: TObject);
     procedure aRestoreServiceConfigExecute(Sender: TObject);
@@ -158,8 +155,7 @@ type
   protected
     FServices: TServiceEntryList;
     function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
-    procedure FilterServices(); overload;
-    procedure FilterServices(AFolder: PVirtualNode); overload;
+    procedure FilterServices();
     procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
     procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
@@ -171,8 +167,8 @@ type
     procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadTriggers;
   public
-    procedure Reload;
-    procedure RefreshAllServices;
+    procedure Refresh;
+    procedure FullReload;
 
   end;
 
@@ -227,7 +223,7 @@ procedure TMainForm.FormShow(Sender: TObject);
 begin
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
-  Reload;
+  Refresh;
 end;
 
 procedure TMainForm.aCloseExecute(Sender: TObject);
@@ -235,82 +231,109 @@ begin
   Close;
 end;
 
-procedure TMainForm.aReloadExecute(Sender: TObject);
-begin
-  Reload;
-end;
-
-//Loads the list of services with their status
-procedure TMainForm.Reload;
+{
+Updates the list of services and their status.
+To do a full reload, clear everything then refresh. Otherwise tries to keep changes to a minimum.
+}
+procedure TMainForm.Refresh;
 var hSC: SC_HANDLE;
   ServiceTypes: dword;
   Services, S: PEnumServiceStatus;
-  BytesNeeded,ServicesReturned,ResumeHandle: DWORD;
-  i: integer;
+  ServicesReturned: cardinal;
+  i, j: integer;
   svc: TExtServiceEntry;
+  ServiceFound: array of boolean;
+  Node: PVirtualNode;
+  Abort: boolean;
 begin
-  MainServiceList.Clear;
-  FServices.Clear;
-
- //Let's load all services since we need all for dependencies, just make sure to handle
- //permission denials well.
+  //Let's load all services since we need all for dependencies, just make sure to handle
+  //permission denials well.
   ServiceTypes := SERVICE_TYPE_ALL;
 
+  //Mark already known services for sweeping
+  SetLength(ServiceFound, FServices.Count);
+  for i := 0 to Length(ServiceFound)-1 do
+    ServiceFound[i] := false;
+
+  //Actualize the list of services
+  Services := nil;
   hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
-    Services := nil;
-    ServicesReturned := 0;
-    ResumeHandle := 0;
-    if EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
-       Services^,0, BytesNeeded,ServicesReturned,ResumeHandle) then Exit; //no services
-    if GetLastError <> ERROR_MORE_DATA then RaiseLastOSError;
-    GetMem(Services,BytesNeeded);
-    try
-      ServicesReturned := 0;
-      ResumeHandle := 0;
-      if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
-        Services^,BytesNeeded,BytesNeeded,ServicesReturned,ResumeHandle) then
-        RaiseLastOsError;
-      S := Services;
-      for i := 0 to ServicesReturned - 1 do begin
+    if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then
+      RaiseLastOsError();
+
+    S := Services;
+    for i := 0 to ServicesReturned - 1 do begin
+      j := FServices.FindIndex(S.lpServiceName);
+      if j >= 0 then begin
+        ServiceFound[j] := true;
+        FServices[j].Status := S.ServiceStatus;
+        //Will be invalidated later
+      end else begin
         svc := TExtServiceEntry.CreateFromEnum(hSC, S);
         svc.Info := FServiceCat.Find(svc.ServiceName);
         FServices.Add(svc);
-        Inc(S);
+        //Will be pushed to UI later
       end;
-    finally
-      FreeMem(Services);
+      Inc(S);
     end;
 
   finally
+    if Services <> nil then
+      FreeMem(Services);
     CloseServiceHandle(hSC);
   end;
 
   FilterFolders; //service list changed, re-test which folders are empty
 
+  //Update the UI
+
   MainServiceList.BeginUpdate;
   try
-    MainServiceList.Clear;
-    for i := 0 to FServices.Count-1 do
-      MainServiceList.AddService(nil, FServices[i]);
-    FilterServices();
+    //Add new services
+    for i := Length(ServiceFound) to FServices.Count-1 do begin
+      Abort := false;
+      Node := MainServiceList.AddService(nil, FServices[i]);
+      //Apply visibility according to filters
+      FilterServices_Callback(MainServiceList.vtServices, Node, nil, Abort);
+    end;
+
+    //Invalidate existing services
+    for i := 0 to Length(ServiceFound)-1 do
+      if ServiceFound[i] then begin
+        InvalidateService(FServices[i]); //but do not RefreshService since we already have its ServiceStatus
+
+        //We will not make visible nodes invisible, for this is usually not what the user wants.
+        //But if a service now matches the criteria, we will make it visible on Refresh
+        Node := MainServiceList.FindServiceNode(FServices[i]);
+        if not MainServiceList.vtServices.IsVisible[Node] then
+          FilterServices_Callback(MainServiceList.vtServices, Node, nil, Abort);
+      end;
+
+    //Delete missing service entries
+    for i := 0 to Length(ServiceFound)-1 do
+      if not ServiceFound[i] then
+        MainServiceList.DeleteServiceNode(FServices[i]);
   finally
     MainServiceList.EndUpdate;
   end;
+
+  //Delete missing services - do this last, it'll screw with indexing
+  for i := Length(ServiceFound)-1 downto 0 do
+    if not ServiceFound[i] then
+      FServices.Delete(i);
 end;
 
-
-procedure TMainForm.RefreshAllServices;
-var service: TServiceEntry;
+procedure TMainForm.FullReload;
 begin
-  for service in FServices do
-    RefreshService(service);
+  MainServiceList.Clear;
+  FServices.Clear;
+  Refresh;
 end;
-
 
 procedure TMainForm.aRefreshExecute(Sender: TObject);
 begin
-  Self.RefreshAllServices;
+  Self.Refresh;
 end;
 
 procedure TMainForm.miShowLogClick(Sender: TObject);
@@ -333,16 +356,11 @@ end;
 
 procedure TMainForm.FilterServices();
 begin
-  FilterServices(vtFolders.FocusedNode);
-end;
-
-procedure TMainForm.FilterServices(AFolder: PVirtualNode);
-begin
-  MainServiceList.ApplyFilter(FilterServices_Callback, AFolder);
+  MainServiceList.ApplyFilter(FilterServices_Callback, nil);
 end;
 
 procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var folderNode: PVirtualNode absolute Data;
+var folderNode: PVirtualNode;
   folderData: PNdFolderData;
   svc: TServiceEntry;
   isService: boolean;
@@ -356,6 +374,7 @@ begin
   isVisible := true;
 
   //Filter by folder
+  folderNode := vtFolders.FocusedNode;
   if folderNode <> nil then begin
     folderData := PNdFolderData(vtFolders.GetNodeData(folderNode));
     case folderData.NodeType of
@@ -620,7 +639,7 @@ end;
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 begin
-  FilterServices(Node);
+  FilterServices;
 end;
 
 procedure TMainForm.aHideEmptyFoldersExecute(Sender: TObject);
@@ -703,12 +722,19 @@ var nd: TExtServiceEntry;
 begin
   MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
 
-  nd := TExtServiceEntry(Sender.GetNodeData(Node)^);
- //Most availability checking is done in OnChanged, depends on Selection
+  //Most availability checking is done in OnChanged, depends on Selection
+  if Node <> nil then
+    nd := TExtServiceEntry(Sender.GetNodeData(Node)^)
+  else
+    nd := nil;
 
-  mmDetails.Text := nd.Description;
 
-  if nd.Info <> nil then
+  if nd <> nil then
+    mmDetails.Text := nd.Description
+  else
+    mmDetails.Text := '';
+
+  if (nd <> nil) and (nd.Info <> nil) then
     mmAdditionalInfo.Text := nd.Info.Description
   else
     mmAdditionalInfo.Text := '';
@@ -765,7 +791,8 @@ begin
   DependencyList.BeginUpdate;
   try
     DependencyList.Clear;
-    LoadServiceDependencyNodes(service, nil);
+    if service <> nil then
+      LoadServiceDependencyNodes(service, nil);
   finally
     DependencyList.EndUpdate;
   end;
@@ -916,7 +943,7 @@ begin
     exit;
 
   if IsPositiveResult(RestoreServiceConfigForm.OpenRestore(OpenServiceConfigDialog.Filename)) then
-    Reload(); //all configurations could've changed
+    Refresh(); //all configurations could've changed
 end;
 
 end.

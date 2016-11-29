@@ -119,6 +119,8 @@ type
     procedure SelectionChanged;
     function GetCommonStartType(const Services: TServiceEntries): DWORD;
     function GetCommonProtectionType(const Services: TServiceEntries): DWORD;
+    procedure FindServiceNode_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer;
+      var Abort: Boolean);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -130,6 +132,8 @@ type
     function GetFocusedService: TServiceEntry;
     function GetSelectedServices: TServiceEntries;
     function GetFirstSelectedService: TServiceEntry;
+    function FindServiceNode(Service: TServiceEntry): PVirtualNode;
+    procedure DeleteServiceNode(Service: TServiceEntry);
 
   end;
 
@@ -533,6 +537,25 @@ begin
     Result := nil
   else
     Result := services[0];
+end;
+
+function TServiceList.FindServiceNode(Service: TServiceEntry): PVirtualNode;
+begin
+  Result := vtServices.IterateSubtree(nil, FindServiceNode_Callback, Service);
+end;
+
+procedure TServiceList.FindServiceNode_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Data: Pointer; var Abort: Boolean);
+begin
+  Abort := (TServiceEntry(Sender.GetNodeData(Node)^) = Data);
+end;
+
+procedure TServiceList.DeleteServiceNode(Service: TServiceEntry);
+var Node: PVirtualNode;
+begin
+  Node := FindServiceNode(Service);
+  if Node <> nil then
+    vtServices.DeleteNode(Node);
 end;
 
 

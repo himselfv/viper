@@ -19,6 +19,9 @@ function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 
 function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 
+function EnumServicesStatus(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
+  out Services: PEnumServiceStatus; out ServicesReturned: cardinal): boolean;
+
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS; overload;
 function QueryServiceStatus(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS; overload;
 function QueryServiceStatus(const AServiceName: string): SERVICE_STATUS; overload;
@@ -123,6 +126,33 @@ begin
       exit; //as an exception, do not raise
     RaiseLastOsError(err);
   end;
+end;
+
+//Enumerates services and their status. The result has to be freed with FreeMem.
+//Returns nil on error, query GetLastError for details.
+function EnumServicesStatus(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
+  out Services: PEnumServiceStatus; out ServicesReturned: cardinal): boolean;
+var BytesNeeded, ResumeHandle: DWORD;
+begin
+  Result := false;
+  Services := nil;
+  ServicesReturned := 0;
+  ResumeHandle := 0;
+  if WinSvc.EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
+     Services^, 0, BytesNeeded, ServicesReturned, ResumeHandle) then exit; //no services
+  if GetLastError <> ERROR_MORE_DATA then
+    exit;
+
+  GetMem(Services, BytesNeeded);
+  ServicesReturned := 0;
+  ResumeHandle := 0;
+  if not WinSvc.EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL,
+    Services^, BytesNeeded, BytesNeeded, ServicesReturned, ResumeHandle) then
+  begin
+    FreeMem(Services); //dont screw LastError plz
+    exit;
+  end;
+  Result := true;
 end;
 
 

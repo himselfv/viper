@@ -849,8 +849,10 @@ var Services: TServiceEntries;
   hPriv: TPrivToken;
   pSidAdmin, pSidPreviousOwner: PSID;
   pPreviousDesc: PSECURITY_DESCRIPTOR;
+  APreviousPermissions: cardinal;
   hadLaunchProt: boolean;
   hadOwnershipChanged: boolean;
+  hadPermissionsChanged: boolean;
   err: integer;
 begin
   Services := GetSelectedServices();
@@ -858,6 +860,7 @@ begin
 
   hadLaunchProt := false;
   hadOwnershipChanged := false;
+  hadPermissionsChanged := false;
   pSidAdmin := nil;
 
   AclHelpers.OnLog := LogForm.Log;
@@ -889,6 +892,14 @@ begin
         if pPreviousDesc <> nil then
           LocalFree(NativeUInt(pPreviousDesc));
       end;
+      Log('Giving Administrators all permissions...');
+      err := AddExplicitPermissions(Service.ServiceName, SE_SERVICE, pSidAdmin, SERVICE_ALL_ACCESS, @APreviousPermissions);
+      if err = 0 then
+        hadPermissionsChanged := APreviousPermissions <> SERVICE_ALL_ACCESS
+      else begin
+        Log('Cannot give permissions, error '+IntToStr(err));
+        hadPermissionsChanged := false;
+      end;
 
       RefreshService(Service);
     end;
@@ -902,7 +913,7 @@ begin
   if hadLaunchProt then
     MessageBox(Self.Handle, PChar(sUnlockNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
   else
-  if hadOwnershipChanged then
+  if hadOwnershipChanged or hadPermissionsChanged then
     MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
   else
     MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);

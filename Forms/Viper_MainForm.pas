@@ -109,6 +109,9 @@ type
     edtQuickFilter: TEdit;
     Label1: TLabel;
     mmAdditionalInfo: TMemo;
+    aRestartAsAdmin: TAction;
+    Restartasadministrator1: TMenuItem;
+    N4: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -138,6 +141,7 @@ type
     procedure aRestoreServiceConfigExecute(Sender: TObject);
     procedure miShowLogClick(Sender: TObject);
     procedure edtQuickFilterChange(Sender: TObject);
+    procedure aRestartAsAdminExecute(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -176,7 +180,7 @@ var
   MainForm: TMainForm;
 
 implementation
-uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils,
+uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
   CommonResources, Viper_RestoreServiceConfig, Viper.Log;
 
 {$R *.dfm}
@@ -221,6 +225,7 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
+  aRestartAsAdmin.Visible := not IsUserAdmin();
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
   Refresh;
@@ -229,6 +234,18 @@ end;
 procedure TMainForm.aCloseExecute(Sender: TObject);
 begin
   Close;
+end;
+
+procedure TMainForm.aRestartAsAdminExecute(Sender: TObject);
+var err: integer;
+begin
+  err := RestartAsAdmin();
+  if err = 0 then begin
+    Application.Terminate;
+    exit;
+  end;
+  if err <> ERROR_CANCELLED then
+    RaiseLastOsError(err);
 end;
 
 {

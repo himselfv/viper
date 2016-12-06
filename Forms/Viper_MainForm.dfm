@@ -381,6 +381,10 @@ object MainForm: TMainForm
       ShortCut = 116
       OnExecute = aRefreshExecute
     end
+    object aRestartAsAdmin: TAction
+      Caption = 'Restart as administrator...'
+      OnExecute = aRestartAsAdminExecute
+    end
     object aHideEmptyFolders: TAction
       AutoCheck = True
       Caption = 'Hide empty folders'
@@ -567,6 +571,12 @@ object MainForm: TMainForm
         Action = aRefresh
       end
       object N2: TMenuItem
+        Caption = '-'
+      end
+      object Restartasadministrator1: TMenuItem
+        Action = aRestartAsAdmin
+      end
+      object N4: TMenuItem
         Caption = '-'
       end
       object Saveserviceconfig1: TMenuItem

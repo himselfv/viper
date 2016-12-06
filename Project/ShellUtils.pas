@@ -2,12 +2,41 @@ unit ShellUtils;
 
 interface
 
+function RestartAsAdmin: integer;
+
 procedure ShellOpen(const sCommand: string; const sParams: string = '');
 procedure ExplorerAtFile(const AFilename: string);
 procedure RegeditAtKey(const key: string);
 
 implementation
-uses SysUtils, Windows, ShellAPI, Registry;
+uses SysUtils, Windows, ShellAPI, Registry, FilenameUtils;
+
+function RunAsAdmin(const aFile: string; const aParameters: string = ''; Handle: HWND = 0): integer;
+var sei: TShellExecuteInfo;
+begin
+  FillChar(sei, SizeOf(sei), 0);
+
+  sei.cbSize := SizeOf(sei);
+  sei.Wnd := Handle;
+  sei.fMask := SEE_MASK_FLAG_DDEWAIT or SEE_MASK_FLAG_NO_UI;
+  sei.lpVerb := 'runas';
+  sei.lpFile := PChar(aFile);
+  sei.lpParameters := PChar(aParameters);
+  sei.nShow := SW_SHOWNORMAL;
+
+  if not ShellExecuteEx(@sei) then
+    Result := GetLastError()
+  else
+    Result := 0;
+end;
+
+//Caller has to manually terminate this instance as we don't know if it prefers System.Exit()
+//or Application.Terminate() here.
+function RestartAsAdmin: integer;
+begin
+  Result := RunAsAdmin(AppFilename(), GetCommandLine());
+end;
+
 
 procedure ShellOpen(const sCommand: string; const sParams: string = '');
 begin

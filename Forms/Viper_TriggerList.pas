@@ -135,7 +135,7 @@ begin
      //A device of the specified device interface class arrives.
      //pTriggerSubtype specifies the device interface class GUID.
      //pDataItems specifies one or more hardware ID and compatible ID strings.
-      if not TrySetupDiGetClassDescriptionStr(ATrigger.pTriggerSubtype^, tmp) then
+      if not SetupDiGetDeviceInterfaceClassDescription(ATrigger.pTriggerSubtype^, tmp) then
         tmp := Format(sUnknownDeviceInterfaceClass, [GuidToString(ATrigger.pTriggerSubtype^)]);
       Result := Format(sTriggerDeviceInterfaceAvailable, [tmp]);
     end;

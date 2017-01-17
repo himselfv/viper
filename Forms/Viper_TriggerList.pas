@@ -14,13 +14,13 @@ uses
 
 //TODO: Parse Firewall Rule details (it's multistring)
 
-//TODO: Choose better play/stop icons
-
 type
   TNdTriggerData = record
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
     EventDescription: string;
+    SourceDescription: string;
+    ParamsDescription: string;
     Action: DWORD;
   end;
   PNdTriggerData = ^TNdTriggerData;
@@ -49,7 +49,7 @@ type
   end;
 
 implementation
-uses Clipbrd, SetupApiHelper;
+uses Clipbrd, TriggerUtils;
 
 {$R *.dfm}
 
@@ -85,6 +85,16 @@ begin
   case Column of
     NoColumn, 0:
       CellText := Data.EventDescription;
+    1:
+      CellText := Data.SourceDescription;
+    2:
+      CellText := Data.ParamsDescription;
+    3:
+      if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
+        CellText := 'Start'
+      else
+      if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
+        CellText := 'Stop';
   end;
 end;
 
@@ -98,7 +108,7 @@ begin
   if Data = nil then exit;
 
   case Column of
-    NoColumn, 0:
+    NoColumn, 3:
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         ImageIndex := 0
       else
@@ -113,83 +123,6 @@ begin
   aCopyText.Visible := Node <> nil;
 end;
 
-
-resourcestring
-  sTriggerDeviceInterfaceAvailable = 'Device available: %s';
-  sTriggerDomainJoin = 'The computer joins a domain';
-  sTriggerDomainLeave = 'The computer leaves a domain';
-  sTriggerDomainUnusual = 'Unusual domain-related trigger';
-  sTriggerFirewallPortOpen = 'Firewall port opens: %s';
-  sTriggerFirewallPortClose = 'Firewall port closes: %s';
-  sTriggerFirewallPortUnusual = 'Unusual firewall port-related trigger: %s';
-
-  sUnknownDeviceInterfaceClass = 'Unknown Device Interface Class %s';
-
-function ServiceTriggerToString(const ATrigger: PSERVICE_TRIGGER): string;
-var tmp: string;
-begin
- //NOTE: Triggers should further be subdivided with action GUIDS
- //See here: https://msdn.microsoft.com/en-us/library/windows/desktop/dd405512%28v=vs.85%29.aspx
-  case ATrigger.dwTriggerType of
-    SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL: begin
-     //A device of the specified device interface class arrives.
-     //pTriggerSubtype specifies the device interface class GUID.
-     //pDataItems specifies one or more hardware ID and compatible ID strings.
-      if not SetupDiGetDeviceInterfaceClassDescription(ATrigger.pTriggerSubtype^, tmp) then
-        tmp := Format(sUnknownDeviceInterfaceClass, [GuidToString(ATrigger.pTriggerSubtype^)]);
-      Result := Format(sTriggerDeviceInterfaceAvailable, [tmp]);
-    end;
-
-    SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY:
-      Result := 'IP Address Availability';
-
-    SERVICE_TRIGGER_TYPE_DOMAIN_JOIN: begin
-     //The computer joins or leaves a domain.
-     //pTriggerSubtype specifies DOMAIN_JOIN_GUID or DOMAIN_LEAVE_GUID.
-      if ATrigger.pTriggerSubtype^ = DOMAIN_JOIN_GUID then
-        Result := sTriggerDomainJoin
-      else
-      if ATrigger.pTriggerSubtype^ = DOMAIN_LEAVE_GUID then
-        Result := sTriggerDomainLeave
-      else
-        Result := sTriggerDomainUnusual;
-    end;
-
-    SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT: begin
-     //A firewall port is opened or approximately 60 seconds after the firewall port is closed.
-     //pTriggerSubtype specifies FIREWALL_PORT_OPEN_GUID or FIREWALL_PORT_CLOSE_GUID.
-     //The pDataItems specifies ..a SERVICE_TRIGGER_DATA_TYPE_STRING multi-string that specifies
-     //the port, the protocol, and optionally the executable path and name of the service
-      if ATrigger.cDataItems <= 0 then
-        tmp := '(no data)'
-      else
-      if ATrigger.pDataItems^.dwDataType <> SERVICE_TRIGGER_DATA_TYPE_STRING then
-        tmp := '(unusual data)'
-      else
-        tmp := PChar(ATrigger.pDataItems^.pData)^;
-
-      if ATrigger.pTriggerSubtype^ = FIREWALL_PORT_OPEN_GUID then
-        Result := Format(sTriggerFirewallPortOpen, [tmp])
-      else
-      if ATrigger.pTriggerSubtype^ = FIREWALL_PORT_CLOSE_GUID then
-        Result := Format(sTriggerFirewallPortClose, [tmp])
-      else
-        Result := Format(sTriggerFirewallPortUnusual, [tmp]);
-    end;
-
-    SERVICE_TRIGGER_TYPE_GROUP_POLICY:
-      Result := 'Group Policy';
-
-    SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT:
-      Result := 'Network Endpoint';
-
-    SERVICE_TRIGGER_TYPE_CUSTOM:
-      Result := 'Custom';
-
-  else Result := 'Unusual trigger: '+IntToStr(ATrigger.dwTriggerType);
-  end;
-end;
-
 procedure TTriggerList.Clear;
 begin
   vtTriggers.Clear;
@@ -197,15 +130,20 @@ end;
 
 function TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
 var Data: PNdTriggerData;
+  TriggerData: TTriggerData;
 begin
   Result := vtTriggers.AddChild(nil);
   vtTriggers.ReinitNode(Result, false);
   Data := vtTriggers.GetNodeData(Result);
 
+  TriggerData := ParseTrigger(ATrigger);
+
   Data.TriggerType := ATrigger^.dwTriggerType;
   Data.Action := ATrigger^.dwAction;
   Data.TriggerSubtype := ATrigger.pTriggerSubtype^;
-  Data.EventDescription := ServiceTriggerToString(ATrigger);
+  Data.EventDescription := TriggerData.Event;
+  Data.SourceDescription := TriggerData.SourcesToString(', ');
+  Data.ParamsDescription := TriggerData.ParamsToString('; ');
 end;
 
 procedure TTriggerList.aCopyTextExecute(Sender: TObject);

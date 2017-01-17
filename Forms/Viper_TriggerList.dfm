@@ -1,13 +1,13 @@
 object TriggerList: TTriggerList
   Left = 0
   Top = 0
-  Width = 628
+  Width = 792
   Height = 238
   TabOrder = 0
   object vtTriggers: TVirtualStringTree
     Left = 0
     Top = 0
-    Width = 628
+    Width = 792
     Height = 238
     Align = alClient
     BorderWidth = 1
@@ -17,7 +17,7 @@ object TriggerList: TTriggerList
     Header.Font.Height = -11
     Header.Font.Name = 'Tahoma'
     Header.Font.Style = []
-    Header.MainColumn = -1
+    Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
     Images = ilImages
     PopupMenu = PopupMenu
     TabOrder = 0
@@ -30,7 +30,28 @@ object TriggerList: TTriggerList
     OnGetImageIndex = vtTriggersGetImageIndex
     OnGetNodeDataSize = vtTriggersGetNodeDataSize
     OnInitNode = vtTriggersInitNode
-    Columns = <>
+    ExplicitWidth = 700
+    Columns = <
+      item
+        Position = 0
+        Width = 200
+        WideText = 'Trigger'
+      end
+      item
+        Position = 1
+        Width = 200
+        WideText = 'Source'
+      end
+      item
+        Position = 2
+        Width = 300
+        WideText = 'Params'
+      end
+      item
+        Position = 3
+        Width = 80
+        WideText = 'Action'
+      end>
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -38,7 +59,7 @@ object TriggerList: TTriggerList
     Left = 80
     Top = 8
     Bitmap = {
-      494C010102000800340010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101020008003C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

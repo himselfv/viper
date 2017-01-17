@@ -14,7 +14,8 @@ uses
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',
-  Viper.Log in 'Viper.Log.pas' {LogForm};
+  Viper.Log in 'Viper.Log.pas' {LogForm},
+  TriggerUtils in 'TriggerUtils.pas';
 
 {$R *.res}
 

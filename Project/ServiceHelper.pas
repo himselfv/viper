@@ -52,8 +52,18 @@ function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoL
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
+//Missing from headers
 const
-  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6; //missing in headers
+  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6;
+
+const
+  SERVICE_TRIGGER_DATA_TYPE_LEVEL          = 3;
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY    = 4;
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL    = 5;
+
+const
+  RPC_INTERFACE_EVENT_GUID: TGuid = '{BC90D167-9470-4139-A9BA-BE0BBBF5B74D}';
+  NAMED_PIPE_EVENT_GUID: TGuid = '{1F81D131-3FAC-4537-9E0C-7E7B0C2F4B55}';
 
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;

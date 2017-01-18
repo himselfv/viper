@@ -1,7 +1,7 @@
 unit TriggerUtils;
 
 interface
-uses WinSvc;
+uses WinSvc, GuidDict;
 
 function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;
 
@@ -51,6 +51,11 @@ type
 //Parses trigger data, extracting its exact action as a string, a set of sources (such as ports
 //or devices) to watch for that action, and a set of remaining params.
 function ParseTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
+
+var
+  WellKnownDeviceInterfaceClasses: TGuidDictionary; //someone has to load this
+
+function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 
 implementation
 uses SysUtils, UniStrUtils, ServiceHelper, SetupApiHelper;
@@ -157,12 +162,7 @@ begin
  //See here: https://msdn.microsoft.com/en-us/library/windows/desktop/dd405512%28v=vs.85%29.aspx
   case ATrigger.dwTriggerType of
 
-   // TODO:
-   //
-   // A device of the specified device interface class arrives.
-   // pTriggerSubtype specifies the device interface class GUID.
-   // pDataItems specifies one or more hardware ID and compatible ID strings.
-   //
+  //Mostly DONE.
    SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL:
      Result := ParseDeviceInterfaceTrigger(ATrigger);
 
@@ -346,5 +346,22 @@ begin
   if Result <> '' then
     SetLength(Result, Length(Result) - Length(ASep));
 end;
+
+
+
+function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
+begin
+  if not WellKnownDeviceInterfaceClasses.TryGetValue(ClassGuid, Result) then
+    Result := '';
+end;
+
+
+initialization
+  WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
+
+finalization
+ {$IFDEF DEBUG}
+  FreeAndNil(WellKnownDeviceInterfaceClasses);
+ {$ENDIF}
 
 end.

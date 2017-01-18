@@ -2,7 +2,7 @@ unit SetupApiHelper;
 //Delphi lacks SetupApi conversion, so we port what we need explicitly.
 
 interface
-uses Windows, GuidDict;
+uses Windows;
 
 const
   setupapi = 'SetupApi.dll';
@@ -62,18 +62,6 @@ function SetupDiGetClassDescriptionW(ClassGuid: PGUID; ClassDescription: PChar;
 
 function TrySetupDiGetClassDescriptionStr(const ClassGuid: TGUID; out Description: string): boolean;
 function SetupDiGetClassDescriptionStr(const ClassGuid: TGUID): string;
-
-type
-  TDeviceInterfaceClassDesc = record
-    c: TGuid;
-    n: string;
-  end;
-  PDeviceInterfaceClassDesc = ^TDeviceInterfaceClassDesc;
-
-var
-  WellKnownDeviceInterfaceClasses: TGuidDictionary; //someone has to load this
-
-function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 
 implementation
 uses SysUtils;
@@ -135,20 +123,5 @@ begin
   if not TrySetupDiGetClassDescriptionStr(ClassGuid, Result) then
     RaiseLastOsError();
 end;
-
-function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
-begin
-  if not WellKnownDeviceInterfaceClasses.TryGetValue(ClassGuid, Result) then
-    Result := '';
-end;
-
-
-initialization
-  WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
-
-finalization
- {$IFDEF DEBUG}
-  FreeAndNil(WellKnownDeviceInterfaceClasses);
- {$ENDIF}
 
 end.

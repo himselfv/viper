@@ -178,7 +178,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800680010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C0101020008006C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -322,10 +322,6 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -423,7 +419,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800600010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800640010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -623,6 +619,10 @@ object MainForm: TMainForm
       object miShowLog: TMenuItem
         Caption = 'Show log'
         OnClick = miShowLogClick
+      end
+      object Alltriggers1: TMenuItem
+        Caption = 'Trigger explorer'
+        OnClick = Alltriggers1Click
       end
     end
   end

@@ -104,6 +104,10 @@
         <DCCReference Include="TriggerUtils.pas"/>
         <DCCReference Include="GuidDict.pas"/>
         <DCCReference Include="EtwUtils.pas"/>
+        <DCCReference Include="..\Forms\Viper_MainTriggerList.pas">
+            <Form>MainTriggerList</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

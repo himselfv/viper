@@ -17,7 +17,8 @@ uses
   Viper.Log in 'Viper.Log.pas' {LogForm},
   TriggerUtils in 'TriggerUtils.pas',
   GuidDict in 'GuidDict.pas',
-  EtwUtils in 'EtwUtils.pas';
+  EtwUtils in 'EtwUtils.pas',
+  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList};
 
 {$R *.res}
 
@@ -28,5 +29,6 @@ begin
   Application.CreateForm(TCommonRes, CommonRes);
   Application.CreateForm(TRestoreServiceConfigForm, RestoreServiceConfigForm);
   Application.CreateForm(TLogForm, LogForm);
+  Application.CreateForm(TMainTriggerList, MainTriggerList);
   Application.Run;
 end.

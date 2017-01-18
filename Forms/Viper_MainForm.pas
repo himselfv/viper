@@ -112,6 +112,7 @@ type
     aRestartAsAdmin: TAction;
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
+    Alltriggers1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -142,6 +143,7 @@ type
     procedure miShowLogClick(Sender: TObject);
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
+    procedure Alltriggers1Click(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -181,7 +183,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper_RestoreServiceConfig, Viper.Log, TriggerUtils;
+  CommonResources, Viper_RestoreServiceConfig, Viper.Log, TriggerUtils, Viper_MainTriggerList;
 
 {$R *.dfm}
 
@@ -962,6 +964,12 @@ begin
 
   if IsPositiveResult(RestoreServiceConfigForm.OpenRestore(OpenServiceConfigDialog.Filename)) then
     Refresh(); //all configurations could've changed
+end;
+
+procedure TMainForm.Alltriggers1Click(Sender: TObject);
+begin
+  MainTriggerList.Services := Self.FServices;
+  MainTriggerList.Show;
 end;
 
 end.

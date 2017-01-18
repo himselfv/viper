@@ -181,7 +181,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper_RestoreServiceConfig, Viper.Log, SetupApiHelper;
+  CommonResources, Viper_RestoreServiceConfig, Viper.Log, TriggerUtils;
 
 {$R *.dfm}
 

@@ -16,9 +16,8 @@ type
   TNdTriggerData = record
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
-    EventDescription: string;
-    SourceDescription: string;
-    ParamsDescription: string;
+    Description: string;
+    Params: string;
     Action: DWORD;
   end;
   PNdTriggerData = ^TNdTriggerData;
@@ -43,7 +42,7 @@ type
       Column: TColumnIndex);
   public
     procedure Clear;
-    function Add(const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+    procedure Add(const ATrigger: PSERVICE_TRIGGER);
   end;
 
 implementation
@@ -82,17 +81,15 @@ begin
 
   case Column of
     NoColumn, 0:
-      CellText := Data.EventDescription;
+      CellText := Data.Description;
     1:
-      CellText := Data.SourceDescription;
-    2:
-      CellText := Data.ParamsDescription;
-    3:
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         CellText := 'Start'
       else
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
         CellText := 'Stop';
+    2:
+      CellText := Data.Params;
   end;
 end;
 
@@ -106,7 +103,7 @@ begin
   if Data = nil then exit;
 
   case Column of
-    NoColumn, 3:
+    NoColumn, 1:
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         ImageIndex := 0
       else
@@ -126,22 +123,33 @@ begin
   vtTriggers.Clear;
 end;
 
-function TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
-var Data: PNdTriggerData;
+procedure TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER);
+var Node: PVirtualNode;
+  NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
+  Sources: TArray<string>;
+  Source: string;
 begin
-  Result := vtTriggers.AddChild(nil);
-  vtTriggers.ReinitNode(Result, false);
-  Data := vtTriggers.GetNodeData(Result);
-
   TriggerData := ParseTrigger(ATrigger);
+  Sources := TriggerData.Sources;
+  if Length(Sources) <= 0 then begin
+    SetLength(Sources, 1);
+    Sources[0] := '';
+  end;
 
-  Data.TriggerType := ATrigger^.dwTriggerType;
-  Data.Action := ATrigger^.dwAction;
-  Data.TriggerSubtype := ATrigger.pTriggerSubtype^;
-  Data.EventDescription := TriggerData.Event;
-  Data.SourceDescription := TriggerData.SourcesToString(', ');
-  Data.ParamsDescription := TriggerData.ParamsToString('; ');
+  for Source in Sources do begin
+    Node := vtTriggers.AddChild(nil);
+    vtTriggers.ReinitNode(Node, false);
+    NodeData := vtTriggers.GetNodeData(Node);
+    NodeData.TriggerType := ATrigger^.dwTriggerType;
+    NodeData.Action := ATrigger^.dwAction;
+    NodeData.TriggerSubtype := ATrigger.pTriggerSubtype^;
+    if Source <> '' then
+      NodeData.Description := TriggerData.Event + ' ('+Source+')'
+    else
+      NodeData.Description := TriggerData.Event;
+    NodeData.Params := TriggerData.ParamsToString('; ');
+  end;
 end;
 
 procedure TTriggerList.aCopyTextExecute(Sender: TObject);
@@ -152,7 +160,10 @@ begin
   Data := vtTriggers.GetNodeData(vtTriggers.FocusedNode);
   if Data = nil then exit;
 
-  Clipboard.AsText := Data.EventDescription;
+  if Data.Params <> '' then
+    Clipboard.AsText := Data.Description + ' (' + Data.Params + ')'
+  else
+    Clipboard.AsText := Data.Description;
 end;
 
 end.

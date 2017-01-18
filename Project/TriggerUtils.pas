@@ -25,7 +25,7 @@ resourcestring
   sTriggerGroupPolicyChangedUser = 'Group Policy Changed (User)';
   sTriggerGroupPolicyChangedOther = 'Group Policy Changed (Other)';
 
-  sUnknownDeviceInterfaceClass = 'Unknown Device Interface Class %s';
+  sUnknownDeviceInterfaceClass = 'Class %s';
 
 type
   TTriggerParam = SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
@@ -105,12 +105,48 @@ begin
 end;
 
 
+//
+// A device of the specified device interface class arrives.
+// pTriggerSubtype specifies the device interface class GUID.
+// pDataItems specifies one or more hardware ID and compatible ID strings.
+//
+function ParseDeviceInterfaceTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
+var param: PTriggerParam;
+  tmp: string;
+begin
+{
+SetupApi has two types of classes: Setup Class and Device Interface Class.
+
+Setup Classes are categories shown in Device Manager. They have names and icons which can be
+retrieved.
+
+Device Interfaces are sets of functions that the device provides. A device can provide several
+of these. Each Interface conforms to some Device Interface Class.
+Device Interface Classes are simply guids associated with a particular set of functions.
+
+The OS provides no names or icons for the device interface classes. There are a few well-known ones,
+but in general, any GUID might mean something for someone.
+
+There are some ways to access properties of the device interface class via it's default implementation:
+  https://msdn.microsoft.com/en-us/windows/hardware/drivers/install/accessing-device-interface-class-properties
+Unfortunately, default implementations for most classes are unavailable as well.
+}
+
+  tmp := GetWellKnownDeviceInterfaceClassName(ATrigger.pTriggerSubtype^);
+  if tmp = '' then
+    tmp := Format(sUnknownDeviceInterfaceClass, [GuidToString(ATrigger.pTriggerSubtype^)]);
+  Result.Event := Format(sTriggerDeviceInterfaceAvailable, [tmp]);
+
+  while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
+    Result.AddSource(param.StringValue);
+end;
+
+
 {$POINTERMATH ON}
 
 function ParseTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
 var i: integer;
   param: PTriggerParam;
-  tmp: string;
 begin
   SetLength(Result.Sources, 0);
 
@@ -127,14 +163,8 @@ begin
    // pTriggerSubtype specifies the device interface class GUID.
    // pDataItems specifies one or more hardware ID and compatible ID strings.
    //
-    SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL: begin
-      if not SetupDiGetDeviceInterfaceClassDescription(ATrigger.pTriggerSubtype^, tmp) then
-        tmp := Format(sUnknownDeviceInterfaceClass, [GuidToString(ATrigger.pTriggerSubtype^)]);
-      Result.Event := Format(sTriggerDeviceInterfaceAvailable, [tmp]);
-
-      while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
-        Result.AddSource(param.StringValue);
-    end;
+   SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL:
+     Result := ParseDeviceInterfaceTrigger(ATrigger);
 
 
    // DONE.

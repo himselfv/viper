@@ -15,7 +15,8 @@ uses
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',
   Viper.Log in 'Viper.Log.pas' {LogForm},
-  TriggerUtils in 'TriggerUtils.pas';
+  TriggerUtils in 'TriggerUtils.pas',
+  GuidDict in 'GuidDict.pas';
 
 {$R *.res}
 

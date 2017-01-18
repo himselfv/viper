@@ -181,7 +181,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper_RestoreServiceConfig, Viper.Log;
+  CommonResources, Viper_RestoreServiceConfig, Viper.Log, SetupApiHelper;
 
 {$R *.dfm}
 
@@ -215,6 +215,7 @@ procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create({OwnsObjects=}true);
   FServices := TServiceEntryList.Create;
+  WellKnownDeviceInterfaceClasses.LoadFromFile(AppFolder()+'\DeviceInterfaceClasses.txt');
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);

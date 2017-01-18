@@ -10,8 +10,6 @@ uses
 //  Note that secondary service lists handle Ctrl-C fine (perhaps because trigger list is invisible
 //  at that moment?)
 
-//TODO: Fix Device Interface IDs (somehow they don't resolve to names)
-
 //TODO: Parse Firewall Rule details (it's multistring)
 
 type

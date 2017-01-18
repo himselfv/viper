@@ -103,6 +103,7 @@
         </DCCReference>
         <DCCReference Include="TriggerUtils.pas"/>
         <DCCReference Include="GuidDict.pas"/>
+        <DCCReference Include="EtwUtils.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

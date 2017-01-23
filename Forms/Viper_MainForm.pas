@@ -10,6 +10,7 @@ uses
 type
  //Folders are tracked only as folder nodes, we don't keep any middle layer.
   TFolderNodeType = (
+    //The order is important, folders are sorted by it
     ntFolder,
     ntRunningServices,
     ntUnknownServices,
@@ -32,13 +33,11 @@ type
   TServiceFolders = array of PNdFolderData;
   PServiceFolders = ^TServiceFolders;
 
-
   TExtServiceEntry = class(TServiceEntry)
     Info: TServiceInfo;
     function GetEffectiveDisplayName: string; override;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); override;
   end;
-
 
   TMainForm = class(TForm)
     ActionList: TActionList;
@@ -111,27 +110,40 @@ type
     procedure FormShow(Sender: TObject);
     procedure aCloseExecute(Sender: TObject);
     procedure aRefreshExecute(Sender: TObject);
-    procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree;
-      var NodeDataSize: Integer);
-    procedure vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode,
-      Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
+    procedure vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
+      var InitialStates: TVirtualNodeInitStates);
     procedure vtFoldersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure vtFoldersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-      var Ghosted: Boolean; var ImageIndex: Integer);
-    procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex);
+    procedure vtFoldersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+      TextType: TVSTTextType; var CellText: string);
+    procedure vtFoldersGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
+    procedure vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
+    procedure vtFoldersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
+      Y: Integer);
+    procedure vtFoldersCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
+      Column: TColumnIndex; var Result: Integer);
     procedure vtFoldersDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; var Allowed: Boolean);
     procedure vtFoldersDragOver(Sender: TBaseVirtualTree; Source: TObject; Shift: TShiftState;
       State: TDragState; Pt: TPoint; Mode: TDropMode; var Effect: Integer; var Accept: Boolean);
     procedure vtFoldersDragDrop(Sender: TBaseVirtualTree; Source: TObject; DataObject: IDataObject;
       Formats: TFormatArray; Shift: TShiftState; Pt: TPoint; var Effect: Integer; Mode: TDropMode);
+    procedure vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+      var Allowed: Boolean);
+    procedure vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+      NewText: string);
+    procedure vtFoldersEdited(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
+    procedure aEditFoldersExecute(Sender: TObject);
+    procedure aAddFolderExecute(Sender: TObject);
+    procedure aRenameFolderExecute(Sender: TObject);
+    procedure aDeleteFolderExecute(Sender: TObject);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
     procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
+    procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
     procedure tsDependenciesShow(Sender: TObject);
     procedure tsDependentsShow(Sender: TObject);
     procedure tsTriggersShow(Sender: TObject);
@@ -143,25 +155,6 @@ type
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
     procedure Alltriggers1Click(Sender: TObject);
-    procedure aAddFolderExecute(Sender: TObject);
-    procedure vtFoldersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
-      Y: Integer);
-    procedure aRenameFolderExecute(Sender: TObject);
-    procedure vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
-      var Allowed: Boolean);
-    procedure vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
-      NewText: string);
-    procedure vtFoldersEdited(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
-    procedure aDeleteFolderExecute(Sender: TObject);
-    procedure vtFoldersCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
-      Column: TColumnIndex; var Result: Integer);
-    procedure vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; var Allowed: Boolean);
-    procedure MainServiceListvtServicesDragDrop(Sender: TBaseVirtualTree; Source: TObject;
-      DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
-      var Effect: Integer; Mode: TDropMode);
-    procedure aEditFoldersExecute(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -178,6 +171,8 @@ type
 
   protected // Folder editing
     function CanEditFolders: boolean;
+    procedure FoldersDropFolder(Sender: TBaseVirtualTree; SourceNode: PVirtualNode; Mode: TDropMode);
+    procedure FoldersDropService(Sender: TBaseVirtualTree; Source: TServiceList; SourceNode: PVirtualNode; Mode: TDropMode);
 
   protected
     FServices: TServiceEntryList;
@@ -678,20 +673,33 @@ begin
     and (Data <> nil) and (Data.NodeType = ntFolder); //drop only allowed on normal folders
   if not Accept then exit;
 
-  Accept := (Source=Sender); //atm only accept nodes of this tree (later we'll also accept services)
+  Accept := (Source = Sender)                 //accept folders
+    or (Source = MainServiceList.vtServices); //accept services
 end;
 
 procedure TMainForm.vtFoldersDragDrop(Sender: TBaseVirtualTree; Source: TObject;
   DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
   var Effect: Integer; Mode: TDropMode);
-var SourceNode, TargetNode: PVirtualNode;
+begin
+  if not Self.CanEditFolders then exit;
+
+  if Source = vtFolders then
+    FoldersDropFolder(Sender, TVirtualStringTree(Source).FocusedNode, Mode)
+  else
+  if Source = MainServiceList.vtServices then
+    FoldersDropService(Sender, MainServiceList, TVirtualStringTree(Source).FocusedNode, Mode);
+
+ //else ignore
+end;
+
+//Called to handle a folder node dropped onto the folder tree
+procedure TMainForm.FoldersDropFolder(Sender: TBaseVirtualTree; SourceNode: PVirtualNode;
+  TargetNode: PVirtualNode; Mode: TDropMode);
+var TargetNode: PVirtualNode;
   SourceData, TargetData: PNdFolderData;
   TargetPath: string;
   attMode: TVTNodeAttachMode;
 begin
-  if not Self.CanEditFolders then exit;
-
-  SourceNode := TVirtualStringTree(Source).FocusedNode;
   TargetNode := Sender.DropTargetNode;
 
   SourceData := Sender.GetNodeData(SourceNode);
@@ -727,6 +735,53 @@ begin
 
   Sender.MoveTo(SourceNode, TargetNode, attMode, False);
 end;
+
+//Called to handle a service node dropped onto the folder tree
+procedure TMainForm.FoldersDropService(Sender: TBaseVirtualTree; Source: TServiceList;
+  SourceNode: PVirtualNode; TargetNode: PVirtualNode; Mode: TDropMode);
+var TargetNode: PVirtualNode;
+  SourceData: TServiceEntry;
+  TargetData: PNdFolderData;
+  TargetPath: string;
+  attMode: TVTNodeAttachMode;
+begin
+  TargetNode := Sender.DropTargetNode;
+
+  SourceData := Source.GetServiceEntry(SourceNode);
+  TargetData := Sender.GetNodeData(TargetNode);
+
+  if TargetNode <> nil then
+    TargetPath := TargetData.Path
+  else
+    TargetPath := ServiceCatRootPath;
+
+  case Mode of
+    dmAbove: begin
+      TargetPath := ExtractFilePath(TargetPath);
+      attMode := amInsertBefore;
+    end;
+    dmBelow: begin
+      TargetPath := ExtractFilePath(TargetPath);
+      attMode := amInsertAfter;
+    end;
+    dmOnNode: attMode := amAddChildLast;
+  else exit;
+  end;
+
+  if TargetPath[Length(TargetPath)] <> '\' then
+    TargetPath := TargetPath + '\';
+  TargetPath := TargetPath + SourceData.ServiceName;
+
+  Assert(SourceData is TExtServiceEntry);
+  if TExtServiceEntry(SourceData).Info = nil then begin
+
+  end else begin
+    MoveFile(TExtServiceEntry(SourceData).Info
+  end;
+
+
+end;
+
 
 procedure TMainForm.vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; var Allowed: Boolean);
@@ -905,14 +960,7 @@ end;
 procedure TMainForm.MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
 begin
-  Allowed := true;
-end;
-
-procedure TMainForm.MainServiceListvtServicesDragDrop(Sender: TBaseVirtualTree; Source: TObject;
-  DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
-  var Effect: Integer; Mode: TDropMode);
-begin
-//
+  Allowed := CanEditFolders;
 end;
 
 type
@@ -1121,6 +1169,7 @@ end;
 
 
 
+// Folder tree editing
 
 procedure TMainForm.aEditFoldersExecute(Sender: TObject);
 begin
@@ -1146,6 +1195,7 @@ function TMainForm.CanEditFolders: boolean;
 begin
   Result := Self.aEditFolders.Checked;
 end;
+
 
 // Folder tree manipulations
 

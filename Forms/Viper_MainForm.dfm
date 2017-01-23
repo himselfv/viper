@@ -364,7 +364,6 @@ object MainForm: TMainForm
         Width = 857
         Height = 392
         OnDragAllowed = MainServiceListvtServicesDragAllowed
-        OnDragDrop = MainServiceListvtServicesDragDrop
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         ExplicitWidth = 857
         ExplicitHeight = 392

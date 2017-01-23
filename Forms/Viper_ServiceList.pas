@@ -129,6 +129,7 @@ type
     procedure EndUpdate;
     function AddService(Parent: PVirtualNode; Service: TServiceEntry): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
+    function GetServiceEntry(Node: PVirtualNode): TServiceEntry; inline;
     function GetFocusedService: TServiceEntry;
     function GetSelectedServices: TServiceEntries;
     function GetFirstSelectedService: TServiceEntry;
@@ -502,6 +503,11 @@ end;
 
 
 
+
+function TServiceList.GetServiceEntry(Node: PVirtualNode): TServiceEntry;
+begin
+  Result := TServiceEntry(vtServices.GetNodeData(Node)^);
+end;
 
 function TServiceList.GetFocusedService: TServiceEntry;
 begin

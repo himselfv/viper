@@ -3,30 +3,12 @@ unit Viper_MainForm;
 interface
 
 uses
-  Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics,
-  Controls, Forms, Dialogs, VirtualTrees, Actions, ActnList, ExtCtrls,
-  ImgList, UiTypes, Generics.Collections, Menus, ServiceHelper, StdCtrls, ComCtrls,
-  SvcEntry, Viper_ServiceList, Viper_TriggerList;
+  Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
+  Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
+  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper_ServiceList, Viper_TriggerList;
 
 type
- //Service information loaded from Catalogue
-  TServiceFlag = (sfCritical, sfTelemetry);
-  TServiceFlags = set of TServiceFlag;
-  TServiceInfo = class
-  public
-    ServiceName: string;
-    DisplayName: string;
-    Description: string;
-    CriticalText: string;
-    Flags: TServiceFlags;
-  end;
-
-  TServiceCatalogue = class(TObjectList<TServiceInfo>)
-  public
-    function Find(const AServiceName: string): TServiceInfo;
-  end;
-
-
+ //Folders are tracked only as folder nodes, we don't keep any middle layer.
   TFolderNodeType = (
     ntFolder,
     ntRunningServices,
@@ -38,9 +20,10 @@ type
 
   TNdFolderData = record
     NodeType: TFolderNodeType;
-    FolderName: string;
+    Name: string;                   // visible name
     Description: string;
     Services: array of string;
+    Path: string;                   // on disk
     procedure LoadDescription(const AFilename: string);
     function ContainsService(AServiceName: string): boolean;
   end;
@@ -48,6 +31,7 @@ type
 
   TServiceFolders = array of PNdFolderData;
   PServiceFolders = ^TServiceFolders;
+
 
   TExtServiceEntry = class(TServiceEntry)
     Info: TServiceInfo;
@@ -113,6 +97,13 @@ type
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
     Alltriggers1: TMenuItem;
+    aAddFolder: TAction;
+    aRenameFolder: TAction;
+    aDeleteFolder: TAction;
+    N5: TMenuItem;
+    pmAddFolder: TMenuItem;
+    pmRenameFolder: TMenuItem;
+    pmDeleteFolder: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -130,6 +121,12 @@ type
       var Ghosted: Boolean; var ImageIndex: Integer);
     procedure vtFoldersFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
+    procedure vtFoldersDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
+    procedure vtFoldersDragOver(Sender: TBaseVirtualTree; Source: TObject; Shift: TShiftState;
+      State: TDragState; Pt: TPoint; Mode: TDropMode; var Effect: Integer; var Accept: Boolean);
+    procedure vtFoldersDragDrop(Sender: TBaseVirtualTree; Source: TObject; DataObject: IDataObject;
+      Formats: TFormatArray; Shift: TShiftState; Pt: TPoint; var Effect: Integer; Mode: TDropMode);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
     procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
@@ -144,6 +141,15 @@ type
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
     procedure Alltriggers1Click(Sender: TObject);
+    procedure aAddFolderExecute(Sender: TObject);
+    procedure vtFoldersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
+      Y: Integer);
+    procedure aRenameFolderExecute(Sender: TObject);
+    procedure vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+      var Allowed: Boolean);
+    procedure vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+      NewText: string);
+    procedure vtFoldersEdited(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -153,10 +159,10 @@ type
     procedure Folders_HideAll(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure Folders_ShowFiltered(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure NodeMarkVisible(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    function LoadServiceInfo(const AFilename: string): TServiceInfo;
   public
+    function ServiceCatRootPath: string;
     procedure ReloadServiceTree;
-    procedure LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
+    procedure LoadServiceFolderContents(AFolderNode: PVirtualNode; AFolderPath: string);
 
   protected
     FServices: TServiceEntryList;
@@ -187,16 +193,6 @@ uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHe
 
 {$R *.dfm}
 
-function TServiceCatalogue.Find(const AServiceName: string): TServiceInfo;
-var i: integer;
-begin
-  Result := nil;
-  for i := 0 to Self.Count-1 do
-    if SameText(Self[i].ServiceName, AServiceName) then begin
-      Result := Self[i];
-      break;
-    end;
-end;
 
 function TExtServiceEntry.GetEffectiveDisplayName: string;
 begin
@@ -210,6 +206,33 @@ procedure TExtServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex:
 begin
   AImageList := CommonRes.ilImages;
   AIndex := CommonRes.iService;
+end;
+
+
+//Loads folder description from description file
+procedure TNdFolderData.LoadDescription(const AFilename: string);
+var sl: TStringList;
+begin
+  sl := TStringList.Create();
+  try
+    sl.LoadFromFile(AFilename);
+    Self.Description := sl.Text;
+  finally
+    FreeAndNil(sl);
+  end;
+end;
+
+//True if folder contains the given service
+function TNdFolderData.ContainsService(AServiceName: string): boolean;
+var i: integer;
+begin
+  Result := false;
+  AServiceName := LowerCase(AServiceName);
+  for i := 0 to Length(Self.Services)-1 do
+    if LowerCase(Self.Services[i]) = AServiceName then begin
+      Result := true;
+      break;
+    end;
 end;
 
 
@@ -448,6 +471,11 @@ end;
 
 
 
+function TMainForm.ServiceCatRootPath: string;
+begin
+  Result := AppFolder+'\SvcData';
+end;
+
 resourcestring
   sFolderUnknownServices = 'Unknown';
   sFolderRunningServices = 'Running';
@@ -463,7 +491,7 @@ begin
   try
     FServiceCat.Clear;
     vtFolders.Clear;
-    LoadServiceFolder(nil, AppFolder+'\SvcData');
+    LoadServiceFolderContents(nil, ServiceCatRootPath);
     vtFolders_AddSpecial(nil, ntUnknownServices, sFolderUnknownServices);
     vtFolders_AddSpecial(nil, ntRunningServices, sFolderRunningServices);
     vtFolders_AddSpecial(nil, ntAllServices, sFolderAllServices);
@@ -474,18 +502,18 @@ begin
   end;
 end;
 
-procedure TMainForm.LoadServiceFolder(AParentNode: PVirtualNode; AFolderPath: string);
+procedure TMainForm.LoadServiceFolderContents(AFolderNode: PVirtualNode; AFolderPath: string);
 var res: integer;
   sr: TSearchRec;
   node: PVirtualNode;
-  nd: PNdFolderData;
+  FolderData: PNdFolderData;
 begin
-  if AParentNode = nil then
-    nd := nil
+  if AFolderNode = nil then
+    FolderData := nil
   else begin
-    nd := PNdFolderData(vtFolders.GetNodeData(AParentNode));
+    FolderData := PNdFolderData(vtFolders.GetNodeData(AFolderNode));
     try
-      nd.LoadDescription(AFolderPath+'\desc');
+      FolderData.LoadDescription(AFolderPath+'\desc');
     except
       on EFOpenError do begin end; //no description, okay
     end;
@@ -499,99 +527,26 @@ begin
     end;
 
     if (sr.Attr and faDirectory) = faDirectory then begin
-      node := vtFolders_Add(AParentNode, AFolderPath+'\'+sr.Name);
-      LoadServiceFolder(node, AFolderPath+'\'+sr.Name);
+      node := vtFolders_Add(AFolderNode, AFolderPath+'\'+sr.Name);
+      LoadServiceFolderContents(node, AFolderPath+'\'+sr.Name);
     end else
     if ExtractFileExt(sr.Name) = '.txt' then begin
-      LoadServiceInfo(AFolderPath + '\' + sr.Name);
-      if nd <> nil then begin
-        SetLength(nd.Services, Length(nd.Services)+1);
-        nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
+      FServiceCat.LoadServiceInfo(AFolderPath + '\' + sr.Name);
+      if FolderData <> nil then begin
+        SetLength(FolderData.Services, Length(FolderData.Services)+1);
+        FolderData.Services[Length(FolderData.Services)-1] := ChangeFileExt(sr.Name, '');
       end;
     end else
     if ExtractFileExt(sr.Name) = '.lnk' then begin
-      if nd <> nil then begin
-        SetLength(nd.Services, Length(nd.Services)+1);
-        nd.Services[Length(nd.Services)-1] := ChangeFileExt(sr.Name, '');
+      if FolderData <> nil then begin
+        SetLength(FolderData.Services, Length(FolderData.Services)+1);
+        FolderData.Services[Length(FolderData.Services)-1] := ChangeFileExt(sr.Name, '');
       end;
     end;
 
     res := FindNext(sr);
   end;
   SysUtils.FindClose(sr);
-end;
-
-//Reads static service information file and registers a service in a catalogue (or extends it)
-function TMainForm.LoadServiceInfo(const AFilename: string): TServiceInfo;
-var ServiceName: string;
-  sl: TStringList;
-  ln: string;
-  i: integer;
-begin
-  ServiceName := ChangeFileExt(ExtractFilename(AFilename), '');
-  Result := FServiceCat.Find(ServiceName);
-  if Result = nil then begin
-    Result := TServiceInfo.Create;
-    Result.ServiceName := ServiceName;
-    FServiceCat.Add(Result);
-  end;
-
-  sl := TStringList.Create;
-  try
-    sl.LoadFromFile(AFilename);
-    i := sl.Count;
-    while i > 0 do begin
-      Dec(i);
-      ln := Trim(sl[i]);
-      if (ln='') or (ln[1]='#') then begin
-        sl.Delete(i);
-        continue;
-      end;
-      if ln.StartsWith('TITLE:') then begin
-        Result.DisplayName := Trim(Copy(ln, 7, MaxInt));
-        sl.Delete(i);
-        continue;
-      end;
-      if ln.StartsWith('CRITICAL') then begin
-        Result.Flags := Result.Flags + [sfCritical];
-        Result.CriticalText := Result.CriticalText + Trim(Copy(ln, 10, MaxInt)) + #13;
-        sl.Delete(i);
-        continue;
-      end;
-      if ln.StartsWith('TELEMETRY') then begin
-        Result.Flags := Result.Flags + [sfTelemetry];
-        sl.Delete(i);
-        continue;
-      end;
-    end;
-    Result.Description := Result.Description + Trim(sl.Text);
-  finally
-    FreeAndNil(sl);
-  end;
-end;
-
-procedure TNdFolderData.LoadDescription(const AFilename: string);
-var sl: TStringList;
-begin
-  sl := TStringList.Create();
-  try
-    sl.LoadFromFile(AFilename);
-    Self.Description := sl.Text;
-  finally
-    FreeAndNil(sl);
-  end;
-end;
-
-function TNdFolderData.ContainsService(AServiceName: string): boolean;
-var i: integer;
-begin
-  Result := false;
-  AServiceName := LowerCase(AServiceName);
-  for i := 0 to Length(Self.Services)-1 do
-    if LowerCase(Self.Services[i]) = AServiceName then begin
-      Result := true;
-      break;
-    end;
 end;
 
 function TMainForm.vtFolders_Add(AParent: PVirtualNode; AFolderPath: string): PVirtualNode;
@@ -601,7 +556,8 @@ begin
   vtFolders.ValidateNode(Result, false);
   Data := vtFolders.GetNodeData(Result);
   Data.NodeType := ntFolder;
-  Data.FolderName := ExtractFilename(AFolderPath);
+  Data.Name := ExtractFilename(AFolderPath);
+  Data.Path := AFolderPath;
 end;
 
 function TMainForm.vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType; ATitle: string): PVirtualNode;
@@ -611,7 +567,8 @@ begin
   vtFolders.ValidateNode(Result, false);
   Data := vtFolders.GetNodeData(Result);
   Data.NodeType := AType;
-  Data.FolderName := ATitle;
+  Data.Name := ATitle;
+  Data.Path := '';
 end;
 
 procedure TMainForm.vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree;
@@ -644,7 +601,7 @@ begin
   Data := Sender.GetNodeData(Node);
   if TextType <> ttNormal then exit;
   case Column of
-    NoColumn, 0: CellText := Data.FolderName;
+    NoColumn, 0: CellText := Data.Name;
   end;
 end;
 
@@ -656,10 +613,156 @@ begin
   ImageIndex := CommonRes.iFolder;
 end;
 
-procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
+procedure TMainForm.vtFoldersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+var Node: PVirtualNode;
+begin
+ //Always focus or de-focus node on right-click so that we always get the correct right-click actions.
+
+ //We could've kept FocusedNode intact and introduced another variable to hold the "what was right-clicked",
+ //but too much bother. Maybe later.
+
+ //Or maybe we'll use Selection for services (can support multi-selection too) and Focus for actions.
+
+ //Would be better to do this on mouseup, but it only arrives after the popup.
+
+  Node := vtFolders.GetNodeAt(X, Y);
+  if vtFolders.FocusedNode <> Node then
+    vtFolders.FocusedNode := Node;
+end;
+
+procedure TMainForm.vtFoldersDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; var Allowed: Boolean);
+var Data: PNdFolderData;
+begin
+  Data := Sender.GetNodeData(Node);
+  Allowed := Data.NodeType = ntFolder; //drag only allowed for normal folders
+end;
+
+procedure TMainForm.vtFoldersDragOver(Sender: TBaseVirtualTree; Source: TObject; Shift: TShiftState;
+  State: TDragState; Pt: TPoint; Mode: TDropMode; var Effect: Integer; var Accept: Boolean);
+var Node: PVirtualNode;
+  Data: PNdFolderData;
+begin
+  Node := Sender.GetNodeAt(Pt.X, Pt.Y);
+  if Node <> nil then
+    Data := Sender.GetNodeData(Node)
+  else Data := nil;
+
+  if (Data = nil) or (Data.NodeType <> ntFolder) then begin //drop only allowed on normal folders
+    Accept := false;
+    exit;
+  end;
+
+  Accept := (Source=Sender); //atm only accept nodes of this tree (later we'll also accept services)
+end;
+
+procedure TMainForm.vtFoldersDragDrop(Sender: TBaseVirtualTree; Source: TObject;
+  DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
+  var Effect: Integer; Mode: TDropMode);
+var SourceNode, TargetNode: PVirtualNode;
+  SourceData, TargetData: PNdFolderData;
+  TargetPath: string;
+  attMode: TVTNodeAttachMode;
+begin
+  SourceNode := TVirtualStringTree(Source).FocusedNode;
+  TargetNode := Sender.DropTargetNode;
+
+  SourceData := Sender.GetNodeData(SourceNode);
+  TargetData := Sender.GetNodeData(TargetNode);
+
+  if TargetNode <> nil then
+    TargetPath := TargetData.Path
+  else
+    TargetPath := ServiceCatRootPath;
+
+  case Mode of
+    dmAbove: begin
+      TargetPath := ExtractFilePath(TargetPath);
+      attMode := amInsertBefore;
+    end;
+    dmBelow: begin
+      TargetPath := ExtractFilePath(TargetPath);
+      attMode := amInsertAfter;
+    end;
+    dmOnNode: attMode := amAddChildLast;
+  else exit;
+  end;
+
+  if TargetPath[Length(TargetPath)] <> '\' then
+    TargetPath := TargetPath + '\';
+  TargetPath := TargetPath + ExtractFilename(SourceData.Path);
+
+  if not SameText(TargetPath, SourceData.Path) then begin // otherwise just reordering
+    if not MoveFile(PChar(SourceData.Path), PChar(TargetPath)) then
+      RaiseLastOsError();
+    SourceData.Path := TargetPath;
+  end;
+
+  Sender.MoveTo(SourceNode, TargetNode, attMode, False);
+end;
+
+procedure TMainForm.vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; var Allowed: Boolean);
+var Data: PNdFolderData;
+begin
+  Data := Sender.GetNodeData(Node);
+  Allowed := (Data.NodeType = ntFolder);
+end;
+
+procedure TMainForm.vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; NewText: string);
+var Data: PNdFolderData;
+begin
+  Data := Sender.GetNodeData(Node);
+  if Data.NodeType <> ntFolder then exit; //wtf
+  if NewText = '' then exit;
+
+  Data.Name := NewText; //Store NewText in Name for now, apply in OnEdited when we're out of Editing mode
+end;
+
+resourcestring
+  eNameAlreadyExists = 'Folder with this name already exists';
+
+procedure TMainForm.vtFoldersEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex);
+var Data: PNdFolderData;
+  err: integer;
+  errmsg: string;
+begin
+  Data := Sender.GetNodeData(Node);
+  if Data.NodeType <> ntFolder then exit; //wtf
+
+  if SameStr(Data.Name, ExtractFilename(Data.Path)) then
+    exit; //nothing to change
+
+  if not MoveFile(PChar(Data.Path), PChar(ExtractFilePath(Data.Path)+'\'+Data.Name)) then begin
+    err := GetLastError;
+    Data.Name := ExtractFilename(Data.Path);
+    case err of
+      ERROR_ALREADY_EXISTS: errmsg := eNameAlreadyExists; //common case
+    else errmsg := SysErrorMessage(err);
+    end;
+    MessageBox(Self.Handle, PChar(errmsg), PChar(Self.Caption), MB_ICONERROR + MB_OK);
+    exit;
+  end;
+
+  Data.Path := ExtractFilePath(Data.Path)+'\'+Data.Name;
+end;
+
+procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex);
+var Data: PNdFolderData;
 begin
   FilterServices;
+
+  if Node <> nil then
+    Data := Sender.GetNodeData(Node)
+  else Data := nil;
+
+  aAddFolder.Enabled := (Node = nil) or (Data.NodeType = ntFolder); //can only add children to normal folders and root
+  aRenameFolder.Enabled := (Node <> nil) and (Data.NodeType = ntFolder); //only for normal folders
+  aDeleteFolder.Enabled := (Node <> nil) and (Data.NodeType = ntFolder);
 end;
 
 procedure TMainForm.aHideEmptyFoldersExecute(Sender: TObject);
@@ -971,5 +1074,58 @@ begin
   MainTriggerList.Services := Self.FServices;
   MainTriggerList.Show;
 end;
+
+
+// Folder tree manipulations
+
+resourcestring
+  sNewFolderName = 'New Folder';
+  sNewFolderNameCtr = 'New Folder (%d)';
+
+procedure TMainForm.aAddFolderExecute(Sender: TObject);
+var ParentNode, Node: PVirtualNode;
+  ParentData: PNdFolderData;
+  Path, NewName: string;
+  NewNameCtr: integer;
+begin
+  //Determine parent node and path
+  ParentNode := vtFolders.FocusedNode;
+  if ParentNode <> nil then begin
+    ParentData := vtFolders.GetNodeData(ParentNode);
+    if ParentData.NodeType <> ntFolder then exit; //cannot create subfolders for system nodes
+    Path := ParentData.Path;
+  end else
+    Path := ServiceCatRootPath;
+  if (Length(Path) < 1) or (Path[Length(Path)] <> '\') then
+    Path := Path + '\';
+
+  //Create a new folder with an unique name
+  NewNameCtr := 0;
+  NewName := sNewFolderName;
+  while not CreateDirectory(PChar(Path+NewName), nil) do begin
+    if GetLastError <> ERROR_ALREADY_EXISTS then
+      RaiseLastOsError();
+    Inc(NewNameCtr);
+    NewName := Format(sNewFolderNameCtr, [NewNameCtr]);
+  end;
+
+  //Create a node for this folder
+  Node := vtFolders_Add(ParentNode, Path+NewName);
+
+  //Auto-start editing
+  vtFolders.EditNode(Node, NoColumn);
+end;
+
+procedure TMainForm.aRenameFolderExecute(Sender: TObject);
+var Node: PVirtualNode;
+  Data: PNdFolderData;
+begin
+  Node := vtFolders.FocusedNode;
+  if Node = nil then exit;
+  Data := vtFolders.GetNodeData(Node);
+  if Data.NodeType = ntFolder then
+    vtFolders.EditNode(Node, NoColumn);
+end;
+
 
 end.

@@ -18,7 +18,8 @@ uses
   TriggerUtils in 'TriggerUtils.pas',
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',
-  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList};
+  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList},
+  SvcCat in 'SvcCat.pas';
 
 {$R *.res}
 

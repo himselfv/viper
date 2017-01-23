@@ -41,15 +41,23 @@ object MainForm: TMainForm
     PopupMenu = pmFolders
     StateImages = CommonRes.ilOverlays
     TabOrder = 1
-    TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
+    TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking]
+    TreeOptions.MiscOptions = [toAcceptOLEDrop, toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
+    OnDragAllowed = vtFoldersDragAllowed
+    OnDragOver = vtFoldersDragOver
+    OnDragDrop = vtFoldersDragDrop
+    OnEdited = vtFoldersEdited
+    OnEditing = vtFoldersEditing
     OnFocusChanged = vtFoldersFocusChanged
     OnFreeNode = vtFoldersFreeNode
     OnGetText = vtFoldersGetText
     OnGetImageIndex = vtFoldersGetImageIndex
     OnGetNodeDataSize = vtFoldersGetNodeDataSize
     OnInitNode = vtFoldersInitNode
+    OnMouseDown = vtFoldersMouseDown
+    OnNewText = vtFoldersNewText
     Columns = <>
   end
   object pnlMain: TPanel
@@ -175,10 +183,26 @@ object MainForm: TMainForm
             Height = 165
             ExplicitWidth = 849
             ExplicitHeight = 165
+            Columns = <
+              item
+                Position = 0
+                Width = 463
+                WideText = 'Trigger'
+              end
+              item
+                Position = 1
+                Width = 80
+                WideText = 'Action'
+              end
+              item
+                Position = 2
+                Width = 300
+                WideText = 'Params'
+              end>
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C0101020008006C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800700010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -412,6 +436,20 @@ object MainForm: TMainForm
       Hint = 'Restore the startup configuration of services to a saved one'
       OnExecute = aRestoreServiceConfigExecute
     end
+    object aAddFolder: TAction
+      Category = 'Folders'
+      Caption = 'Add...'
+      OnExecute = aAddFolderExecute
+    end
+    object aRenameFolder: TAction
+      Category = 'Folders'
+      Caption = 'Rename...'
+      OnExecute = aRenameFolderExecute
+    end
+    object aDeleteFolder: TAction
+      Category = 'Folders'
+      Caption = 'Delete'
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -419,7 +457,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800640010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800680010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -629,6 +667,18 @@ object MainForm: TMainForm
   object pmFolders: TPopupMenu
     Left = 24
     Top = 184
+    object pmAddFolder: TMenuItem
+      Action = aAddFolder
+    end
+    object pmRenameFolder: TMenuItem
+      Action = aRenameFolder
+    end
+    object pmDeleteFolder: TMenuItem
+      Action = aDeleteFolder
+    end
+    object N5: TMenuItem
+      Caption = '-'
+    end
     object Hideemptyfolders1: TMenuItem
       Action = aHideEmptyFolders
       AutoCheck = True

@@ -30,7 +30,7 @@ object MainForm: TMainForm
     Height = 609
     Align = alLeft
     BorderWidth = 1
-    Header.AutoSizeIndex = 0
+    Header.AutoSizeIndex = -1
     Header.Font.Charset = DEFAULT_CHARSET
     Header.Font.Color = clWindowText
     Header.Font.Height = -11
@@ -41,10 +41,12 @@ object MainForm: TMainForm
     PopupMenu = pmFolders
     StateImages = CommonRes.ilOverlays
     TabOrder = 1
-    TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking]
+    TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking]
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
+    OnChange = vtFoldersChange
+    OnCompareNodes = vtFoldersCompareNodes
     OnDragAllowed = vtFoldersDragAllowed
     OnDragOver = vtFoldersDragOver
     OnDragDrop = vtFoldersDragDrop
@@ -202,7 +204,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800700010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800780010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -361,6 +363,8 @@ object MainForm: TMainForm
       inherited vtServices: TVirtualStringTree
         Width = 857
         Height = 392
+        OnDragAllowed = MainServiceListvtServicesDragAllowed
+        OnDragDrop = MainServiceListvtServicesDragDrop
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         ExplicitWidth = 857
         ExplicitHeight = 392
@@ -392,6 +396,13 @@ object MainForm: TMainForm
   object ActionList: TActionList
     Left = 24
     Top = 16
+    object aEditFolders: TAction
+      Category = 'Folders'
+      AutoCheck = True
+      Caption = 'Edit folders'
+      ShortCut = 16497
+      OnExecute = aEditFoldersExecute
+    end
     object aClose: TAction
       Caption = 'Close'
       OnExecute = aCloseExecute
@@ -406,6 +417,7 @@ object MainForm: TMainForm
       OnExecute = aRestartAsAdminExecute
     end
     object aHideEmptyFolders: TAction
+      Category = 'Folders'
       AutoCheck = True
       Caption = 'Hide empty folders'
       Checked = True
@@ -439,16 +451,20 @@ object MainForm: TMainForm
     object aAddFolder: TAction
       Category = 'Folders'
       Caption = 'Add...'
+      Visible = False
       OnExecute = aAddFolderExecute
     end
     object aRenameFolder: TAction
       Category = 'Folders'
-      Caption = 'Rename...'
+      Caption = 'Rename'
+      Visible = False
       OnExecute = aRenameFolderExecute
     end
     object aDeleteFolder: TAction
       Category = 'Folders'
       Caption = 'Delete'
+      Visible = False
+      OnExecute = aDeleteFolderExecute
     end
   end
   object ilImages: TImageList
@@ -457,7 +473,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800680010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800700010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -678,6 +694,10 @@ object MainForm: TMainForm
     end
     object N5: TMenuItem
       Caption = '-'
+    end
+    object Editfolders1: TMenuItem
+      Action = aEditFolders
+      AutoCheck = True
     end
     object Hideemptyfolders1: TMenuItem
       Action = aHideEmptyFolders

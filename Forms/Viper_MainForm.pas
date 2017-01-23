@@ -12,8 +12,8 @@ type
   TFolderNodeType = (
     ntFolder,
     ntRunningServices,
-    ntAllServices,
     ntUnknownServices,
+    ntAllServices,
     ntRunningDrivers,
     ntAllDrivers
   );
@@ -104,6 +104,8 @@ type
     pmAddFolder: TMenuItem;
     pmRenameFolder: TMenuItem;
     pmDeleteFolder: TMenuItem;
+    aEditFolders: TAction;
+    Editfolders1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -150,6 +152,16 @@ type
     procedure vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
       NewText: string);
     procedure vtFoldersEdited(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
+    procedure aDeleteFolderExecute(Sender: TObject);
+    procedure vtFoldersCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
+      Column: TColumnIndex; var Result: Integer);
+    procedure vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
+    procedure MainServiceListvtServicesDragDrop(Sender: TBaseVirtualTree; Source: TObject;
+      DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
+      var Effect: Integer; Mode: TDropMode);
+    procedure aEditFoldersExecute(Sender: TObject);
 
   protected
     FServiceCat: TServiceCatalogue; //catalogue of static service information
@@ -163,6 +175,9 @@ type
     function ServiceCatRootPath: string;
     procedure ReloadServiceTree;
     procedure LoadServiceFolderContents(AFolderNode: PVirtualNode; AFolderPath: string);
+
+  protected // Folder editing
+    function CanEditFolders: boolean;
 
   protected
     FServices: TServiceEntryList;
@@ -417,7 +432,7 @@ begin
   isVisible := true;
 
   //Filter by folder
-  folderNode := vtFolders.FocusedNode;
+  folderNode := vtFolders.GetFirstSelected();
   if folderNode <> nil then begin
     folderData := PNdFolderData(vtFolders.GetNodeData(folderNode));
     case folderData.NodeType of
@@ -613,16 +628,26 @@ begin
   ImageIndex := CommonRes.iFolder;
 end;
 
+procedure TMainForm.vtFoldersCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
+  Column: TColumnIndex; var Result: Integer);
+var Data1, Data2: PNdFolderData;
+begin
+  Data1 := Sender.GetNodeData(Node1);
+  Data2 := Sender.GetNodeData(Node2);
+
+  Result := NativeUInt(Data1.NodeType) - NativeUInt(Data2.NodeType);
+  if Result = 0 then
+    Result := CompareText(Data1.Name, Data2.Name);
+end;
+
+
 procedure TMainForm.vtFoldersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer);
 var Node: PVirtualNode;
 begin
  //Always focus or de-focus node on right-click so that we always get the correct right-click actions.
 
- //We could've kept FocusedNode intact and introduced another variable to hold the "what was right-clicked",
- //but too much bother. Maybe later.
-
- //Or maybe we'll use Selection for services (can support multi-selection too) and Focus for actions.
+ //Focus is used for right-click actions, Selection for filtering the services
 
  //Would be better to do this on mouseup, but it only arrives after the popup.
 
@@ -636,7 +661,7 @@ procedure TMainForm.vtFoldersDragAllowed(Sender: TBaseVirtualTree; Node: PVirtua
 var Data: PNdFolderData;
 begin
   Data := Sender.GetNodeData(Node);
-  Allowed := Data.NodeType = ntFolder; //drag only allowed for normal folders
+  Allowed := Self.CanEditFolders and (Data.NodeType = ntFolder); //drag only allowed for normal folders
 end;
 
 procedure TMainForm.vtFoldersDragOver(Sender: TBaseVirtualTree; Source: TObject; Shift: TShiftState;
@@ -649,10 +674,9 @@ begin
     Data := Sender.GetNodeData(Node)
   else Data := nil;
 
-  if (Data = nil) or (Data.NodeType <> ntFolder) then begin //drop only allowed on normal folders
-    Accept := false;
-    exit;
-  end;
+  Accept := Self.CanEditFolders
+    and (Data <> nil) and (Data.NodeType = ntFolder); //drop only allowed on normal folders
+  if not Accept then exit;
 
   Accept := (Source=Sender); //atm only accept nodes of this tree (later we'll also accept services)
 end;
@@ -665,6 +689,8 @@ var SourceNode, TargetNode: PVirtualNode;
   TargetPath: string;
   attMode: TVTNodeAttachMode;
 begin
+  if not Self.CanEditFolders then exit;
+
   SourceNode := TVirtualStringTree(Source).FocusedNode;
   TargetNode := Sender.DropTargetNode;
 
@@ -707,7 +733,7 @@ procedure TMainForm.vtFoldersEditing(Sender: TBaseVirtualTree; Node: PVirtualNod
 var Data: PNdFolderData;
 begin
   Data := Sender.GetNodeData(Node);
-  Allowed := (Data.NodeType = ntFolder);
+  Allowed := Self.CanEditFolders and (Data.NodeType = ntFolder);
 end;
 
 procedure TMainForm.vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -715,7 +741,8 @@ procedure TMainForm.vtFoldersNewText(Sender: TBaseVirtualTree; Node: PVirtualNod
 var Data: PNdFolderData;
 begin
   Data := Sender.GetNodeData(Node);
-  if Data.NodeType <> ntFolder then exit; //wtf
+  if not self.CanEditFolders or (Data.NodeType <> ntFolder) then exit; //wtf
+
   if NewText = '' then exit;
 
   Data.Name := NewText; //Store NewText in Name for now, apply in OnEdited when we're out of Editing mode
@@ -731,7 +758,7 @@ var Data: PNdFolderData;
   errmsg: string;
 begin
   Data := Sender.GetNodeData(Node);
-  if Data.NodeType <> ntFolder then exit; //wtf
+  if not self.CanEditFolders or (Data.NodeType <> ntFolder) then exit; //wtf
 
   if SameStr(Data.Name, ExtractFilename(Data.Path)) then
     exit; //nothing to change
@@ -750,12 +777,17 @@ begin
   Data.Path := ExtractFilePath(Data.Path)+'\'+Data.Name;
 end;
 
+
+procedure TMainForm.vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  //Selection changed
+  FilterServices;
+end;
+
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex);
 var Data: PNdFolderData;
 begin
-  FilterServices;
-
   if Node <> nil then
     Data := Sender.GetNodeData(Node)
   else Data := nil;
@@ -820,7 +852,7 @@ begin
       break;
     end;
 
-  if (not cbHideEmptyFolders.Checked) or HasAnyServices then
+  if (not aHideEmptyFolders.Checked) or aEditFolders.Checked or HasAnyServices then
     NodeMarkVisible(Sender, Node);
 end;
 
@@ -870,6 +902,18 @@ begin
     ReloadTriggers;
 end;
 
+procedure TMainForm.MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
+begin
+  Allowed := true;
+end;
+
+procedure TMainForm.MainServiceListvtServicesDragDrop(Sender: TBaseVirtualTree; Source: TObject;
+  DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
+  var Effect: Integer; Mode: TDropMode);
+begin
+//
+end;
 
 type
   TGetServiceFoldersData = record
@@ -1076,11 +1120,40 @@ begin
 end;
 
 
+
+
+procedure TMainForm.aEditFoldersExecute(Sender: TObject);
+begin
+ //By default, click+drag on services results in rectangle selection. Dragging interferes with this.
+  if aEditFolders.Checked then
+    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions + [toFullRowDrag]
+  else
+    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions - [toFullRowDrag];
+
+  aAddFolder.Visible := aEditFolders.Checked;
+  aRenameFolder.Visible := aEditFolders.Checked;
+  aDeleteFolder.Visible := aEditFolders.Checked;
+
+  aHideEmptyFolders.Enabled := not aEditFolders.Checked; //Cannot hide empty folders in edit mode
+  aHideEmptyFolders.Visible := not aEditFolders.Checked;
+
+  FilterFolders; //Because "Hide empty folders" might implicitly change
+end;
+
+function TMainForm.CanEditFolders: boolean;
+begin
+  Result := Self.aEditFolders.Checked;
+end;
+
 // Folder tree manipulations
 
 resourcestring
   sNewFolderName = 'New Folder';
   sNewFolderNameCtr = 'New Folder (%d)';
+  sConfirmDeleteFolder = 'Do you really want to delete folder "%s"?';
+  sCannotDeleteFolderNotEmpty = 'Cannot delete this folder because it is not empty.';
 
 procedure TMainForm.aAddFolderExecute(Sender: TObject);
 var ParentNode, Node: PVirtualNode;
@@ -1127,5 +1200,28 @@ begin
     vtFolders.EditNode(Node, NoColumn);
 end;
 
+procedure TMainForm.aDeleteFolderExecute(Sender: TObject);
+var Node: PVirtualNode;
+  Data: PNdFolderData;
+begin
+  Node := vtFolders.FocusedNode;
+  if Node = nil then exit;
+  Data := vtFolders.GetNodeData(Node);
+  if Data.NodeType <> ntFolder then exit;
+
+  if (vtFolders.ChildCount[Node] > 0) or (Length(Data.Services) > 0) then begin
+    MessageBox(Self.Handle, PChar(sCannotDeleteFolderNotEmpty), PChar(Self.Caption), MB_ICONERROR or MB_OK);
+    exit;
+  end;
+
+  if MessageBox(Self.Handle, PChar(Format(sConfirmDeleteFolder, [Data.Name])), PChar(Self.Caption),
+    MB_YESNO or MB_ICONQUESTION) <> ID_YES then
+    exit;
+
+  if not RemoveDirectory(PChar(Data.Path)) then
+    RaiseLastOsError();
+
+  vtFolders.DeleteNode(Node);
+end;
 
 end.

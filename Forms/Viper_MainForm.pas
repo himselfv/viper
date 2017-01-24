@@ -15,7 +15,8 @@ type
     ntUnknownServices,
     ntAllServices,
     ntRunningDrivers,
-    ntAllDrivers
+    ntAllDrivers,
+    ntMax = 255               //represents all the other values when cast to TFolderNodeType
   );
 
   //Folder node data contains only a single pointer.
@@ -506,7 +507,12 @@ end;
 
 function TMainForm.SpecialFolderType(AFolder: TNdFolderData): TFolderNodeType;
 begin
-  Result := TFolderNodeType(AFolder);
+  //We can't just typecast to TFolderNodeType as this will only look at the lowest byte
+  //But we also have to have a result for non-TFolderNodeType values, so I'm creating ntMax for that
+  if (NativeUInt(AFolder) > NativeUInt(ntMax)) then
+    Result := ntMax
+  else
+    Result := TFolderNodeType(NativeUInt(AFolder));
 end;
 
 function TMainForm.vtFolders_Add(AParent: PVirtualNode; AInfo: TServiceFolder): PVirtualNode;

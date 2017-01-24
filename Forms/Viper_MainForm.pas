@@ -10,6 +10,7 @@ uses
 type
   TFolderNodeType = (
     //The order is important, folders are sorted by it
+    ntNone = 0,               //no folder type OR information is assigned
     ntRunningServices = 1,
     ntUnknownServices,
     ntAllServices,
@@ -94,6 +95,9 @@ type
     pmDeleteFolder: TMenuItem;
     aEditFolders: TAction;
     Editfolders1: TMenuItem;
+    aServiceRemoveFromFolder: TAction;
+    N6: TMenuItem;
+    Removefromfolder1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -144,6 +148,7 @@ type
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
     procedure Alltriggers1Click(Sender: TObject);
+    procedure aServiceRemoveFromFolderExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -395,9 +400,10 @@ begin
   if folderNode <> nil then begin
     folderData := GetFolderData(folderNode);
     case SpecialFolderType(folderData) of
+      ntNone: isVisible := false;
       ntRunningServices: isVisible := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
       ntAllServices: isVisible :=  isService;
-      ntUnknownServices: isVisible := isService and (Length(svc.Info.Folders) <= 0);
+      ntUnknownServices: isVisible := isService and ((svc.Info = nil) or (Length(svc.Info.Folders) <= 0));
       ntRunningDrivers: isVisible := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
       ntAllDrivers: isVisible := not isService;
     else //pointer
@@ -487,7 +493,10 @@ end;
 
 function TMainForm.GetFolderData(AFolderNode: PVirtualNode): TNdFolderData;
 begin
-  Result := TServiceFolder(vtFolders.GetNodeData(AFolderNode)^);
+  if AFolderNode = nil then
+    Result := nil
+  else
+    Result := TServiceFolder(vtFolders.GetNodeData(AFolderNode)^);
 end;
 
 function TMainForm.IsSpecialFolder(AFolder: TNdFolderData): boolean;
@@ -529,7 +538,7 @@ procedure TMainForm.vtFoldersInitNode(Sender: TBaseVirtualTree; ParentNode,
 var Data: PNdFolderData;
 begin
   Data := Sender.GetNodeData(Node);
-  Initialize(Data^);
+//  Initialize(Data^); //no need for now
 end;
 
 procedure TMainForm.vtFoldersFreeNode(Sender: TBaseVirtualTree;
@@ -537,7 +546,7 @@ procedure TMainForm.vtFoldersFreeNode(Sender: TBaseVirtualTree;
 var Data: PNdFolderData;
 begin
   Data := Sender.GetNodeData(Node);
-  Finalize(Data^);
+//  Finalize(Data^);  //no need for now
 end;
 
 procedure TMainForm.vtFoldersGetText(Sender: TBaseVirtualTree;
@@ -550,6 +559,7 @@ begin
   case Column of
     NoColumn, 0:
       case SpecialFolderType(Data) of
+        ntNone: CellText := '';
         ntRunningServices: CellText := sFolderRunningServices;
         ntUnknownServices: CellText := sFolderUnknownServices;
         ntAllServices: CellText := sFolderAllServices;
@@ -579,10 +589,10 @@ begin
     Result := NativeUInt(Data1) - NativeUInt(Data2)
   else
   if IsSpecialFolder(Data1) then
-    Result := -1
+    Result := +1
   else
   if IsSpecialFolder(Data2) then
-    Result := +1
+    Result := -1
   else
     Result := CompareText(Data1.Name, Data2.Name);
 end;
@@ -647,43 +657,28 @@ end;
 //Called to handle a folder node dropped onto the folder tree
 procedure TMainForm.FoldersDropFolder(Sender: TBaseVirtualTree; SourceNode: PVirtualNode; Mode: TDropMode);
 var TargetNode: PVirtualNode;
-  SourceData, TargetData: PNdFolderData;
-  TargetPath: string;
+  Folder, NewParent: TServiceFolder;
   attMode: TVTNodeAttachMode;
 begin
   TargetNode := Sender.DropTargetNode;
 
-  SourceData := Sender.GetNodeData(SourceNode);
-  TargetData := Sender.GetNodeData(TargetNode);
-
-  if TargetNode <> nil then
-    TargetPath := TargetData.Path
-  else
-    TargetPath := FServiceCat.RootPath;
+  Folder := GetFolderData(SourceNode);
+  NewParent := GetFolderData(TargetNode);
 
   case Mode of
     dmAbove: begin
-      TargetPath := ExtractFilePath(TargetPath);
+      NewParent := NewParent.Parent;
       attMode := amInsertBefore;
     end;
     dmBelow: begin
-      TargetPath := ExtractFilePath(TargetPath);
+      NewParent := NewParent.Parent;
       attMode := amInsertAfter;
     end;
     dmOnNode: attMode := amAddChildLast;
   else exit;
   end;
 
-  if TargetPath[Length(TargetPath)] <> '\' then
-    TargetPath := TargetPath + '\';
-  TargetPath := TargetPath + ExtractFilename(SourceData.Path);
-
-  if not SameText(TargetPath, SourceData.Path) then begin // otherwise just reordering
-    if not MoveFile(PChar(SourceData.Path), PChar(TargetPath)) then
-      RaiseLastOsError();
-    SourceData.Path := TargetPath;
-  end;
-
+  FServiceCat.MoveFolder(Folder, NewParent); //throws on error;
   Sender.MoveTo(SourceNode, TargetNode, attMode, False);
 end;
 
@@ -691,48 +686,48 @@ end;
 procedure TMainForm.FoldersDropService(Sender: TBaseVirtualTree; Source: TServiceList;
   SourceNode: PVirtualNode; Mode: TDropMode);
 var TargetNode: PVirtualNode;
-  SourceData: TServiceEntry;
-  TargetData: PNdFolderData;
-  TargetPath: string;
-  attMode: TVTNodeAttachMode;
+  SvcEntry: TServiceEntry;
+  SvcInfo: TServiceInfo;
+  TargetFolder: TNdFolderData;
 begin
-//TODO:!
-{
+  SvcEntry := Source.GetServiceEntry(SourceNode);
+  SvcInfo := FServiceCat.Get(SvcEntry.ServiceName); // Find or create one
+
+  //We could've created SvcInfo just now, so update the field
+  //Thankfully, all TServiceEntries are global between the ServiceList instances! So we only need to update in one place.
+  if SvcEntry is TExtServiceEntry then
+    TExtServiceEntry(SvcEntry).Info := SvcInfo;
+
   TargetNode := Sender.DropTargetNode;
-
-  SourceData := Source.GetServiceEntry(SourceNode);
-  TargetData := Sender.GetNodeData(TargetNode);
-
-  if TargetNode <> nil then
-    TargetPath := TargetData.Path
-  else
-    TargetPath := ServiceCatRootPath;
+  TargetFolder := GetFolderData(TargetNode);
+  if IsSpecialFolder(TargetFolder) then exit;
 
   case Mode of
-    dmAbove: begin
-      TargetPath := ExtractFilePath(TargetPath);
-      attMode := amInsertBefore;
-    end;
-    dmBelow: begin
-      TargetPath := ExtractFilePath(TargetPath);
-      attMode := amInsertAfter;
-    end;
-    dmOnNode: attMode := amAddChildLast;
+    dmAbove,
+    dmBelow: TargetFolder := TargetFolder.Parent;
+    dmOnNode: begin end;
   else exit;
   end;
 
-  if TargetPath[Length(TargetPath)] <> '\' then
-    TargetPath := TargetPath + '\';
-  TargetPath := TargetPath + SourceData.ServiceName;
+  FServiceCat.MoveService(SvcInfo, TargetFolder); //throws on error
+  Self.FilterServices;
+end;
 
-  Assert(SourceData is TExtServiceEntry);
-  if TExtServiceEntry(SourceData).Info = nil then begin
+//Removes the selected services from exactly the active folders (not from every folder they're in)
+procedure TMainForm.aServiceRemoveFromFolderExecute(Sender: TObject);
+var Folder: TServiceFolder;
+  SvcEntry: TServiceEntry;
+  SvcInfo: TServiceInfo;
+begin
+  Folder := GetFolderData(vtFolders.GetFirstSelected());
+  if (Folder = nil) or IsSpecialFolder(Folder) then exit; //TODO: shouldn't have even been visible!
 
-  end else begin
-    MoveFile(TExtServiceEntry(SourceData).Info
+  for SvcEntry in MainServiceList.GetSelectedServices do begin
+    SvcInfo := FServiceCat.Find(SvcEntry.ServiceName);
+    if SvcInfo <> nil then //those that are nil are already outside of everything
+      FServiceCat.RemoveServiceFromFolder(SvcInfo, Folder);
   end;
-}
-
+  Self.FilterServices;
 end;
 
 
@@ -800,9 +795,9 @@ begin
     Data := GetFolderData(Node)
   else Data := nil;
 
-  aAddFolder.Enabled := (Node = nil) or IsSpecialFolder(Data); //can only add children to normal folders and root
-  aRenameFolder.Enabled := (Node <> nil) and IsSpecialFolder(Data); //only for normal folders
-  aDeleteFolder.Enabled := (Node <> nil) and IsSpecialFolder(Data);
+  aAddFolder.Enabled := (Node = nil) or not IsSpecialFolder(Data); //can only add children to normal folders and root
+  aRenameFolder.Enabled := (Node <> nil) and not IsSpecialFolder(Data); //only for normal folders
+  aDeleteFolder.Enabled := (Node <> nil) and not IsSpecialFolder(Data);
 end;
 
 procedure TMainForm.aHideEmptyFoldersExecute(Sender: TObject);
@@ -1109,6 +1104,7 @@ begin
 
   aHideEmptyFolders.Enabled := not aEditFolders.Checked; //Cannot hide empty folders in edit mode
   aHideEmptyFolders.Visible := not aEditFolders.Checked;
+  aServiceRemoveFromFolder.Visible := aEditFolders.Checked;
 
   FilterFolders; //Because "Hide empty folders" might implicitly change
 end;

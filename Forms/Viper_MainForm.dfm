@@ -369,7 +369,13 @@ object MainForm: TMainForm
         ExplicitHeight = 392
       end
       inherited pmServices: TPopupMenu
-        object N1: TMenuItem [13]
+        object Removefromfolder1: TMenuItem [0]
+          Action = aServiceRemoveFromFolder
+        end
+        object N6: TMenuItem [1]
+          Caption = '-'
+        end
+        object N1: TMenuItem [15]
           Caption = '-'
         end
         inherited Advanced1: TMenuItem
@@ -464,6 +470,12 @@ object MainForm: TMainForm
       Caption = 'Delete'
       Visible = False
       OnExecute = aDeleteFolderExecute
+    end
+    object aServiceRemoveFromFolder: TAction
+      Category = 'Folders'
+      Caption = 'Remove from folder'
+      Visible = False
+      OnExecute = aServiceRemoveFromFolderExecute
     end
   end
   object ilImages: TImageList

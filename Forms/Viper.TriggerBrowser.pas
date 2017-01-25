@@ -1,4 +1,4 @@
-unit Viper_MainTriggerList;
+unit Viper.TriggerBrowser;
 
 interface
 
@@ -18,7 +18,7 @@ type
   end;
   PNdTriggerData = ^TNdTriggerData;
 
-  TMainTriggerList = class(TForm)
+  TTriggerBrowserForm = class(TForm)
     Tree: TVirtualStringTree;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
@@ -50,34 +50,34 @@ type
   end;
 
 var
-  MainTriggerList: TMainTriggerList;
+  TriggerBrowserForm: TTriggerBrowserForm;
 
 implementation
 uses ServiceHelper;
 
 {$R *.dfm}
 
-procedure TMainTriggerList.FormCreate(Sender: TObject);
+procedure TTriggerBrowserForm.FormCreate(Sender: TObject);
 begin
   FTriggerGroups := TDictionary<string, PVirtualNode>.Create;
 end;
 
-procedure TMainTriggerList.FormDestroy(Sender: TObject);
+procedure TTriggerBrowserForm.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FTriggerGroups);
 end;
 
-procedure TMainTriggerList.FormShow(Sender: TObject);
+procedure TTriggerBrowserForm.FormShow(Sender: TObject);
 begin
   Reload;
 end;
 
-procedure TMainTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
+procedure TTriggerBrowserForm.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
 begin
   NodeDataSize := SizeOf(TNdTriggerData);
 end;
 
-procedure TMainTriggerList.TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
+procedure TTriggerBrowserForm.TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
   var InitialStates: TVirtualNodeInitStates);
 var Data: PNdTriggerData;
 begin
@@ -85,14 +85,14 @@ begin
   Initialize(Data^);
 end;
 
-procedure TMainTriggerList.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+procedure TTriggerBrowserForm.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
 var Data: PNdTriggerData;
 begin
   Data := Sender.GetNodeData(Node);
   Finalize(Data^);
 end;
 
-procedure TMainTriggerList.TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+procedure TTriggerBrowserForm.TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var Data: PNdTriggerData;
 begin
@@ -109,7 +109,7 @@ begin
   end;
 end;
 
-procedure TMainTriggerList.TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
+procedure TTriggerBrowserForm.TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
   var ImageList: TCustomImageList);
 var Data: PNdTriggerData;
@@ -129,7 +129,7 @@ begin
   end;
 end;
 
-procedure TMainTriggerList.TreeCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
+procedure TTriggerBrowserForm.TreeCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
   Column: TColumnIndex; var Result: Integer);
 var Data1, Data2: PNdTriggerData;
 begin
@@ -141,7 +141,7 @@ begin
     Result := CompareText(Data1.Description, Data2.Description);
 end;
 
-procedure TMainTriggerList.TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+procedure TTriggerBrowserForm.TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
 begin
   if Sender.SortColumn <> HitInfo.Column then begin
     Sender.SortColumn := HitInfo.Column;
@@ -154,20 +154,20 @@ begin
   Sender.Treeview.SortTree(Sender.SortColumn, Sender.SortDirection);
 end;
 
-procedure TMainTriggerList.SetServices(const AValue: TServiceEntryList);
+procedure TTriggerBrowserForm.SetServices(const AValue: TServiceEntryList);
 begin
   if FServices = AValue then exit;
   FServices := AValue;
   Reload;
 end;
 
-procedure TMainTriggerList.Clear;
+procedure TTriggerBrowserForm.Clear;
 begin
   FTriggerGroups.Clear;
   Tree.Clear;
 end;
 
-procedure TMainTriggerList.Reload;
+procedure TTriggerBrowserForm.Reload;
 var service: TServiceEntry;
   triggers: PSERVICE_TRIGGER_INFO;
 begin
@@ -198,7 +198,7 @@ begin
   end;
 end;
 
-procedure TMainTriggerList.AddTriggers(AService: TServiceEntry; AInfo: PSERVICE_TRIGGER);
+procedure TTriggerBrowserForm.AddTriggers(AService: TServiceEntry; AInfo: PSERVICE_TRIGGER);
 var ATriggerData: TTriggerData;
   ATriggerText: string;
   AActionText: string;
@@ -243,7 +243,7 @@ begin
 
 end;
 
-function TMainTriggerList.GetGroupNode(ATriggerType: cardinal; const AEventType: string): PVirtualNode;
+function TTriggerBrowserForm.GetGroupNode(ATriggerType: cardinal; const AEventType: string): PVirtualNode;
 begin
   if not FTriggerGroups.TryGetValue(AEventType, Result) then begin
     Result := AddTriggerGroupNode(nil, AEventType, ATriggerType);
@@ -251,7 +251,7 @@ begin
   end;
 end;
 
-function TMainTriggerList.AddTriggerGroupNode(const AParent: PVirtualNode; const AGroup: string; ATriggerType: integer): PVirtualNode;
+function TTriggerBrowserForm.AddTriggerGroupNode(const AParent: PVirtualNode; const AGroup: string; ATriggerType: integer): PVirtualNode;
 var Data: PNdTriggerData;
 begin
   Result := Tree.AddChild(AParent);
@@ -261,7 +261,7 @@ begin
   Data.Description := AGroup;
 end;
 
-function TMainTriggerList.AddTriggerNode(const AParent: PVirtualNode; const ASource: string): PVirtualNode;
+function TTriggerBrowserForm.AddTriggerNode(const AParent: PVirtualNode; const ASource: string): PVirtualNode;
 var Data: PNdTriggerData;
 begin
   Result := Tree.AddChild(AParent);

@@ -1,4 +1,4 @@
-unit Viper_RestoreServiceConfig;
+unit Viper.RestoreServiceConfig;
 {
 Saves the startup configuration of all services, or selected services, to a file so that it can
 later be restored:
@@ -158,7 +158,7 @@ resourcestring
 procedure SaveServiceConfig(AParent: HWND; AServices: TServiceEntries; const AFilename: string);
 var AFailedServices: string;
 begin
-  AFailedServices := Viper_RestoreServiceConfig.WriteServiceConfigFile(AServices, AFilename);
+  AFailedServices := Viper.RestoreServiceConfig.WriteServiceConfigFile(AServices, AFilename);
   if AFailedServices <> '' then
     MessageBox(AParent,
       PChar(Format(sConfigurationSaveFailed, [AFailedServices])),

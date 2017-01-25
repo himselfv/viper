@@ -1,11 +1,11 @@
-unit Viper_MainForm;
+unit Viper.MainForm;
 
 interface
 
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
-  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper_ServiceList, Viper_TriggerList,
+  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList, Viper.TriggerList,
   Viper.RichEditEx;
 
 type
@@ -231,7 +231,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper_RestoreServiceConfig, Viper.Log, TriggerUtils, Viper_MainTriggerList;
+  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils, Viper.TriggerBrowser;
 
 {$R *.dfm}
 
@@ -1159,8 +1159,8 @@ end;
 
 procedure TMainForm.Alltriggers1Click(Sender: TObject);
 begin
-  MainTriggerList.Services := Self.FServices;
-  MainTriggerList.Show;
+  TriggerBrowserForm.Services := Self.FServices;
+  TriggerBrowserForm.Show;
 end;
 
 
@@ -1354,7 +1354,7 @@ var Node: PVirtualNode;
 begin
   Node := MainServiceList.vtServices.FocusedNode;
   if Node = nil then exit;
-  MainServiceList.vtServices.EditNode(Node, Viper_ServiceList.colDisplayName); //only Name column is editable
+  MainServiceList.vtServices.EditNode(Node, Viper.ServiceList.colDisplayName); //only Name column is editable
 end;
 
 procedure TMainForm.MainServiceListvtServicesKeyAction(Sender: TBaseVirtualTree; var CharCode: Word;
@@ -1366,14 +1366,14 @@ begin
    We want to always edit the Display Name.
    Solution: Enable toExtendedFocus and move focus to Display Name column.
    }
-    Sender.FocusedColumn := Viper_ServiceList.colDisplayName;
+    Sender.FocusedColumn := Viper.ServiceList.colDisplayName;
   end;
 end;
 
 procedure TMainForm.MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; var Allowed: Boolean);
 begin
-  Allowed := CanEditServiceInfo and (Column = Viper_ServiceList.colDisplayName);
+  Allowed := CanEditServiceInfo and (Column = Viper.ServiceList.colDisplayName);
 end;
 
 {
@@ -1402,7 +1402,7 @@ procedure TMainForm.MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; N
   Column: TColumnIndex; NewText: string);
 var service: TExtServiceEntry;
 begin
-  if (not CanEditServiceInfo) or (Column <> Viper_ServiceList.colDisplayName) then
+  if (not CanEditServiceInfo) or (Column <> Viper.ServiceList.colDisplayName) then
     exit;
   service := TExtServiceEntry(MainServiceList.GetServiceEntry(Node));
 

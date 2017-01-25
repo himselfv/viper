@@ -1,4 +1,4 @@
-object MainTriggerList: TMainTriggerList
+object TriggerBrowserForm: TTriggerBrowserForm
   Left = 0
   Top = 0
   Caption = 'Triggers'

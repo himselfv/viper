@@ -71,7 +71,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="..\Forms\Viper_MainForm.pas">
+        <DCCReference Include="..\Forms\Viper.MainForm.pas">
             <Form>MainForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
@@ -79,19 +79,19 @@
             <Form>CommonRes</Form>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper_ServiceList.pas">
+        <DCCReference Include="..\Forms\Viper.ServiceList.pas">
             <Form>ServiceList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper_TriggerList.pas">
+        <DCCReference Include="..\Forms\Viper.TriggerList.pas">
             <Form>TriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper_RestoreServiceConfig.pas">
+        <DCCReference Include="..\Forms\Viper.RestoreServiceConfig.pas">
             <Form>RestoreServiceConfigForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper_MainTriggerList.pas">
-            <Form>MainTriggerList</Form>
+        <DCCReference Include="..\Forms\Viper.TriggerBrowser.pas">
+            <Form>TriggerBrowserForm</Form>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.RichEditEx.pas">
             <Form>RichEditFrame</Form>

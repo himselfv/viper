@@ -2,12 +2,12 @@ program Viper;
 
 uses
   Vcl.Forms,
-  Viper_MainForm in '..\Forms\Viper_MainForm.pas' {MainForm},
+  Viper.MainForm in '..\Forms\Viper.MainForm.pas' {MainForm},
   CommonResources in 'CommonResources.pas' {CommonRes: TDataModule},
-  Viper_ServiceList in '..\Forms\Viper_ServiceList.pas' {ServiceList: TFrame},
-  Viper_TriggerList in '..\Forms\Viper_TriggerList.pas' {TriggerList: TFrame},
-  Viper_RestoreServiceConfig in '..\Forms\Viper_RestoreServiceConfig.pas' {RestoreServiceConfigForm},
-  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList},
+  Viper.ServiceList in '..\Forms\Viper.ServiceList.pas' {ServiceList: TFrame},
+  Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
+  Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
+  Viper.TriggerBrowser in '..\Forms\Viper.TriggerBrowser.pas' {TriggerBrowserForm},
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   Viper.Log in 'Viper.Log.pas' {LogForm},
   ServiceHelper in 'ServiceHelper.pas',
@@ -31,6 +31,6 @@ begin
   Application.CreateForm(TCommonRes, CommonRes);
   Application.CreateForm(TRestoreServiceConfigForm, RestoreServiceConfigForm);
   Application.CreateForm(TLogForm, LogForm);
-  Application.CreateForm(TMainTriggerList, MainTriggerList);
+  Application.CreateForm(TTriggerBrowserForm, TriggerBrowserForm);
   Application.Run;
 end.

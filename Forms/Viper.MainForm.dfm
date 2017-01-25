@@ -747,7 +747,7 @@ object MainForm: TMainForm
         OnClick = miShowLogClick
       end
       object Alltriggers1: TMenuItem
-        Caption = 'Trigger explorer'
+        Caption = 'Trigger browser'
         OnClick = Alltriggers1Click
       end
     end

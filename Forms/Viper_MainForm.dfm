@@ -12,6 +12,7 @@ object MainForm: TMainForm
   Font.Style = []
   Menu = MainMenu
   OldCreateOrder = False
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
@@ -111,7 +112,7 @@ object MainForm: TMainForm
           ReadOnly = True
           TabOrder = 0
         end
-        object mmAdditionalInfo: TMemo
+        object mmNotes: TMemo
           Left = 0
           Top = 62
           Width = 849
@@ -121,6 +122,7 @@ object MainForm: TMainForm
           ParentColor = True
           ReadOnly = True
           TabOrder = 1
+          OnExit = mmNotesExit
         end
       end
       object tsDependencies: TTabSheet

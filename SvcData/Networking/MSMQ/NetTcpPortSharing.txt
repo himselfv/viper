@@ -1,4 +1,3 @@
-
 > A Worker Process: Any process communicating over net.tcp:// using shared ports.
 > The WCF TCP transport: Implements the net.tcp:// protocol.
 > The Net.TCP Port Sharing Service: Allows many worker processes to share the same TCP port.

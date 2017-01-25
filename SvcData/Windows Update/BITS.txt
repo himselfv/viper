@@ -1,5 +1,4 @@
 # Background Intelligent Transfer Service
-
 This service is used to transfer asynchronous data via HTTP 1.1 servers. BITS “continues” a download when you log back in after you log off or shutdown the system during a download. You may require this service for some, Windows Live Messenger, Windows Media Player or future .NET or Live functions.
 
 Used by Windows Update to download updates to local PC.

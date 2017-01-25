@@ -1,5 +1,4 @@
 # Windows Error Reporting Service
-
 The Windows Error Reporting Service (WerSvc) reports errors when programs stop working or responding and enables existing solutions to be delivered. It also generates logs for the Problem Reports and Solutions diagnostic and repair service. If this service is stopped, programs and services that rely on this service will not report errors correctly, and the results of diagnostic services and repairs for those programs and services will not be displayed.
 
 Windows Error Reporting is a feature that allows Microsoft to track and address errors relating to the operating system, Windows features, and applications. Windows Error Reporting gives users the opportunity to send data about errors to Microsoft and to receive information about solutions. Solution information can include instructions for working around a problem, or a link to the Windows Update Web site or another Web site for updated drivers, patches, or Microsoft Knowledge Base articles. Microsoft developers can use Windows Error Reporting as a problem-solving tool to address customer problems in a timely manner and to improve the quality of Microsoft products.
@@ -10,3 +9,4 @@ User Account Control does affect how Windows Error Reporting works. A standard u
 
 The administrator also has the option to specify a list of programs for which error reports should never be sent.
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_wersvc
+

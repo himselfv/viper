@@ -1,6 +1,5 @@
+TITLE:NAP\%1
 Network Access Protection Agent
-
-TITLE: NAP\%1
 
 The Network Access Protection Agent (napagent) service enables NAP functionality on client computers. Enabling the NAP client agent makes it possible for clients that support NAP to evaluate clients that connect to your network for compliance with organizational software security policies such as mandatory updates, antivirus, signatures, and firewall configurations.
 

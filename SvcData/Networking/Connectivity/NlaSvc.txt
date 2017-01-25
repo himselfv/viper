@@ -1,6 +1,5 @@
-# Network Location Awareness
 # Collects and stores configuration information for the network and notifies programs when this information is modified. If this service is stopped, configuration information might be unavailable. If this service is disabled, any services that explicitly depend on it will fail to start.
-
+# Network Location Awareness
 This service in conjunction with Network List Service and Network Connections enables status of network connections in the system tray.
 
 Apparently required for network connections icon in the system tray.

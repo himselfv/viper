@@ -1,5 +1,4 @@
 # Net.Msmq Listener Adapter
-
 Related to WSA, MSMQ.
 
 Can be uninstalled from "Turn Windows Features on or off".

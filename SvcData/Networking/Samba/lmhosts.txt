@@ -1,6 +1,5 @@
-# TCP/IP Netbios Helper
 # Provides support for the NetBIOS over TCP/IP (NetBT) service and NetBIOS name resolution for clients on the network, therefore enabling users to share files, print, and log on to the network.
-
+# TCP/IP Netbios Helper
 Provides support for the NetBIOS over TCP/IP (NetBT) service including NetBIOS name resolution for clients on the network which is required for Samba (file and printer sharing) to work.
 
 NetBIOS is an old communication protocol for LAN which covered resolving textual computer names into addresses (on the internet, DNS is used for the same purpose).
@@ -9,3 +8,4 @@ Originally NetBIOS worked as a standalone protocol but these days it's usually i
   https://en.wikipedia.org/wiki/NetBIOS_over_TCP/IP
 
 This service runs NetBIOS over TCP/IP and provides its functions to the system. Of particular importance is NetBIOS local name resolution provided by this service. If lmhosts is disabled, accessing LAN computers by their names will be unavailable.
+

@@ -1,7 +1,7 @@
-Extensible Authentication Protocol
-
+# Extensible Authentication Protocol
 The Extensible Authentication Protocol (EapHost) service provides network authentication in such scenarios as 802.1x wired and wireless, virtual private network (VPN), and Network Access Protection (NAP). The Extensible Authentication Protocol (EAP) also provides APIs that are used by network access clients, including wireless and VPN clients, during the authentication process.
 
 EAP supports authentication schemes such as Generic Token Card, One Time Password (OTP), Message Digest 5 (MD5)-Challenge, Transport Layer Security (TLS) for smart card and digital certificate-based authentication, and future authentication technologies. EAP is a critical technology component for establishing secure connections. If you disable this service, this computer is prevented from accessing networks that require EAP authentication.
 
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx
+

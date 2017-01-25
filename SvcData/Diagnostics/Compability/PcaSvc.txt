@@ -1,5 +1,4 @@
-# Program Compability Assistant Service
-# This service provides support for the Program Compatibility Assistant (PCA).
 # PCA monitors programs installed and run by the user and detects known compatibility problems. If this service is stopped, PCA will not function properly.
-
+# This service provides support for the Program Compatibility Assistant (PCA).
+# Program Compability Assistant Service
 Disabling does not affect explicitly enforced shims (i.e. AppLocale or shims configred in the environment variables)

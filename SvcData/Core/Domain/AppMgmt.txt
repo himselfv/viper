@@ -1,5 +1,4 @@
-Application Management
-
+# Application Management
 Provides software installation services such as Assign, Publish, and Remove. It processes requests to enumerate, install, and remove applications that are deployed through an organization's network by using Group Policy. When you use Get Programs from the Windows Control Panel to install programs from the network on a domain-joined computer, Windows calls this service to retrieve the list of deployed applications on your network.
 The service is also called when you use Control Panel to remove an application, or when a component (such as the shell) makes an installation request for an application to handle a file name extension, Component Object Model (COM) class, or ProgID that is not present on the computer. The service is started by the first call that is made to it, and it does not stop after it is started.
 If the Application Management service stops or if you disable it, users cannot install, remove, or enumerate applications that are deployed in AD DS. This service is installed by default but is not started unless an application requests it.

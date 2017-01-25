@@ -1,7 +1,8 @@
-Security Center
-
+# Security Center
 The WSCSVC (Windows Security Center) service monitors and reports security health settings on the computer.
 The health settings include firewall (on/off), antivirus (on/off/out of date), antispyware (on/off/out of date), Windows Update (automatically/manually download and install updates), User Account Control (on/off), and Internet settings (recommended/not recommended). The service provides COM APIs for independent software vendors to register and record the state of their products to the Security Center service.
 The Security and Maintenance UI uses the service to provide systray alerts and a graphical view of the security health states in the Security and Maintenance control panel.
 Network Access Protection (NAP) uses the service to report the security health states of clients to the NAP Network Policy Server to make network quarantine decisions.
 The service also has a public API that allows external consumers to programmatically retrieve the aggregated security health state of the system.
+
+

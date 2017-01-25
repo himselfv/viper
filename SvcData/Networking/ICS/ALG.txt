@@ -1,4 +1,3 @@
-# Application Layer Gateway Service
 # Provides support for 3rd party protocol plug-ins for Internet Connection Sharing.
-
+# Application Layer Gateway Service
 If you are not using Internet Connection Sharing (ICS) service, the Application Layer Gateway Service and Internet Connection Sharing (ICS) can be safely disabled.

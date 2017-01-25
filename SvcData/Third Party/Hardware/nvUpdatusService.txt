@@ -1,3 +1,2 @@
-NVIDIA Update Service Daemon
-
-NVIDIA Settings Update Manager service, used to check new updates from NVIDIA server.
+# NVIDIA Update Service Daemon
+# NVIDIA Settings Update Manager service, used to check new updates from NVIDIA server.

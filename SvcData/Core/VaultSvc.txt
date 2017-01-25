@@ -4,8 +4,6 @@ Manages saved passwords and credentials from "Manage your credentials". Starts o
 
 Not to be confused with ProtectedStorage.
 
----------------------
-
 > The Credential Manager (VaultSvc) service provides secure storage and retrieval of credentials to users, applications and security service packages.
 > The Windows Biometric Service is dependent upon the Credential Manager service.
 https://technet.microsoft.com/en-us/library/hh125927(v=ws.10).aspx#BKMK_vaultsvc

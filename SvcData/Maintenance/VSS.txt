@@ -1,6 +1,5 @@
-# Volume Shadow Copy
 # Manages and implements Volume Shadow Copies used for backup and other purposes.
-
+# Volume Shadow Copy
 The Volume Shadow Copy (VSS) service manages and implements volume shadow copies, which are used for backup and other purposes, and manages the volume snapshots.
 
 Needed mostly when creating System Restore points, and for any third-party backup solutions which use it.
@@ -10,3 +9,4 @@ When a backup application attempts to start a backup with the new snapshots infr
 If the service is stopped, shadow copies will be unavailable for backup and the backup process may not succeed.
 
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_vss
+

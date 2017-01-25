@@ -1,6 +1,6 @@
 # Remote Access Connection Manager
-
 The Remote Access Connection Manager (RasMan) service manages dial-up and VPN connections from your computer to the Internet or other remote networks. When you double-click a connection in the Network Connections folder and then click the Connect button, the Remote Access Connection Manager service either dials the connection or sends a VPN connection request and handles subsequent negotiations with the remote access server to set up the connection.
 
 The Remote Access Connection Manager service unloads itself when no requests are pending.
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_rasman
+

@@ -1,5 +1,4 @@
 # Net.Tcp Listener Adapter
-
 Related to WSA.
 Not to be confused with NetTcpPortSharing, which is mostly unrelated to WSA.
 

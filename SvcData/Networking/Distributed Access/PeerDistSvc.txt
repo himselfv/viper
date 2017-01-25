@@ -1,5 +1,4 @@
 # BranchCache
-
 Wide area network (WAN) bandwidth optimization technology. When users access content on remote servers, BranchCache copies content from your main office or hosted cloud content servers and caches it at branch office locations, allowing client computers at branch offices to access the content locally rather than over the WAN.
 
 Content is stored either on servers that are configured to host the cache or, when no server is available in the branch office, on client computers that are running Windows 8 or Windows 7. After a client computer requests and receives content from the main office and the content is cached at the branch office, other computers at the same branch office can obtain the content locally rather than downloading the content from the content server over the WAN link.

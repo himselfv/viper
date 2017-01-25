@@ -1,9 +1,6 @@
 # Thread Ordering Service
-
-TITLE: MMCSS\%1
-
+TITLE:MMCSS\%1
 Can be safely disabled.
-
 Controls the execution of one or more client threads. Ensures that each client thread runs once during the specified period and in relative order.
 
 Off by default and must be started by the user. While the thread ordering service is running, it is activated every 5 seconds to check whether there is a new request, even if the system is idle. This prevents the system from sleeping for longer than 5 seconds, causing the system to consume more power.
@@ -13,3 +10,4 @@ system32\mmcss.dll
 https://msdn.microsoft.com/en-us/library/windows/desktop/ms686752(v=vs.85).aspx
 
 RELATED: MMCSS
+

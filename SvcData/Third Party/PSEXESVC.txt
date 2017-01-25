@@ -1,3 +1,1 @@
-PsExec
-
 Server part of a SysInternals' PSEXEC tool. Basically a sleeping legit backdoor, disable when you no longer use it.

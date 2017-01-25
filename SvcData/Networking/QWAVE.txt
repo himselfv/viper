@@ -1,5 +1,4 @@
 # Quality Windows Audio/Video Experience
-
 Quality Windows Audio/Video Experience (qWAVE) is the Quality of Service (QOS) platform introduced in Windows Vista.
 
 qWAVE provides new features focused on streaming multimedia and real-time content over variable bandwidth networks. These features include the following.
@@ -12,3 +11,4 @@ qWAVE provides new features focused on streaming multimedia and real-time conten
     Distributed admission control, including caching to improve performance and minimize latency.
 
 https://msdn.microsoft.com/en-us/library/windows/desktop/aa374110%28v=vs.85%29.aspx
+

@@ -1,5 +1,3 @@
-Netlogon
-
 Maintains an encrypted channel between your computer and the domain controller that it uses to authenticate users and services.
 It passes user credentials through the encrypted channel to a domain controller and returns the domain security identifiers and user rights for the user, which is commonly referred to as pass-through authentication.
 The service is installed by default and its startup type is Manual. After the computer joins a domain, the service starts automatically. 

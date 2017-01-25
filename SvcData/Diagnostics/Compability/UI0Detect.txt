@@ -1,4 +1,4 @@
-# Interactive Services Detection
 # Enables user notification of user input for interactive services, which enables access to dialogs created by interactive services when they appear. If this service is stopped, notifications of new interactive service dialogs will no longer function and there might not be access to interactive service dialogs. If this service is disabled, both notifications of and access to new interactive service dialogs will no longer function.
-
+# Interactive Services Detection
 Can be safely set to manual if you don't use interactive services.
+

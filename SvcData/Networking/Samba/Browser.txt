@@ -1,24 +1,14 @@
 # Computer Browser
 # Maintains an updated list of computers on the network and supplies this list to computers designated as browsers. If this service is stopped, this list will not be updated or maintained. If this service is disabled, any services that explicitly depend on it will fail to start.
+Enables the computer to participate in the election for maintaining the browser list. The browser list contains all computers that have announced themselves on the network through the Server service
+
+Home Network: This service only need to be activated on a single computer. It is convenient to activate this service on all computers to avoid single point of failure.
+Corporate Network: The Active Directory should be used instead.
+
+Even if no computer is maintaining the browser list, it is still possible to access remote shares by creating direct shortcuts or mapping network shares (\\computername\sharename).
+
+If the Computer Browser cannot be reached (either because no computer is running the service or because of a firewall), then it will give the following error message when trying to browse My Network Places:
+
+    WORKGROUP is not accessible. You might not have permission to use this network resource. Contact the administrator of this server to find out if you have access permissions.
 
 http://smallvoid.com/article/winnt-services-browser.html
-Enables the computer to participate in the election for maintaining the browser list.
-
-The browser list contains all computers, that have announced themselves on the network through the Server service
-
-    Home Network: This service only need to be activated on a single computer. It is convenient to activate this service on all computers to avoid single point of failure.
-    Corporate Network: The Active Directory should be used instead.
-
-Note even if no computer is maintaining the browser list, then it is still possible to access remote shares by creating direct shortcuts or mapping network shares (\\computername\sharename).
-
-Note the Computer Browser service will fail to start if the services it depends on are not available (Disable the Computer Browser if not using File Sharing):
-
-    Event ID: 7003
-    The Computer Browser service depends on the following nonexistent service: LanmanServer, LMHOSTS
-
-Note if the Computer Browser cannot be reached (either because no computer is running the service, or because of a firewall), then it will give the following error message when trying to browse My Network Places:
-
-    MShome is not accessible. You might not have permission to use this network resource. Contact the administrator of this server to find out if you have access permissions.
-
-    More Info MS KB318030
-    More Info MS KB913619

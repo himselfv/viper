@@ -1,5 +1,4 @@
 Portable Device Enumerator Service
-
 Looks like it's only related to Domains/AD, but maybe not (have to learn more).
 
 > The Portable Device Enumerator Service (WPDBusEnum) enforces Group Policy settings for removable mass-storage devices. It enables applications such as Windows Media Player and Image Import Wizard to transfer and synchronize content by using removable mass-storage devices. This service enables you to specify which portable storage devices are allowed to be connected to systems that are managed with Group Policy.

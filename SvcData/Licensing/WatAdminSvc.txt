@@ -1,7 +1,7 @@
 # Windows Activation Technologies Service
-
 Microsoft service that periodically determines if your Windows Product ID is valid, and if not, displays warnings that your copy of Windows may not be Genuine.
 
 Not required to run Automatically, but probably shouldn't be uninstalled or disabled.
 
 +Windows 7
+

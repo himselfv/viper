@@ -1,4 +1,4 @@
-# WinHTTP Web Proxy Auto-Discovery Service
 # WinHTTP implements the client HTTP stack and provides developers with a Win32 API and COM Automation component for sending HTTP requests and receiving responses. In addition, WinHTTP provides support for auto-discovering a proxy configuration via its implementation of the Web Proxy Auto-Discovery (WPAD) protocol.
-
+# WinHTTP Web Proxy Auto-Discovery Service
 Win10: Could be disabled when the functionality is not required, but iphlpsvc seems to unfortunately depend on it.
+

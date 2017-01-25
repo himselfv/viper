@@ -2,7 +2,7 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'Services'
-  ClientHeight = 609
+  ClientHeight = 648
   ClientWidth = 1040
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -21,14 +21,15 @@ object MainForm: TMainForm
   object Splitter1: TSplitter
     Left = 180
     Top = 0
-    Height = 609
+    Height = 648
     ExplicitLeft = 194
+    ExplicitHeight = 609
   end
   object vtFolders: TVirtualStringTree
     Left = 0
     Top = 0
     Width = 180
-    Height = 609
+    Height = 648
     Align = alLeft
     BorderWidth = 1
     Header.AutoSizeIndex = -1
@@ -61,19 +62,21 @@ object MainForm: TMainForm
     OnInitNode = vtFoldersInitNode
     OnMouseDown = vtFoldersMouseDown
     OnNewText = vtFoldersNewText
+    ExplicitHeight = 609
     Columns = <>
   end
   object pnlMain: TPanel
     Left = 183
     Top = 0
     Width = 857
-    Height = 609
+    Height = 648
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitHeight = 609
     object Splitter2: TSplitter
       Left = 0
-      Top = 413
+      Top = 405
       Width = 857
       Height = 3
       Cursor = crVSplit
@@ -84,63 +87,96 @@ object MainForm: TMainForm
     end
     object pcBottom: TPageControl
       Left = 0
-      Top = 416
+      Top = 408
       Width = 857
-      Height = 193
+      Height = 240
       ActivePage = tsDescription
       Align = alBottom
+      Font.Charset = RUSSIAN_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Segoe UI'
+      Font.Style = []
+      ParentFont = False
       TabOrder = 2
       object tsDescription: TTabSheet
         Caption = 'Info'
+        ExplicitTop = 24
+        ExplicitHeight = 165
         object Label1: TLabel
           Left = 0
-          Top = 49
+          Top = 57
           Width = 849
           Height = 13
           Align = alTop
-          Caption = 'Additional info:'
-          ExplicitWidth = 72
+          Caption = 'Additional notes:'
+          Font.Charset = RUSSIAN_CHARSET
+          Font.Color = clGrayText
+          Font.Height = -11
+          Font.Name = 'Segoe UI'
+          Font.Style = []
+          ParentFont = False
+          ExplicitTop = 73
+          ExplicitWidth = 89
+        end
+        object Splitter3: TSplitter
+          Left = 0
+          Top = 54
+          Width = 849
+          Height = 3
+          Cursor = crVSplit
+          Align = alTop
+          ExplicitLeft = -1
+          ExplicitTop = 51
         end
         object mmDetails: TMemo
           Left = 0
           Top = 0
           Width = 849
-          Height = 49
+          Height = 54
           Align = alTop
           BorderStyle = bsNone
           ParentColor = True
           ReadOnly = True
           TabOrder = 0
         end
-        object mmNotes: TMemo
+        object mmNotes: TRichEdit
           Left = 0
-          Top = 62
+          Top = 70
           Width = 849
-          Height = 103
+          Height = 138
           Align = alClient
+          BevelInner = bvNone
+          BevelOuter = bvNone
           BorderStyle = bsNone
-          ParentColor = True
+          Color = clBtnFace
           ReadOnly = True
+          ScrollBars = ssVertical
           TabOrder = 1
+          OnChange = mmNotesChange
           OnExit = mmNotesExit
+          ExplicitTop = 0
+          ExplicitHeight = 161
         end
       end
       object tsDependencies: TTabSheet
         Caption = 'Depends on'
         ImageIndex = 1
         OnShow = tsDependenciesShow
+        ExplicitTop = 24
+        ExplicitHeight = 165
         inline DependencyList: TServiceList
           Left = 0
           Top = 0
           Width = 849
-          Height = 165
+          Height = 208
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
           ExplicitHeight = 165
           inherited vtServices: TVirtualStringTree
             Width = 849
-            Height = 165
+            Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
             ExplicitWidth = 849
             ExplicitHeight = 165
@@ -151,18 +187,20 @@ object MainForm: TMainForm
         Caption = 'Required by'
         ImageIndex = 2
         OnShow = tsDependentsShow
+        ExplicitTop = 24
+        ExplicitHeight = 165
         inline DependentsList: TServiceList
           Left = 0
           Top = 0
           Width = 849
-          Height = 165
+          Height = 208
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
           ExplicitHeight = 165
           inherited vtServices: TVirtualStringTree
             Width = 849
-            Height = 165
+            Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
             ExplicitWidth = 849
             ExplicitHeight = 165
@@ -173,18 +211,20 @@ object MainForm: TMainForm
         Caption = 'Triggers'
         ImageIndex = 4
         OnShow = tsTriggersShow
+        ExplicitTop = 24
+        ExplicitHeight = 165
         inline TriggerList: TTriggerList
           Left = 0
           Top = 0
           Width = 849
-          Height = 165
+          Height = 208
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
           ExplicitHeight = 165
           inherited vtTriggers: TVirtualStringTree
             Width = 849
-            Height = 165
+            Height = 208
             ExplicitWidth = 849
             ExplicitHeight = 165
             Columns = <
@@ -206,7 +246,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800800010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800840010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -350,13 +390,15 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
+        ExplicitTop = 24
+        ExplicitHeight = 165
       end
     end
     inline MainServiceList: TServiceList
       Left = 0
       Top = 21
       Width = 857
-      Height = 392
+      Height = 384
       Align = alClient
       TabOrder = 1
       ExplicitTop = 21
@@ -364,7 +406,7 @@ object MainForm: TMainForm
       ExplicitHeight = 392
       inherited vtServices: TVirtualStringTree
         Width = 857
-        Height = 392
+        Height = 384
         OnCreateEditor = MainServiceListvtServicesCreateEditor
         OnDragAllowed = MainServiceListvtServicesDragAllowed
         OnEdited = MainServiceListvtServicesEdited
@@ -499,6 +541,12 @@ object MainForm: TMainForm
       ShortCut = 16467
       OnExecute = aSaveNotesExecute
     end
+    object aEditServiceNotes: TAction
+      Category = 'Services'
+      Caption = 'Edit notes'
+      ShortCut = 115
+      OnExecute = aEditServiceNotesExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -506,7 +554,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800700010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800740010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

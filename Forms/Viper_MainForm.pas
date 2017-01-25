@@ -53,7 +53,6 @@ type
     Refresh1: TMenuItem;
     pcBottom: TPageControl;
     tsDescription: TTabSheet;
-    mmDetails: TMemo;
     tsDependencies: TTabSheet;
     tsDependents: TTabSheet;
     tsOperations: TTabSheet;
@@ -81,8 +80,6 @@ type
     Debug1: TMenuItem;
     miShowLog: TMenuItem;
     edtQuickFilter: TEdit;
-    Label1: TLabel;
-    mmNotes: TMemo;
     aRestartAsAdmin: TAction;
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
@@ -102,6 +99,11 @@ type
     miRenameService: TMenuItem;
     miRemoveServiceFromFolder: TMenuItem;
     aSaveNotes: TAction;
+    mmDetails: TMemo;
+    Label1: TLabel;
+    mmNotes: TRichEdit;
+    Splitter3: TSplitter;
+    aEditServiceNotes: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -167,6 +169,8 @@ type
       var Shift: TShiftState; var DoDefault: Boolean);
     procedure MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; out EditLink: IVTEditLink);
+    procedure mmNotesChange(Sender: TObject);
+    procedure aEditServiceNotesExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -948,6 +952,23 @@ begin
     ReloadTriggers;
 end;
 
+type
+  TControlHack = class(TControl)
+  end;
+
+function GetControlFontHeight(Control: TWinControl): integer;
+var DC: HDC;
+  SaveFont : HFont;
+  Metrics : TTextMetric;
+begin
+  DC := GetDC(Control.Handle);
+  SaveFont := SelectObject(DC, TControlHack(Control).Font.Handle);
+  GetTextMetrics(DC, Metrics);
+  SelectObject(DC, SaveFont);
+  ReleaseDC(Control.Handle, DC);
+  Result := Metrics.tmHeight;
+end;
+
 procedure TMainForm.ReloadServiceInfo;
 var service: TExtServiceEntry;
 begin
@@ -957,6 +978,7 @@ begin
     mmDetails.Text := service.Description
   else
     mmDetails.Text := '';
+//  mmDetails.Height := mmDetails.Lines.Count * GetControlFontHeight(mmDetails) + 8;
 
   if (service <> nil) and (service.Info <> nil) then
     mmNotes.Text := service.Info.Description
@@ -1264,6 +1286,15 @@ end;
 
 // Service editing
 
+procedure TMainForm.mmNotesChange(Sender: TObject);
+var NewHeight: integer;
+begin
+  //Auto-grow in size
+  NewHeight := mmNotes.Lines.Count * GetControlFontHeight(mmNotes) + 8;
+  if mmNotes.Height <> NewHeight then
+    mmNotes.Height := NewHeight;
+end;
+
 function TMainForm.CanEditServiceInfo: boolean;
 begin
   Result := aEditFolders.Checked; //Edit mode is common for folders and service info
@@ -1298,6 +1329,29 @@ begin
   //Ctrl-S shortcut for saving notes while editing
   if (not mmNotes.ReadOnly) and mmNotes.Focused then
     SaveNotes;
+end;
+
+//Enters/exits notes edit mode for a currently focused service
+procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
+begin
+  if MainServiceList.vtServices.Focused then begin
+    //Switch editing on
+    if not MainServiceList.vtServices.Focused then exit; //only works when a service is focused
+    if MainServiceList.GetFocusedService = nil then exit;
+
+    if not aEditFolders.Checked then
+      aEditFolders.Execute; //Enter edit mode
+    if pcBottom.ActivePage <> tsDescription then
+      pcBottom.ActivePage := tsDescription;
+    mmNotes.SetFocus;
+
+  end else
+  if (not mmNotes.ReadOnly) and mmNotes.Focused then begin
+    //Switch editing off
+    if aEditFolders.Checked then
+      aEditFolders.Execute;
+    MainServiceList.vtServices.SetFocus;
+  end;
 end;
 
 procedure TMainForm.aRenameServiceExecute(Sender: TObject);

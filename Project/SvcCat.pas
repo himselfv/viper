@@ -29,6 +29,7 @@ type
   protected
     FMainFile: string;
     FMainFolder: TServiceFolder;
+    FComments: string;
   public
     ServiceName: string;
     DisplayName: string;
@@ -123,6 +124,11 @@ begin
     while i > 0 do begin
       Dec(i);
       ln := Trim(sl[i]);
+      if (ln <> '') and (ln[1]='#') then begin
+        FComments := FComments + ln + #13#10;
+        sl.Delete(i);
+        continue;
+      end;
       if ln.StartsWith('TITLE:') then begin
         Self.DisplayName := Trim(Copy(ln, 7, MaxInt));
         sl.Delete(i);
@@ -141,6 +147,8 @@ begin
       end;
     end;
 
+    if FComments <> '' then
+      SetLength(FComments, Length(FComments)-Length(#13#10));
     Self.Description := sl.Text;
   finally
     FreeAndNil(sl);
@@ -157,6 +165,9 @@ begin
   try
     //TODO: Properly save everything, preferably exactly as it were
 
+    if FComments <> '' then
+      sl.Add(FComments);
+
     if Self.DisplayName <> '' then
       sl.Add('TITLE:'+Self.DisplayName);
 
@@ -169,7 +180,8 @@ begin
     if sfTelemetry in Self.Flags then
       sl.Add('TELEMETRY');
 
-    sl.Add(Self.Description);
+    if Self.Description <> '' then
+      sl.Add(Self.Description);
     sl.SaveToFile(FMainFile);
   finally
     FreeAndNil(sl);

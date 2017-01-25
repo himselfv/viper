@@ -1,1 +1,1 @@
-# Desktop Window Manager session manager
+Desktop Window Manager session manager

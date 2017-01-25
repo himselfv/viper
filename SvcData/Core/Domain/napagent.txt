@@ -1,4 +1,4 @@
-# Network Access Protection Agent
+Network Access Protection Agent
 
 TITLE: NAP\%1
 

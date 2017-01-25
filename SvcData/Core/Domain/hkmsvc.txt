@@ -1,4 +1,4 @@
-# Health Key and Certificate Management
+Health Key and Certificate Management
 
 TITLE: NAP\%1
 

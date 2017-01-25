@@ -1,3 +1,3 @@
-# DCOM Server Process Launcher
+DCOM Server Process Launcher
 
 CRITICAL: Most of the OS won't work.

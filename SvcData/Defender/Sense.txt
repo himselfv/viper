@@ -1,4 +1,4 @@
-# Windows Defender Advanced Threat Protection
-# Helps protect against advanced threats by monitoring and reporting security events that happen on the computer.
+Windows Defender Advanced Threat Protection
+Helps protect against advanced threats by monitoring and reporting security events that happen on the computer.
 
 Advanced Threat Protection for Windows Defender

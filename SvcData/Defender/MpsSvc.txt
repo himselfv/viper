@@ -1,2 +1,2 @@
-# Windows Firewall
-# Windows Firewall helps protect your computer by preventing unauthorized users from gaining access to your computer through the Internet or a network.
+Windows Firewall
+Windows Firewall helps protect your computer by preventing unauthorized users from gaining access to your computer through the Internet or a network.

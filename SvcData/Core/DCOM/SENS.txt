@@ -1,5 +1,5 @@
-# System Event Notification Service
-# Monitors system events and notifies subscribers to COM+ Event System of these events.
+System Event Notification Service
+Monitors system events and notifies subscribers to COM+ Event System of these events.
 
 TITLE: SENS\System Event Notification Service
 

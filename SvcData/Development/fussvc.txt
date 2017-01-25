@@ -1,4 +1,4 @@
-# Fast User Switching Utility Service
+Fast User Switching Utility Service
 
 \Program Files (x86)\windows kits\8.1\app certification kit\fussvc.exe
 

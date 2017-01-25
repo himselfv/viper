@@ -1,8 +1,9 @@
-# AppLocker\Application Identity
+TITLE:AppLocker\%1
+AppLocker\Application Identity
 
-TITLE: AppLocker\%1
 
 > The Application Identity (AppIDSvc) service determines and verifies the identity of an application. Disabling this service will prevent AppLocker from being enforced. This service is configured by default for a manual start. When started, by default it logs on using the local service account.
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_appidsvc
 
 RELATED: AppLocker
+

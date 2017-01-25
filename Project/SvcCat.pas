@@ -103,6 +103,10 @@ begin
   Flags := [];
 end;
 
+{
+Service description files are simple text files which are displayed intact,
+except for the special commands which are extracted and processed, and put at the top on saving.
+}
 procedure TServiceInfo.LoadFromFile(const AFilename: string);
 var sl: TStringList;
   ln: string;
@@ -119,10 +123,6 @@ begin
     while i > 0 do begin
       Dec(i);
       ln := Trim(sl[i]);
-      if (ln='') or (ln[1]='#') then begin
-        sl.Delete(i);
-        continue;
-      end;
       if ln.StartsWith('TITLE:') then begin
         Self.DisplayName := Trim(Copy(ln, 7, MaxInt));
         sl.Delete(i);
@@ -140,7 +140,8 @@ begin
         continue;
       end;
     end;
-    Self.Description := Self.Description + Trim(sl.Text);
+
+    Self.Description := sl.Text;
   finally
     FreeAndNil(sl);
   end;
@@ -155,8 +156,20 @@ begin
   sl := TStringList.Create;
   try
     //TODO: Properly save everything, preferably exactly as it were
-    sl.Add(Self.Description);
 
+    if Self.DisplayName <> '' then
+      sl.Add('TITLE:'+Self.DisplayName);
+
+    if sfCritical in Self.Flags then
+      if Self.CriticalText <> '' then
+        sl.Add('CRITICAL:'+Self.CriticalText)
+      else
+        sl.Add('CRITICAL');
+
+    if sfTelemetry in Self.Flags then
+      sl.Add('TELEMETRY');
+
+    sl.Add(Self.Description);
     sl.SaveToFile(FMainFile);
   finally
     FreeAndNil(sl);

@@ -138,6 +138,10 @@ type
 
   end;
 
+const
+  colServiceName = 0;
+  colDisplayName = 1;
+
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
   Viper.Log;

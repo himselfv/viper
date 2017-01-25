@@ -204,7 +204,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800780010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800800010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -363,19 +363,27 @@ object MainForm: TMainForm
       inherited vtServices: TVirtualStringTree
         Width = 857
         Height = 392
+        OnCreateEditor = MainServiceListvtServicesCreateEditor
         OnDragAllowed = MainServiceListvtServicesDragAllowed
+        OnEdited = MainServiceListvtServicesEdited
+        OnEditing = MainServiceListvtServicesEditing
         OnFocusChanged = MainServiceListvtServicesFocusChanged
+        OnKeyAction = MainServiceListvtServicesKeyAction
+        OnNewText = MainServiceListvtServicesNewText
         ExplicitWidth = 857
         ExplicitHeight = 392
       end
       inherited pmServices: TPopupMenu
-        object Removefromfolder1: TMenuItem [0]
-          Action = aServiceRemoveFromFolder
+        object miRenameService: TMenuItem [0]
+          Action = aRenameService
         end
-        object N6: TMenuItem [1]
+        object miRemoveServiceFromFolder: TMenuItem [1]
+          Action = aRemoveServiceFromFolder
+        end
+        object N6: TMenuItem [2]
           Caption = '-'
         end
-        object N1: TMenuItem [15]
+        object N1: TMenuItem [16]
           Caption = '-'
         end
         inherited Advanced1: TMenuItem
@@ -471,11 +479,23 @@ object MainForm: TMainForm
       Visible = False
       OnExecute = aDeleteFolderExecute
     end
-    object aServiceRemoveFromFolder: TAction
-      Category = 'Folders'
+    object aRenameService: TAction
+      Category = 'Services'
+      Caption = 'Rename'
+      Visible = False
+      OnExecute = aRenameServiceExecute
+    end
+    object aRemoveServiceFromFolder: TAction
+      Category = 'Services'
       Caption = 'Remove from folder'
       Visible = False
-      OnExecute = aServiceRemoveFromFolderExecute
+      OnExecute = aRemoveServiceFromFolderExecute
+    end
+    object aSaveNotes: TAction
+      Category = 'Services'
+      Caption = 'Save'
+      ShortCut = 16467
+      OnExecute = aSaveNotesExecute
     end
   end
   object ilImages: TImageList
@@ -694,23 +714,23 @@ object MainForm: TMainForm
   object pmFolders: TPopupMenu
     Left = 24
     Top = 184
-    object pmAddFolder: TMenuItem
+    object miAddFolder: TMenuItem
       Action = aAddFolder
     end
-    object pmRenameFolder: TMenuItem
+    object miRenameFolder: TMenuItem
       Action = aRenameFolder
     end
-    object pmDeleteFolder: TMenuItem
+    object miDeleteFolder: TMenuItem
       Action = aDeleteFolder
     end
     object N5: TMenuItem
       Caption = '-'
     end
-    object Editfolders1: TMenuItem
+    object miEditFolders: TMenuItem
       Action = aEditFolders
       AutoCheck = True
     end
-    object Hideemptyfolders1: TMenuItem
+    object miHideEmptyFolders: TMenuItem
       Action = aHideEmptyFolders
       AutoCheck = True
     end

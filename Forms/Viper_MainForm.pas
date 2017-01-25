@@ -40,7 +40,7 @@ type
     cbHideEmptyFolders: TMenuItem;
     aHideEmptyFolders: TAction;
     pmFolders: TPopupMenu;
-    Hideemptyfolders1: TMenuItem;
+    miHideEmptyFolders: TMenuItem;
     pnlMain: TPanel;
     Splitter2: TSplitter;
     Colorize1: TMenuItem;
@@ -82,7 +82,7 @@ type
     miShowLog: TMenuItem;
     edtQuickFilter: TEdit;
     Label1: TLabel;
-    mmAdditionalInfo: TMemo;
+    mmNotes: TMemo;
     aRestartAsAdmin: TAction;
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
@@ -91,17 +91,21 @@ type
     aRenameFolder: TAction;
     aDeleteFolder: TAction;
     N5: TMenuItem;
-    pmAddFolder: TMenuItem;
-    pmRenameFolder: TMenuItem;
-    pmDeleteFolder: TMenuItem;
+    miAddFolder: TMenuItem;
+    miRenameFolder: TMenuItem;
+    miDeleteFolder: TMenuItem;
     aEditFolders: TAction;
-    Editfolders1: TMenuItem;
-    aServiceRemoveFromFolder: TAction;
+    miEditFolders: TMenuItem;
+    aRemoveServiceFromFolder: TAction;
+    aRenameService: TAction;
     N6: TMenuItem;
-    Removefromfolder1: TMenuItem;
+    miRenameService: TMenuItem;
+    miRemoveServiceFromFolder: TMenuItem;
+    aSaveNotes: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure aCloseExecute(Sender: TObject);
     procedure aRefreshExecute(Sender: TObject);
     procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
@@ -149,7 +153,20 @@ type
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
     procedure Alltriggers1Click(Sender: TObject);
-    procedure aServiceRemoveFromFolderExecute(Sender: TObject);
+    procedure aRemoveServiceFromFolderExecute(Sender: TObject);
+    procedure mmNotesExit(Sender: TObject);
+    procedure aSaveNotesExecute(Sender: TObject);
+    procedure aRenameServiceExecute(Sender: TObject);
+    procedure MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
+    procedure MainServiceListvtServicesEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex);
+    procedure MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; NewText: string);
+    procedure MainServiceListvtServicesKeyAction(Sender: TBaseVirtualTree; var CharCode: Word;
+      var Shift: TShiftState; var DoDefault: Boolean);
+    procedure MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; out EditLink: IVTEditLink);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -180,16 +197,31 @@ type
     procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
     procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+
+  protected //Details pane
+    procedure ReloadDetails;
+    procedure ReloadServiceInfo;
     procedure ReloadServiceDependencies;
     procedure LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadServiceDependents;
     procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadTriggers;
+
+  protected //Service editing
+    function CanEditServiceInfo: boolean;
+    procedure SaveNotes;
+
   public
     procedure Refresh;
     procedure FullReload;
 
   end;
+
+  TServiceEditLink = class(TStringEditLink)
+  public
+    function PrepareEdit(Tree: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex): Boolean; override; stdcall;
+  end;
+
 
 var
   MainForm: TMainForm;
@@ -235,6 +267,11 @@ begin
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
   Refresh;
+end;
+
+procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  SaveNotes; //since OnExit won't happen
 end;
 
 procedure TMainForm.aCloseExecute(Sender: TObject);
@@ -720,7 +757,7 @@ begin
 end;
 
 //Removes the selected services from exactly the active folders (not from every folder they're in)
-procedure TMainForm.aServiceRemoveFromFolderExecute(Sender: TObject);
+procedure TMainForm.aRemoveServiceFromFolderExecute(Sender: TObject);
 var Folder: TServiceFolder;
   SvcEntry: TServiceEntry;
   SvcInfo: TServiceInfo;
@@ -881,33 +918,10 @@ end;
 
 procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
-var nd: TExtServiceEntry;
 begin
   MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
-
-  //Most availability checking is done in OnChanged, depends on Selection
-  if Node <> nil then
-    nd := TExtServiceEntry(Sender.GetNodeData(Node)^)
-  else
-    nd := nil;
-
-
-  if nd <> nil then
-    mmDetails.Text := nd.Description
-  else
-    mmDetails.Text := '';
-
-  if (nd <> nil) and (nd.Info <> nil) then
-    mmAdditionalInfo.Text := nd.Info.Description
-  else
-    mmAdditionalInfo.Text := '';
-
-  if pcBottom.ActivePage = tsDependencies then
-    ReloadServiceDependencies;
-  if pcBottom.ActivePage = tsDependents then
-    ReloadServiceDependents;
-  if pcBottom.ActivePage = tsTriggers then
-    ReloadTriggers;
+  ReloadDetails;
+  //Action availability checking is done in OnChanged, depends on Selection
 end;
 
 procedure TMainForm.MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree;
@@ -916,6 +930,39 @@ begin
   Allowed := CanEditFolders;
 end;
 
+
+
+// Details pane
+// At the moment, always shows the details for MainServiceList.FocusedService
+
+//Reloads all data in the details pane
+procedure TMainForm.ReloadDetails;
+begin
+ //Only reload visible data, the rest is reloaded as we switch between tabs
+  ReloadServiceInfo;
+  if pcBottom.ActivePage = tsDependencies then
+    ReloadServiceDependencies;
+  if pcBottom.ActivePage = tsDependents then
+    ReloadServiceDependents;
+  if pcBottom.ActivePage = tsTriggers then
+    ReloadTriggers;
+end;
+
+procedure TMainForm.ReloadServiceInfo;
+var service: TExtServiceEntry;
+begin
+  service := TExtServiceEntry(MainServiceList.GetFocusedService);
+
+  if service <> nil then
+    mmDetails.Text := service.Description
+  else
+    mmDetails.Text := '';
+
+  if (service <> nil) and (service.Info <> nil) then
+    mmNotes.Text := service.Info.Description
+  else
+    mmNotes.Text := '';
+end;
 
 procedure TMainForm.tsDependenciesShow(Sender: TObject);
 begin
@@ -1092,17 +1139,12 @@ end;
 
 
 
-// Folder tree editing
+// Edit mode
 
 procedure TMainForm.aEditFoldersExecute(Sender: TObject);
 begin
- //By default, click+drag on services results in rectangle selection. Dragging interferes with this.
-  if aEditFolders.Checked then
-    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
-      Self.MainServiceList.vtServices.TreeOptions.MiscOptions + [toFullRowDrag]
-  else
-    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
-      Self.MainServiceList.vtServices.TreeOptions.MiscOptions - [toFullRowDrag];
+  if not aEditFolders.Checked then
+    SaveNotes; //before turning them read-only
 
   aAddFolder.Visible := aEditFolders.Checked;
   aRenameFolder.Visible := aEditFolders.Checked;
@@ -1110,9 +1152,28 @@ begin
 
   aHideEmptyFolders.Enabled := not aEditFolders.Checked; //Cannot hide empty folders in edit mode
   aHideEmptyFolders.Visible := not aEditFolders.Checked;
-  aServiceRemoveFromFolder.Visible := aEditFolders.Checked;
 
   FilterFolders; //Because "Hide empty folders" might implicitly change
+
+ //By default, click+drag on services results in rectangle selection. Dragging interferes with this.
+ //Also enable editing
+  if aEditFolders.Checked then
+    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions + [toFullRowDrag, toEditable]
+  else
+    Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions - [toFullRowDrag, toEditable];
+
+  //Services
+  aRenameService.Visible := aEditFolders.Checked;
+  aRemoveServiceFromFolder.Visible := aEditFolders.Checked;
+
+  //Enable note editing
+  if aEditFolders.Checked then
+    mmNotes.Color := clWindow
+  else
+    mmNotes.Color := clBtnFace;
+  mmNotes.ReadOnly := not aEditFolders.Checked;
 end;
 
 function TMainForm.CanEditFolders: boolean;
@@ -1199,5 +1260,118 @@ begin
 
   vtFolders.DeleteNode(Node);
 end;
+
+
+// Service editing
+
+function TMainForm.CanEditServiceInfo: boolean;
+begin
+  Result := aEditFolders.Checked; //Edit mode is common for folders and service info
+end;
+
+procedure TMainForm.mmNotesExit(Sender: TObject);
+begin
+  SaveNotes;
+end;
+
+procedure TMainForm.SaveNotes;
+var service: TExtServiceEntry;
+begin
+  if mmNotes.ReadOnly then exit; // couldn't have been changed
+
+  service := TExtServiceEntry(MainServiceList.GetFocusedService);
+  if service = nil then exit;
+
+  if (service.Info = nil) and (mmNotes.Text = '') then exit; //do not create a file unless there's a point
+
+  if service.Info = nil then
+    service.Info := FServiceCat.Get(service.Info.ServiceName);
+
+  if service.Info.Description = mmNotes.Text then exit; //nothing changed
+
+  service.Info.Description := mmNotes.Text;
+  service.Info.SaveToMainFile;
+end;
+
+procedure TMainForm.aSaveNotesExecute(Sender: TObject);
+begin
+  //Ctrl-S shortcut for saving notes while editing
+  if (not mmNotes.ReadOnly) and mmNotes.Focused then
+    SaveNotes;
+end;
+
+procedure TMainForm.aRenameServiceExecute(Sender: TObject);
+var Node: PVirtualNode;
+begin
+  Node := MainServiceList.vtServices.FocusedNode;
+  if Node = nil then exit;
+  MainServiceList.vtServices.EditNode(Node, Viper_ServiceList.colDisplayName); //only Name column is editable
+end;
+
+procedure TMainForm.MainServiceListvtServicesKeyAction(Sender: TBaseVirtualTree; var CharCode: Word;
+  var Shift: TShiftState; var DoDefault: Boolean);
+begin
+  if (CharCode = VK_F2) and (Shift=[]) then begin
+   {
+   VirtualTree tries to edit either Column 0 or whatever column is focused (with toExtendedFocus)
+   We want to always edit the Display Name.
+   Solution: Enable toExtendedFocus and move focus to Display Name column.
+   }
+    Sender.FocusedColumn := Viper_ServiceList.colDisplayName;
+  end;
+end;
+
+procedure TMainForm.MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; var Allowed: Boolean);
+begin
+  Allowed := CanEditServiceInfo and (Column = Viper_ServiceList.colDisplayName);
+end;
+
+{
+ServiceInfo.DisplayName can contain substitutions such as "Something something %1". These are
+displayed processed, but when editing we want to edit the source.
+We subclass TStringEditLink and replace the edit text at the last moment.
+}
+procedure TMainForm.MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; out EditLink: IVTEditLink);
+begin
+  EditLink := TServiceEditLink.Create;
+end;
+
+function TServiceEditLink.PrepareEdit(Tree: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex): Boolean;
+var service: TExtServiceEntry;
+begin
+  Result := inherited; //initialize the control
+  if Result then begin
+    service := TExtServiceEntry(Tree.GetNodeData(Node)^);
+    if (service = nil) or (service.Info = nil) or (service.Info.DisplayName = '') then exit; //use the default value
+    Self.Edit.Text := service.Info.DisplayName;
+  end;
+end;
+
+procedure TMainForm.MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; NewText: string);
+var service: TExtServiceEntry;
+begin
+  if (not CanEditServiceInfo) or (Column <> Viper_ServiceList.colDisplayName) then
+    exit;
+  service := TExtServiceEntry(MainServiceList.GetServiceEntry(Node));
+
+  if service.Info = nil then
+    service.Info := FServiceCat.Get(service.ServiceName);
+
+  if SameStr(service.Info.DisplayName, NewText) then exit;
+
+  service.Info.DisplayName := NewText;
+  service.Info.SaveToMainFile;
+  //We could also save this later in OnEdited, but there would be no way to check if DisplayName has really changed
+end;
+
+procedure TMainForm.MainServiceListvtServicesEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex);
+begin
+//Reserved
+end;
+
 
 end.

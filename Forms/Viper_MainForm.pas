@@ -5,7 +5,8 @@ interface
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
-  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper_ServiceList, Viper_TriggerList;
+  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper_ServiceList, Viper_TriggerList,
+  Viper.RichEditEx;
 
 type
   TFolderNodeType = (
@@ -101,9 +102,9 @@ type
     aSaveNotes: TAction;
     mmDetails: TMemo;
     Label1: TLabel;
-    mmNotes: TRichEdit;
     Splitter3: TSplitter;
     aEditServiceNotes: TAction;
+    NotesFrame: TRichEditFrame;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -161,15 +162,12 @@ type
     procedure aRenameServiceExecute(Sender: TObject);
     procedure MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; var Allowed: Boolean);
-    procedure MainServiceListvtServicesEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex);
     procedure MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; NewText: string);
     procedure MainServiceListvtServicesKeyAction(Sender: TBaseVirtualTree; var CharCode: Word;
       var Shift: TShiftState; var DoDefault: Boolean);
     procedure MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; out EditLink: IVTEditLink);
-    procedure mmNotesChange(Sender: TObject);
     procedure aEditServiceNotesExecute(Sender: TObject);
 
   protected
@@ -210,6 +208,7 @@ type
     procedure ReloadServiceDependents;
     procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadTriggers;
+    function mmNotes: TRichEdit; inline;
 
   protected //Service editing
     function CanEditServiceInfo: boolean;
@@ -986,6 +985,11 @@ begin
     mmNotes.Text := '';
 end;
 
+function TMainForm.mmNotes: TRichEdit;
+begin
+  Result := NotesFrame.mmNotes;
+end;
+
 procedure TMainForm.tsDependenciesShow(Sender: TObject);
 begin
   ReloadServiceDependencies;
@@ -1286,15 +1290,6 @@ end;
 
 // Service editing
 
-procedure TMainForm.mmNotesChange(Sender: TObject);
-var NewHeight: integer;
-begin
-  //Auto-grow in size
-  NewHeight := mmNotes.Lines.Count * GetControlFontHeight(mmNotes) + 8;
-  if mmNotes.Height <> NewHeight then
-    mmNotes.Height := NewHeight;
-end;
-
 function TMainForm.CanEditServiceInfo: boolean;
 begin
   Result := aEditFolders.Checked; //Edit mode is common for folders and service info
@@ -1420,12 +1415,5 @@ begin
   service.Info.SaveToMainFile;
   //We could also save this later in OnEdited, but there would be no way to check if DisplayName has really changed
 end;
-
-procedure TMainForm.MainServiceListvtServicesEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Column: TColumnIndex);
-begin
-//Reserved
-end;
-
 
 end.

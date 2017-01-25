@@ -7,6 +7,9 @@ uses
   Viper_ServiceList in '..\Forms\Viper_ServiceList.pas' {ServiceList: TFrame},
   Viper_TriggerList in '..\Forms\Viper_TriggerList.pas' {TriggerList: TFrame},
   Viper_RestoreServiceConfig in '..\Forms\Viper_RestoreServiceConfig.pas' {RestoreServiceConfigForm},
+  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList},
+  Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
+  Viper.Log in 'Viper.Log.pas' {LogForm},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',
@@ -14,11 +17,9 @@ uses
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',
-  Viper.Log in 'Viper.Log.pas' {LogForm},
   TriggerUtils in 'TriggerUtils.pas',
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',
-  Viper_MainTriggerList in '..\Forms\Viper_MainTriggerList.pas' {MainTriggerList},
   SvcCat in 'SvcCat.pas';
 
 {$R *.res}

@@ -90,6 +90,16 @@
         <DCCReference Include="..\Forms\Viper_RestoreServiceConfig.pas">
             <Form>RestoreServiceConfigForm</Form>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper_MainTriggerList.pas">
+            <Form>MainTriggerList</Form>
+        </DCCReference>
+        <DCCReference Include="..\Forms\Viper.RichEditEx.pas">
+            <Form>RichEditFrame</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="Viper.Log.pas">
+            <Form>LogForm</Form>
+        </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>
         <DCCReference Include="ShellUtils.pas"/>
@@ -97,17 +107,9 @@
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <DCCReference Include="SecEdit.pas"/>
-        <DCCReference Include="Viper.Log.pas">
-            <Form>LogForm</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
         <DCCReference Include="TriggerUtils.pas"/>
         <DCCReference Include="GuidDict.pas"/>
         <DCCReference Include="EtwUtils.pas"/>
-        <DCCReference Include="..\Forms\Viper_MainTriggerList.pas">
-            <Form>MainTriggerList</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
         <DCCReference Include="SvcCat.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

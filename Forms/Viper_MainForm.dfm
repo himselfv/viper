@@ -62,7 +62,6 @@ object MainForm: TMainForm
     OnInitNode = vtFoldersInitNode
     OnMouseDown = vtFoldersMouseDown
     OnNewText = vtFoldersNewText
-    ExplicitHeight = 609
     Columns = <>
   end
   object pnlMain: TPanel
@@ -73,7 +72,6 @@ object MainForm: TMainForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitHeight = 609
     object Splitter2: TSplitter
       Left = 0
       Top = 405
@@ -101,8 +99,6 @@ object MainForm: TMainForm
       TabOrder = 2
       object tsDescription: TTabSheet
         Caption = 'Info'
-        ExplicitTop = 24
-        ExplicitHeight = 165
         object Label1: TLabel
           Left = 0
           Top = 57
@@ -116,7 +112,6 @@ object MainForm: TMainForm
           Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
-          ExplicitTop = 73
           ExplicitWidth = 89
         end
         object Splitter3: TSplitter
@@ -140,31 +135,34 @@ object MainForm: TMainForm
           ReadOnly = True
           TabOrder = 0
         end
-        object mmNotes: TRichEdit
+        inline NotesFrame: TRichEditFrame
           Left = 0
           Top = 70
           Width = 849
           Height = 138
           Align = alClient
-          BevelInner = bvNone
-          BevelOuter = bvNone
-          BorderStyle = bsNone
-          Color = clBtnFace
-          ReadOnly = True
-          ScrollBars = ssVertical
           TabOrder = 1
-          OnChange = mmNotesChange
-          OnExit = mmNotesExit
-          ExplicitTop = 0
-          ExplicitHeight = 161
+          ExplicitLeft = 56
+          ExplicitTop = -32
+          inherited mmNotes: TRichEdit
+            Width = 849
+            Height = 138
+            Font.Charset = RUSSIAN_CHARSET
+            Font.Height = -13
+            Font.Name = 'Segoe UI'
+            ParentFont = False
+            OnExit = nil
+            ExplicitLeft = 0
+            ExplicitTop = 0
+            ExplicitWidth = 320
+            ExplicitHeight = 240
+          end
         end
       end
       object tsDependencies: TTabSheet
         Caption = 'Depends on'
         ImageIndex = 1
         OnShow = tsDependenciesShow
-        ExplicitTop = 24
-        ExplicitHeight = 165
         inline DependencyList: TServiceList
           Left = 0
           Top = 0
@@ -173,13 +171,13 @@ object MainForm: TMainForm
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
-          ExplicitHeight = 165
+          ExplicitHeight = 208
           inherited vtServices: TVirtualStringTree
             Width = 849
             Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
             ExplicitWidth = 849
-            ExplicitHeight = 165
+            ExplicitHeight = 208
           end
         end
       end
@@ -187,8 +185,6 @@ object MainForm: TMainForm
         Caption = 'Required by'
         ImageIndex = 2
         OnShow = tsDependentsShow
-        ExplicitTop = 24
-        ExplicitHeight = 165
         inline DependentsList: TServiceList
           Left = 0
           Top = 0
@@ -197,13 +193,13 @@ object MainForm: TMainForm
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
-          ExplicitHeight = 165
+          ExplicitHeight = 208
           inherited vtServices: TVirtualStringTree
             Width = 849
             Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
             ExplicitWidth = 849
-            ExplicitHeight = 165
+            ExplicitHeight = 208
           end
         end
       end
@@ -211,8 +207,6 @@ object MainForm: TMainForm
         Caption = 'Triggers'
         ImageIndex = 4
         OnShow = tsTriggersShow
-        ExplicitTop = 24
-        ExplicitHeight = 165
         inline TriggerList: TTriggerList
           Left = 0
           Top = 0
@@ -221,12 +215,12 @@ object MainForm: TMainForm
           Align = alClient
           TabOrder = 0
           ExplicitWidth = 849
-          ExplicitHeight = 165
+          ExplicitHeight = 208
           inherited vtTriggers: TVirtualStringTree
             Width = 849
             Height = 208
             ExplicitWidth = 849
-            ExplicitHeight = 165
+            ExplicitHeight = 208
             Columns = <
               item
                 Position = 0
@@ -246,7 +240,7 @@ object MainForm: TMainForm
           end
           inherited ilImages: TImageList
             Bitmap = {
-              494C010102000800840010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+              494C010102000800880010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
               0000000000003600000028000000400000001000000001002000000000000010
               0000000000000000000000000000000000000000000000000000000000000000
               0000000000000000000000000000000000000000000000000000000000000000
@@ -390,8 +384,6 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = 3
-        ExplicitTop = 24
-        ExplicitHeight = 165
       end
     end
     inline MainServiceList: TServiceList
@@ -403,19 +395,18 @@ object MainForm: TMainForm
       TabOrder = 1
       ExplicitTop = 21
       ExplicitWidth = 857
-      ExplicitHeight = 392
+      ExplicitHeight = 384
       inherited vtServices: TVirtualStringTree
         Width = 857
         Height = 384
         OnCreateEditor = MainServiceListvtServicesCreateEditor
         OnDragAllowed = MainServiceListvtServicesDragAllowed
-        OnEdited = MainServiceListvtServicesEdited
         OnEditing = MainServiceListvtServicesEditing
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         OnKeyAction = MainServiceListvtServicesKeyAction
         OnNewText = MainServiceListvtServicesNewText
         ExplicitWidth = 857
-        ExplicitHeight = 392
+        ExplicitHeight = 384
       end
       inherited pmServices: TPopupMenu
         object miRenameService: TMenuItem [0]
@@ -554,7 +545,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800740010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800780010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

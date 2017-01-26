@@ -8,6 +8,7 @@ uses
   TriggerUtils;
 
 type
+ //We have nodes of 2 types: trigger groups (parent level) and actions (child level). Trigger groups have Action == 0
   TNdTriggerData = record
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
@@ -35,6 +36,9 @@ type
     procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
     procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+  const
+    colDescription = 0;
+    colParams = 1;
   protected
     FServices: TServiceEntryList;
     FTriggerGroups: TDictionary<string, PVirtualNode>;
@@ -53,7 +57,7 @@ var
   TriggerBrowserForm: TTriggerBrowserForm;
 
 implementation
-uses ServiceHelper;
+uses CommonResources, ServiceHelper;
 
 {$R *.dfm}
 
@@ -102,9 +106,9 @@ begin
   if Data = nil then exit;
 
   case Column of
-    NoColumn, 0:
+    NoColumn, colDescription:
       CellText := Data.Description;
-    1:
+    colParams:
       CellText := Data.Params;
   end;
 end;
@@ -120,12 +124,15 @@ begin
   if Data = nil then exit;
 
   case Column of
-    NoColumn, 0:
+    NoColumn, colDescription:
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         ImageIndex := 0
       else
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
-        ImageIndex := 1;
+        ImageIndex := 1
+      else
+      if Data.Action = 0 then
+        ImageIndex := CommonRes.GetTriggerImageIndex(Data.TriggerType, Data.TriggerSubtype);
   end;
 end;
 

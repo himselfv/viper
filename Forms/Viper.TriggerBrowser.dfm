@@ -202,6 +202,7 @@ object TriggerBrowserForm: TTriggerBrowserForm
     Header.Font.Style = []
     Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
     Header.SortColumn = 0
+    Images = CommonRes.ilImages
     TabOrder = 0
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]

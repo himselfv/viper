@@ -111,25 +111,7 @@ begin
   ImageList := CommonRes.ilImages;
   case Column of
     NoColumn, colTrigger:
-      case Data.TriggerType of
-        SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL: ImageIndex := CommonRes.iTriggerDevice;
-        SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY: ImageIndex := CommonRes.iTriggerIp;
-        SERVICE_TRIGGER_TYPE_DOMAIN_JOIN: ImageIndex := CommonRes.iTriggerDomain;
-        SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT: ImageIndex := CommonRes.iTriggerFirewall;
-        //TODO: The four types above would benefit from a separate "DIS-connected" versions
-        SERVICE_TRIGGER_TYPE_GROUP_POLICY:
-          if Data.TriggerSubtype = MACHINE_POLICY_PRESENT_GUID then
-            ImageIndex := CommonRes.iTriggerMachinePolicy
-          else
-          if Data.TriggerSubtype = USER_POLICY_PRESENT_GUID then
-            ImageIndex := CommonRes.iTriggerUserPolicy
-          else
-            ImageIndex := CommonRes.iTriggerGroupPolicy;
-        SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: ImageIndex := CommonRes.iTriggerNetwork;
-        SERVICE_TRIGGER_TYPE_CUSTOM: ImageIndex := CommonRes.iTriggerEvent;
-      else
-        ImageIndex := CommonRes.iTrigger;
-      end;
+      ImageIndex := CommonRes.GetTriggerImageIndex(Data.TriggerType, Data.TriggerSubtype);
 
     colAction: begin
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then

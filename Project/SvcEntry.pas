@@ -22,11 +22,14 @@ type
     FServiceDll: string;
     FLaunchProtectionQueried: boolean;
     FLaunchProtection: cardinal;
+    FTriggerCountQueried: boolean;
+    FTriggerCount: integer;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
     function GetDescription: string; inline;
     function GetServiceDll: string; inline;
     function GetLaunchProtection: cardinal; inline;
+    function GetTriggerCount: integer;
   public
     ServiceName: string;
     DisplayName: string;
@@ -48,6 +51,7 @@ type
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig;
     property ServiceDll: string read GetServiceDll;
     property LaunchProtection: cardinal read GetLaunchProtection;
+    property TriggerCount: integer read GetTriggerCount;
   end;
   PServiceEntry = ^TServiceEntry;
 
@@ -173,6 +177,21 @@ begin
     FLaunchProtectionQueried := true;
   end;
   Result := FLaunchProtection;
+end;
+
+function TServiceEntry.GetTriggerCount: integer;
+var triggers: PSERVICE_TRIGGER_INFO;
+begin
+  if not FTriggerCountQueried then begin
+    triggers := QueryServiceTriggers(Self.Handle);
+    if triggers = nil then
+      FTriggerCount := 0
+    else begin
+      FTriggerCount := triggers.cTriggers;
+      FreeMem(triggers);
+    end;
+  end;
+  Result := FTriggerCount;
 end;
 
 

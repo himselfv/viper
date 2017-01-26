@@ -141,6 +141,12 @@ type
 const
   colServiceName = 0;
   colDisplayName = 1;
+  colStatus = 2;
+  colStartMode = 3;
+  colTriggers = 4;
+  colDescription = 5;
+  colFilename = 6;
+  colProtection = 7;
 
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
@@ -220,6 +226,8 @@ resourcestring
   sProtectionWindowsLight = 'OS (light)';
   sProtectionAntimalwareLight = 'Antimalware';
 
+  sTriggerCount = '%d triggers';
+
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -228,9 +236,9 @@ begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
   if TextType <> ttNormal then exit;
   case Column of
-    NoColumn, 0: CellText := Data.ServiceName;
-    1: CellText := Data.GetEffectiveDisplayName;
-    2: case Data.Status.dwCurrentState of
+    NoColumn, colServiceName: CellText := Data.ServiceName;
+    colDisplayName: CellText := Data.GetEffectiveDisplayName;
+    colStatus: case Data.Status.dwCurrentState of
          SERVICE_STOPPED: CellText := '';
          SERVICE_START_PENDING: CellText := sStatusStartPending;
          SERVICE_STOP_PENDING: CellText := sStatusStopPending;
@@ -240,7 +248,7 @@ begin
          SERVICE_PAUSED: CellText := sStatusPaused;
        else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
        end;
-    3: if Data.Config = nil then
+    colStartMode: if Data.Config = nil then
          CellText := ''
        else
        case Data.Config.dwStartType of
@@ -251,15 +259,19 @@ begin
          SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
        else CellText := '';
        end;
-    4: CellText := Data.Description;
-    5: CellText := Data.GetExecutableFilename;
-    6: case Data.LaunchProtection of
+    colDescription: CellText := Data.Description;
+    colFilename: CellText := Data.GetExecutableFilename;
+    colProtection: case Data.LaunchProtection of
          SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
          SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
          SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sProtectionWindowsLight;
          SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sProtectionAntimalwareLight;
        else CellText := '';
        end;
+    colTriggers: if Data.TriggerCount > 0 then
+         CellText := IntToStr(Data.TriggerCount)
+       else
+         CellText := '';
   end;
 end;
 
@@ -316,15 +328,20 @@ begin
   case Kind of
   ikNormal, ikSelected:
     case Column of
-      NoColumn, 0: Service.GetIcon(ImageList, ImageIndex);
-      6: if Service.IsLaunchProtected then begin
+      NoColumn, colServiceName: Service.GetIcon(ImageList, ImageIndex);
+      colProtection: if Service.IsLaunchProtected then begin
         ImageList := CommonRes.ilImages;
         ImageIndex := CommonRes.iShield;
       end;
+      colTriggers: if Service.TriggerCount > 0 then begin
+        ImageList := CommonRes.ilImages;
+        ImageIndex := CommonRes.iTrigger;
+      end;
+
     end;
   ikOverlay: begin
     case Column of
-      NoColumn, 0: begin
+      NoColumn, colServiceName: begin
         ImageList := CommonRes.ilOverlays;
         if Service.IsLaunchProtected then
           ImageIndex := CommonRes.iShieldOverlay;
@@ -341,10 +358,10 @@ begin
   Data1 := TServiceEntry(Sender.GetNodeData(Node1)^);
   Data2 := TServiceEntry(Sender.GetNodeData(Node2)^);
   case Column of
-    0, NoColumn: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
-    1: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
-    2: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
-    3: if Data1.Config = nil then
+    NoColumn, colServiceName: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
+    colDisplayName: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
+    colStatus: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
+    colStartMode: if Data1.Config = nil then
          if Data2.Config = nil then
            Result := 0
          else
@@ -354,8 +371,9 @@ begin
            Result := -1
          else
            Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
-    4: Result := CompareText(Data1.Description, Data2.Description);
-    5: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
+    colDescription: Result := CompareText(Data1.Description, Data2.Description);
+    colFilename: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
+    colTriggers: Result := Data2.TriggerCount - Data1.TriggerCount; //Triggers are by default sorted from biggest
   end;
 end;
 

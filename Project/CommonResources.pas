@@ -21,6 +21,17 @@ type
     function LoadIcon16(const ALibName: string; AResId: integer): integer; overload;
     function LoadIcon16(const ALibName: string; const AResName: string): integer; overload;
     function LoadIcon8(const ALibName: string; const AResName: string): integer;
+  const
+    iTrigger: integer = 2;
+    iTriggerFirewall: integer = 3;
+    iTriggerDevice: integer = 4; //5
+    iTriggerDomain: integer = 6;
+    iTriggerIp: integer = 7;
+    iTriggerEvent: integer = 8;
+    iTriggerGroupPolicy: integer = 9;
+    iTriggerUserPolicy: integer = 10;
+    iTriggerMachinePolicy: integer = 11;
+    iTriggerNetwork: integer = 12;
   end;
 
 var

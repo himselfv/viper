@@ -1106,25 +1106,12 @@ end;
 
 procedure TMainForm.ReloadTriggers;
 var service: TServiceEntry;
-  triggers: PSERVICE_TRIGGER_INFO;
 begin
   TriggerList.Clear;
   service := MainServiceList.GetFocusedService;
   if service = nil then
     exit;
-
-  triggers := QueryServiceTriggers(service.Handle);
-  if triggers = nil then exit;
-  try
-    while triggers.cTriggers > 0 do begin
-      TriggerList.Add(triggers.pTriggers);
-      Inc(triggers.pTriggers);
-      Dec(triggers.cTriggers);
-    end;
-
-  finally
-    FreeMem(triggers);
-  end;
+  TriggerList.Reload(service.Handle);
 end;
 
 

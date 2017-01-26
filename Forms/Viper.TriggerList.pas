@@ -24,7 +24,6 @@ type
 
   TTriggerList = class(TFrame)
     vtTriggers: TVirtualStringTree;
-    ilImages: TImageList;
     PopupMenu: TPopupMenu;
     ActionList: TActionList;
     aCopyText: TAction;
@@ -35,18 +34,24 @@ type
     procedure vtTriggersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vtTriggersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
       TextType: TVSTTextType; var CellText: string);
-    procedure vtTriggersGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
     procedure aCopyTextExecute(Sender: TObject);
     procedure vtTriggersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
+    procedure vtTriggersGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
+      var ImageList: TCustomImageList);
+  const
+    colAction = 0;
+    colTrigger = 1;
+    colParams = 2;
   public
     procedure Clear;
     procedure Add(const ATrigger: PSERVICE_TRIGGER);
+    procedure Reload(ServiceHandle: SC_HANDLE);
   end;
 
 implementation
-uses Clipbrd, TriggerUtils;
+uses Clipbrd, CommonResources, TriggerUtils;
 
 {$R *.dfm}
 
@@ -80,21 +85,22 @@ begin
   if Data = nil then exit;
 
   case Column of
-    NoColumn, 0:
+    NoColumn, colTrigger:
       CellText := Data.Description;
-    1:
+    colAction:
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         CellText := 'Start'
       else
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
         CellText := 'Stop';
-    2:
+    colParams:
       CellText := Data.Params;
   end;
 end;
 
-procedure TTriggerList.vtTriggersGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
+procedure TTriggerList.vtTriggersGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
+  var ImageList: TCustomImageList);
 var Data: PNdTriggerData;
 begin
   if not (Kind in [ikNormal, ikSelected]) then exit;
@@ -102,13 +108,36 @@ begin
   Data := Sender.GetNodeData(Node);
   if Data = nil then exit;
 
+  ImageList := CommonRes.ilImages;
   case Column of
-    NoColumn, 1:
+    NoColumn, colTrigger:
+      case Data.TriggerType of
+        SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL: ImageIndex := CommonRes.iTriggerDevice;
+        SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY: ImageIndex := CommonRes.iTriggerIp;
+        SERVICE_TRIGGER_TYPE_DOMAIN_JOIN: ImageIndex := CommonRes.iTriggerDomain;
+        SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT: ImageIndex := CommonRes.iTriggerFirewall;
+        //TODO: The four types above would benefit from a separate "DIS-connected" versions
+        SERVICE_TRIGGER_TYPE_GROUP_POLICY:
+          if Data.TriggerSubtype = MACHINE_POLICY_PRESENT_GUID then
+            ImageIndex := CommonRes.iTriggerMachinePolicy
+          else
+          if Data.TriggerSubtype = USER_POLICY_PRESENT_GUID then
+            ImageIndex := CommonRes.iTriggerUserPolicy
+          else
+            ImageIndex := CommonRes.iTriggerGroupPolicy;
+        SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: ImageIndex := CommonRes.iTriggerNetwork;
+        SERVICE_TRIGGER_TYPE_CUSTOM: ImageIndex := CommonRes.iTriggerEvent;
+      else
+        ImageIndex := CommonRes.iTrigger;
+      end;
+
+    colAction: begin
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
         ImageIndex := 0
       else
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
         ImageIndex := 1;
+    end;
   end;
 end;
 
@@ -149,6 +178,23 @@ begin
     else
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
+  end;
+end;
+
+procedure TTriggerList.Reload(ServiceHandle: SC_HANDLE);
+var triggers: PSERVICE_TRIGGER_INFO;
+begin
+  triggers := QueryServiceTriggers(ServiceHandle);
+  if triggers = nil then exit;
+  try
+    while triggers.cTriggers > 0 do begin
+      Self.Add(triggers.pTriggers);
+      Inc(triggers.pTriggers);
+      Dec(triggers.cTriggers);
+    end;
+
+  finally
+    FreeMem(triggers);
   end;
 end;
 

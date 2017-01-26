@@ -1,13 +1,13 @@
 object ServiceList: TServiceList
   Left = 0
   Top = 0
-  Width = 672
+  Width = 746
   Height = 447
   TabOrder = 0
   object vtServices: TVirtualStringTree
     Left = 0
     Top = 0
-    Width = 672
+    Width = 746
     Height = 447
     Align = alClient
     BorderWidth = 1
@@ -56,26 +56,31 @@ object ServiceList: TServiceList
       end
       item
         Position = 2
-        Width = 150
+        Width = 125
         WideText = 'Status'
       end
       item
         Position = 3
-        Width = 150
+        Width = 125
         WideText = 'Start mode'
       end
       item
         Position = 4
-        Width = 200
-        WideText = 'Description'
+        Width = 65
+        WideText = 'Triggers'
       end
       item
         Position = 5
         Width = 200
-        WideText = 'Filename'
+        WideText = 'Description'
       end
       item
         Position = 6
+        Width = 200
+        WideText = 'Filename'
+      end
+      item
+        Position = 7
         Width = 100
         WideText = 'Protection'
       end>

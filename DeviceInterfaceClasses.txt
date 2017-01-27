@@ -1,6 +1,6 @@
 # Sources:
 #   https://msdn.microsoft.com/en-us/library/windows/hardware/ff553412(v=vs.85).aspx
-#   Windows 10 SDK search for DEVINTERFACE_
+#   Windows 10 SDK search for DEVINTERFACE_, DEVICE_INTERFACE
 
 # 1394 and 61883 Devices
 BUS1394 = {6BDD1FC1-810F-11d0-BEC7-08002BE2092F}
@@ -20,6 +20,9 @@ THERMAL_COOLING = {DBE4373D-3C81-40cb-ACE4-E0E5D05F0C9F} # poclass.h
 # Bluetooth Devices
 BTH = {00F40965-E89D-4487-9890-87C3ABB211F4}
 BTHPORT = {0850302A-B344-4fda-9BE9-90576B8D46F0}
+BTH_RFCOMM_SERVICE = {b142fc3e-fa4e-460b-8abc-072b628b3c70} # bthdef.h
+BLUETOOTHLE = {781aee18-7733-4ce4-add0-91f41c67b592} # bthledef.h (Bluetooth LE)
+BLUETOOTH_GATT_SERVICE = {6e3bb679-4372-40c8-9eaa-4509df260cd8} # bthledef.h (Bluetooth LE Service)
 
 # Display and Image Devices
 BRIGHTNESS = {FDE5BBA4-B3F9-46FB-BDAA-0728CE3100B4}
@@ -234,8 +237,10 @@ SIDESHOW = {152E5811-FEB9-4B00-90F4-D32947AE1681}
 # These are missing from system defined interface list, but are nevertheless in the headers
 GNSS = {3336e5e4-018a-4669-84c5-bd05f3bd368b} # gnssdriver.h
 LAMP = {6c11e9e3-8238-4f0a-190a-aaec26ca5e98) # lamp.h
-NFCDTA = {8DC7C854-F5E5-4bed-815D-0C85AD047725} # nfcdtadev.h
-NFCSE = {8DC7C854-F5E5-4bed-815D-0C85AD047725} # nfcsedev.h
+NFCDTA = {8DC7C854-F5E5-4bed-815D-0C85AD047725} # nfcdtadev.h, same as NFCSE in nfcsedev.h
+NFC_RADIO_MEDIA = {4d51e930-750d-4a36-f7a9-91dc540fcd30} # nfcradiodev.h
+NFCSE_RADIO_MEDIA = {EF8BA08F-148D-4116-EF83-A2679DFC3FA5} # nfcradiodev.h
+
 NFP = {FB3842CD-9E2A-4F83-8FCC-4B0761139AE9} # nfpdev.h (Near Field Proximity device)
 VM_GENCOUNTER = {3ff2c92b-6598-4e60-8e1c-0ccf4927e319} # vmgenerationcounter.h (Virtual Machine generation counter)
 BIOMETRIC_READER = {E2B5183A-99EA-4cc3-AD6B-80CA8D715B80} # winbio_ioctl.h

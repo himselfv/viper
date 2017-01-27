@@ -75,6 +75,9 @@
             <Form>MainForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="Viper.Log.pas">
+            <Form>LogForm</Form>
+        </DCCReference>
         <DCCReference Include="CommonResources.pas">
             <Form>CommonRes</Form>
             <DesignClass>TDataModule</DesignClass>
@@ -96,9 +99,6 @@
         <DCCReference Include="..\Forms\Viper.RichEditEx.pas">
             <Form>RichEditFrame</Form>
             <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="Viper.Log.pas">
-            <Form>LogForm</Form>
         </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>

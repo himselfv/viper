@@ -252,6 +252,7 @@ DMS = {C96037AE-A558-4470-B432-115A31B85553} # DLNADeviceInterfaceIds.h
 ENHANCED_STORAGE_SILO = {3897F6A4-FD35-4bc8-A0B7-5DBBA36ADAFA} # ehstorextensions.h (Enhanced Storage Device)
 EHSTOR_SILO_INTERFACE = {7c2bcf57-2bea-46da-26ad-78fdc83cee46} # ehstorioctl.h
 EHSTOR_CONTROL_INTERFACE = {4f40006f-b933-4550-32b5-2b58cee614d3} # ehstorioctl.h, appears in the wild (even though not DevInterface by name)
+EHSTOR_CONTROL_INTERFACE = {4f40006f-b933-4550-b532-2b58cee614d3} # ehstorioctl.h (wrong byte order in 4-th syllable, but that's what some services list in W10!)
 AUDIO_RENDER = {E6327CAD-DCEC-4949-AE8A-991E976A79D2} # mmdeviceapi.h
 AUDIO_CAPTURE = {2EEF81BE-33FA-4800-9670-1CD474972C3F} # mmdeviceapi.h
 MIDI_OUTPUT = {6DC23320-AB33-4CE4-80D4-BBB3EBBF2814} # mmdeviceapi.h

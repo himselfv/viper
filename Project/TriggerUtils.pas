@@ -330,7 +330,7 @@ begin
       if ATrigger.pTriggerSubtype^ = RPC_INTERFACE_EVENT_GUID then begin
         Result.Event := 'RPC request';
         while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
-          Result.AddSource(ParseRpcRequestSource(param.StringValue));
+          Result.AddSource(ParseRpcRequestSource(param.StringValue), param.StringValue);
       end else begin
         if ATrigger.pTriggerSubtype^ = NAMED_PIPE_EVENT_GUID then
           Result.Event := 'Named pipe request'

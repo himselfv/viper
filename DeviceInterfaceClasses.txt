@@ -244,7 +244,6 @@ LAMP = {6c11e9e3-8238-4f0a-190a-aaec26ca5e98) # lamp.h
 NFCDTA = {8DC7C854-F5E5-4bed-815D-0C85AD047725} # nfcdtadev.h, same as NFCSE in nfcsedev.h
 NFC_RADIO_MEDIA = {4d51e930-750d-4a36-f7a9-91dc540fcd30} # nfcradiodev.h
 NFCSE_RADIO_MEDIA = {EF8BA08F-148D-4116-EF83-A2679DFC3FA5} # nfcradiodev.h
-
 NFP = {FB3842CD-9E2A-4F83-8FCC-4B0761139AE9} # nfpdev.h (Near Field Proximity device)
 VM_GENCOUNTER = {3ff2c92b-6598-4e60-8e1c-0ccf4927e319} # vmgenerationcounter.h (Virtual Machine generation counter)
 BIOMETRIC_READER = {E2B5183A-99EA-4cc3-AD6B-80CA8D715B80} # winbio_ioctl.h
@@ -262,3 +261,8 @@ AUDIO_CAPTURE = {2EEF81BE-33FA-4800-9670-1CD474972C3F} # mmdeviceapi.h
 MIDI_OUTPUT = {6DC23320-AB33-4CE4-80D4-BBB3EBBF2814} # mmdeviceapi.h
 MIDI_INPUT = {504BE32C-CCF6-4D2C-B73F-6F8B3747E22B} # mmdeviceapi.h
 WIFIDIRECT_DEVICE = {439B20AF-8955-405B-99F0-A62AF0C68D43} # wlanapi.h
+
+
+# This one is missing from basically everywhere,
+# but can be determined from the usage contexts and is documented in one obscure place
+BLUETOOTH MTP = {C1E9BC6D-1DAE-421A-9369-CC7FF0D6E359}

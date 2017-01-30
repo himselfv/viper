@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
-  VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList;
+  VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
+  TriggerUtils;
 
 //TODO: Fix Ctrl-C sharing between this and main service list!
 //  Note that secondary service lists handle Ctrl-C fine (perhaps because trigger list is invisible
@@ -17,29 +18,39 @@ type
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
     Description: string;
+    Source: TTriggerSource;
     Params: string;
     Action: DWORD;
   end;
   PNdTriggerData = ^TNdTriggerData;
 
   TTriggerList = class(TFrame)
-    vtTriggers: TVirtualStringTree;
+    Tree: TVirtualStringTree;
     PopupMenu: TPopupMenu;
     ActionList: TActionList;
-    aCopyText: TAction;
-    Copy1: TMenuItem;
-    procedure vtTriggersGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
-    procedure vtTriggersInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
+    aCopySummary: TAction;
+    miCopySummary: TMenuItem;
+    aCopyTriggerText: TAction;
+    aCopySourceData: TAction;
+    aCopyParams: TAction;
+    miCopy: TMenuItem;
+    Sourcetext1: TMenuItem;
+    SourceID1: TMenuItem;
+    Additionalparams1: TMenuItem;
+    procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
+    procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
-    procedure vtTriggersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure vtTriggersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+    procedure TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
       TextType: TVSTTextType; var CellText: string);
-    procedure aCopyTextExecute(Sender: TObject);
-    procedure vtTriggersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex);
-    procedure vtTriggersGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
+    procedure aCopySummaryExecute(Sender: TObject);
+    procedure TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
       var ImageList: TCustomImageList);
+    procedure aCopyTriggerTextExecute(Sender: TObject);
+    procedure aCopySourceDataExecute(Sender: TObject);
+    procedure aCopyParamsExecute(Sender: TObject);
+    procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
   const
     colAction = 0;
     colTrigger = 1;
@@ -48,19 +59,21 @@ type
     procedure Clear;
     procedure Add(const ATrigger: PSERVICE_TRIGGER);
     procedure Reload(ServiceHandle: SC_HANDLE);
+    function SelectedTriggers: TArray<PNdTriggerData>;
+
   end;
 
 implementation
-uses Clipbrd, CommonResources, TriggerUtils;
+uses Clipbrd, CommonResources;
 
 {$R *.dfm}
 
-procedure TTriggerList.vtTriggersGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
+procedure TTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
 begin
   NodeDataSize := SizeOf(TNdTriggerData);
 end;
 
-procedure TTriggerList.vtTriggersInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
+procedure TTriggerList.TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
   var InitialStates: TVirtualNodeInitStates);
 var Data: PNdTriggerData;
 begin
@@ -68,14 +81,28 @@ begin
   Initialize(Data^);
 end;
 
-procedure TTriggerList.vtTriggersFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+procedure TTriggerList.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
 var Data: PNdTriggerData;
 begin
   Data := Sender.GetNodeData(Node);
   Finalize(Data^);
 end;
 
-procedure TTriggerList.vtTriggersGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+resourcestring
+  sActionStart = 'Start';
+  sActionStop = 'Stop';
+  sActionOther = 'Action (%d)';
+
+function TriggerActionToString(const Action: cardinal): string; inline;
+begin
+  case Action of
+    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := sActionStart;
+    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := sActionStop;
+  else Result := Format(sActionOther, [Action]);
+  end;
+end;
+
+procedure TTriggerList.TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var Data: PNdTriggerData;
 begin
@@ -88,17 +115,13 @@ begin
     NoColumn, colTrigger:
       CellText := Data.Description;
     colAction:
-      if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_START then
-        CellText := 'Start'
-      else
-      if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
-        CellText := 'Stop';
+      CellText := TriggerActionToString(Data.Action);
     colParams:
       CellText := Data.Params;
   end;
 end;
 
-procedure TTriggerList.vtTriggersGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
+procedure TTriggerList.TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
   var ImageList: TCustomImageList);
 var Data: PNdTriggerData;
@@ -123,40 +146,45 @@ begin
   end;
 end;
 
-procedure TTriggerList.vtTriggersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Column: TColumnIndex);
+procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
-  aCopyText.Visible := Node <> nil;
+ //Selection changed
+  aCopySummary.Visible := Tree.SelectedCount > 0;
+  aCopyTriggerText.Visible := Tree.SelectedCount > 0;
+  aCopySourceData.Visible := Tree.SelectedCount > 0;
+  aCopyParams.Visible := Tree.SelectedCount > 0;
 end;
 
 procedure TTriggerList.Clear;
 begin
-  vtTriggers.Clear;
+  Tree.Clear;
 end;
 
 procedure TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER);
 var Node: PVirtualNode;
   NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
-  Sources: TArray<string>;
-  Source: string;
+  Sources: TArray<TTriggerSource>;
+  Source: TTriggerSource;
 begin
   TriggerData := ParseTrigger(ATrigger);
   Sources := TriggerData.Sources;
   if Length(Sources) <= 0 then begin
     SetLength(Sources, 1);
-    Sources[0] := '';
+    Sources[0].DisplayText := '';
+    Sources[0].Data := '';
   end;
 
   for Source in Sources do begin
-    Node := vtTriggers.AddChild(nil);
-    vtTriggers.ReinitNode(Node, false);
-    NodeData := vtTriggers.GetNodeData(Node);
+    Node := Tree.AddChild(nil);
+    Tree.ReinitNode(Node, false);
+    NodeData := Tree.GetNodeData(Node);
     NodeData.TriggerType := ATrigger^.dwTriggerType;
     NodeData.Action := ATrigger^.dwAction;
     NodeData.TriggerSubtype := ATrigger.pTriggerSubtype^;
-    if Source <> '' then
-      NodeData.Description := TriggerData.Event + ' ('+Source+')'
+    NodeData.Source := Source;
+    if Source.Data <> '' then
+      NodeData.Description := TriggerData.Event + ' ('+Source.DisplayText+')'
     else
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
@@ -180,18 +208,76 @@ begin
   end;
 end;
 
-procedure TTriggerList.aCopyTextExecute(Sender: TObject);
-var Data: PNdTriggerData;
+function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
+var ANode: PVirtualNode;
 begin
-  if vtTriggers.FocusedNode = nil then exit;
+  SetLength(Result, 0);
+  for ANode in Tree.SelectedNodes() do begin
+    SetLength(Result, Length(Result)+1);
+    Result[Length(Result)-1] := Tree.GetNodeData(ANode);
+  end;
+end;
 
-  Data := vtTriggers.GetNodeData(vtTriggers.FocusedNode);
-  if Data = nil then exit;
+const
+  sTriggerSummary = '%s on %s';
+  sTriggerSummaryParams = '%s on %s (%s)';
 
-  if Data.Params <> '' then
-    Clipboard.AsText := Data.Description + ' (' + Data.Params + ')'
-  else
-    Clipboard.AsText := Data.Description;
+procedure TTriggerList.aCopySummaryExecute(Sender: TObject);
+var Data: PNdTriggerData;
+  Result: string;
+begin
+  Result := '';
+  for Data in SelectedTriggers do
+    if Data.Params = '' then
+      Result := Result + Format(sTriggerSummary, [TriggerActionToString(Data.Action), Data.Description]) + #13#10
+    else
+      Result := Result + Format(sTriggerSummaryParams, [TriggerActionToString(Data.Action), Data.Description, Data.Params]) + #13#10;
+
+  if Length(Result) >= 2 then
+    SetLength(Result, Length(Result)-2);
+  Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aCopyTriggerTextExecute(Sender: TObject);
+var Data: PNdTriggerData;
+  Result: string;
+begin
+  Result := '';
+
+  for Data in SelectedTriggers do
+    Result := Result + Data.Description + #13#10;
+
+  if Length(Result) >= 2 then
+    SetLength(Result, Length(Result)-2);
+  Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aCopySourceDataExecute(Sender: TObject);
+var Data: PNdTriggerData;
+  Result: string;
+begin
+  Result := '';
+
+  for Data in SelectedTriggers do
+    Result := Result + Data.Source.Data + #13#10;
+
+  if Length(Result) >= 2 then
+    SetLength(Result, Length(Result)-2);
+  Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aCopyParamsExecute(Sender: TObject);
+var Data: PNdTriggerData;
+  Result: string;
+begin
+  Result := '';
+
+  for Data in SelectedTriggers do
+    Result := Result + Data.Params + #13#10;
+
+  if Length(Result) >= 2 then
+    SetLength(Result, Length(Result)-2);
+  Clipboard.AsText := Result;
 end;
 
 end.

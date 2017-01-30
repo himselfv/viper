@@ -4,7 +4,7 @@ object TriggerList: TTriggerList
   Width = 792
   Height = 238
   TabOrder = 0
-  object vtTriggers: TVirtualStringTree
+  object Tree: TVirtualStringTree
     Left = 0
     Top = 0
     Width = 792
@@ -23,13 +23,13 @@ object TriggerList: TTriggerList
     TabOrder = 0
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
-    TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect, toSimpleDrawSelection]
-    OnFocusChanged = vtTriggersFocusChanged
-    OnFreeNode = vtTriggersFreeNode
-    OnGetText = vtTriggersGetText
-    OnGetImageIndexEx = vtTriggersGetImageIndexEx
-    OnGetNodeDataSize = vtTriggersGetNodeDataSize
-    OnInitNode = vtTriggersInitNode
+    TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toMultiSelect, toRightClickSelect, toSimpleDrawSelection]
+    OnChange = TreeChange
+    OnFreeNode = TreeFreeNode
+    OnGetText = TreeGetText
+    OnGetImageIndexEx = TreeGetImageIndexEx
+    OnGetNodeDataSize = TreeGetNodeDataSize
+    OnInitNode = TreeInitNode
     Columns = <
       item
         Position = 0
@@ -50,17 +50,45 @@ object TriggerList: TTriggerList
   object PopupMenu: TPopupMenu
     Left = 16
     Top = 64
-    object Copy1: TMenuItem
-      Action = aCopyText
+    object miCopy: TMenuItem
+      Caption = 'Copy'
+      object miCopySummary: TMenuItem
+        Action = aCopySummary
+      end
+      object Sourcetext1: TMenuItem
+        Action = aCopyTriggerText
+      end
+      object SourceID1: TMenuItem
+        Action = aCopySourceData
+      end
+      object Additionalparams1: TMenuItem
+        Action = aCopyParams
+      end
     end
   end
   object ActionList: TActionList
     Left = 16
     Top = 8
-    object aCopyText: TAction
-      Caption = 'Copy'
+    object aCopySummary: TAction
+      Category = 'Copy'
+      Caption = 'Summary'
       ShortCut = 16451
-      OnExecute = aCopyTextExecute
+      OnExecute = aCopySummaryExecute
+    end
+    object aCopyTriggerText: TAction
+      Category = 'Copy'
+      Caption = 'Trigger text'
+      OnExecute = aCopyTriggerTextExecute
+    end
+    object aCopySourceData: TAction
+      Category = 'Copy'
+      Caption = 'Source reference'
+      OnExecute = aCopySourceDataExecute
+    end
+    object aCopyParams: TAction
+      Category = 'Copy'
+      Caption = 'Additional params'
+      OnExecute = aCopyParamsExecute
     end
   end
 end

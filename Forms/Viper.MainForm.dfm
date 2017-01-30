@@ -88,7 +88,7 @@ object MainForm: TMainForm
       Top = 408
       Width = 857
       Height = 240
-      ActivePage = tsTriggers
+      ActivePage = tsDescription
       Align = alBottom
       Font.Charset = RUSSIAN_CHARSET
       Font.Color = clWindowText
@@ -245,6 +245,7 @@ object MainForm: TMainForm
       object tsOperations: TTabSheet
         Caption = 'Operations'
         ImageIndex = -1
+        TabVisible = False
         ExplicitLeft = 0
         ExplicitTop = 0
         ExplicitWidth = 0

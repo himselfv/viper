@@ -1,5 +1,9 @@
 unit TriggerUtils;
 
+{$DEFINE QUERYLOCALRPC}
+// Query local RPC interfaces and use this to decode the RPC interface IDs.
+// Lets you decode some IDs but might make the app start a bit slower.
+
 interface
 uses WinSvc, GuidDict;
 
@@ -39,11 +43,19 @@ type
     function StringValue: string; inline;
   end;
 
+ //Trigger source is stuff like ETW queue name, Device class, RPC interface GUID
+ //Sometimes we can decode it into something user-friendly, then DisplayText is different from OriginalData;
+  TTriggerSource = record
+    DisplayText: string;
+    Data: string;
+  end;
+
   TTriggerData = record
     Event: string;
-    Sources: TArray<string>;
+    Sources: TArray<TTriggerSource>;
     Params: TArray<PTriggerParam>;
-    procedure AddSource(const ASource: string); inline;
+    procedure AddSource(const ADisplayText, AData: string); overload; inline;
+    procedure AddSource(const AData: string); overload; inline;
     function ExtractParamByType(const dwType: cardinal): PTriggerParam; overload;
     function ExtractParamByType(const dwType: cardinal; out AParam: PTriggerParam): boolean; overload;
     function SourcesToString(const ASep: string = #13): string;
@@ -61,10 +73,14 @@ var
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 
 function TryGetEtwProviderName(const Guid: TGuid; out AName: string): boolean;
-function GetEtwProviderName(const Guid: TGuid): string;
+function GetEtwProviderName(const Guid: TGuid): string; inline;
+
+function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
+function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 
 implementation
-uses SysUtils, Windows, UniStrUtils, ServiceHelper, SetupApiHelper, EtwUtils;
+uses SysUtils, Windows, UniStrUtils, ServiceHelper, SetupApiHelper, EtwUtils
+  {$IFDEF QUERYLOCALRPC}, JwaRpc, JwaRpcDce{$ENDIF}, Viper.Log;
 
 type
   PInt64 = ^Int64;
@@ -152,39 +168,44 @@ Unfortunately, default implementations for most classes are unavailable as well.
     Result.AddSource(param.StringValue);
 end;
 
-procedure ParseRPCRequestTrigger(const ATrigger: PSERVICE_TRIGGER; var Result: TTriggerData);
-var param: PTriggerParam;
-  tmpGuid: TGuid;
-  tmpGuidStr, sourceStr: string;
+
+
+function ParseRPCRequestSource(const ASource: string): string;
+var srcGuidStr: string;
+  srcGuid: TGuid;
   i_pos: integer;
 begin
-  Result.Event := 'RPC request';
-  while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do begin
-    tmpGuidStr := param.StringValue;
-    i_pos := pos(':', tmpGuidStr);
-    if i_pos > 0 then
-      delete(tmpGuidStr, i_pos, MaxInt);
-    try
-      tmpGuid := StringToGuid(tmpGuidStr);
-    except
-      on EConvertError do begin //can't decode guid
-        Result.AddSource(param.StringValue);
-        continue;
-      end;
-    end;
+  Result := ASource;
 
-    if not WellKnownRpcInterfaces.TryGetValue(tmpGuid, sourceStr) then
-      Result.AddSource(param.StringValue)
-    else begin
-      if i_pos > 0 then begin
-        //Append the unparsed part to the translated string
-        tmpGuidStr := param.StringValue;
-        delete(tmpGuidStr, 1, i_pos);
-        sourceStr := sourceStr + ':' + tmpGuidStr;
-      end;
-      Result.AddSource(sourceStr);
+ //RPC sources are sometimes
+  i_pos := pos(':', ASource);
+  if i_pos > 0 then
+    srcGuidStr := copy(ASource, 1, i_pos-1)
+  else
+    srcGuidStr := ASource;
+  try
+    srcGuid := StringToGuid('{'+srcGuidStr+'}');
+  except
+    on EConvertError do begin //can't decode guid
+      Result := ASource;
+      exit;
     end;
   end;
+
+  if not WellKnownRpcInterfaces.TryGetValue(srcGuid, Result)
+  and not TryGetLocalRpcInterfaceName(srcGuid, Result) then begin
+    Result := ASource;
+    exit;
+  end;
+
+  if Result = '' then begin
+    Result := ASource;
+    exit;
+  end;
+
+  if i_pos > 0 then
+    //Append the unparsed part to the translated string
+    Result := Result + ':' + copy(ASource, i_pos+1, MaxInt);
 end;
 
 
@@ -306,9 +327,11 @@ begin
     // The dwAction member must be SERVICE_TRIGGER_ACTION_SERVICE_START.
     //
     SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: begin
-      if ATrigger.pTriggerSubtype^ = RPC_INTERFACE_EVENT_GUID then
-        ParseRpcRequestTrigger(ATrigger, Result)
-      else begin
+      if ATrigger.pTriggerSubtype^ = RPC_INTERFACE_EVENT_GUID then begin
+        Result.Event := 'RPC request';
+        while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
+          Result.AddSource(ParseRpcRequestSource(param.StringValue));
+      end else begin
         if ATrigger.pTriggerSubtype^ = NAMED_PIPE_EVENT_GUID then
           Result.Event := 'Named pipe request'
         else
@@ -338,10 +361,18 @@ begin
 end;
 
 
-procedure TTriggerData.AddSource(const ASource: string);
+procedure TTriggerData.AddSource(const ADisplayText, AData: string);
+var i: integer;
 begin
-  SetLength(Self.Sources, Length(Self.Sources)+1);
-  Self.Sources[Length(Self.Sources)-1] := ASource;
+  i := Length(Self.Sources);
+  SetLength(Self.Sources, i+1);
+  Self.Sources[i].DisplayText := ADisplayText;
+  Self.Sources[i].Data := AData;
+end;
+
+procedure TTriggerData.AddSource(const AData: string);
+begin
+  Self.AddSource(AData, AData);
 end;
 
 //Extracts first param with a given type
@@ -370,7 +401,7 @@ var i: integer;
 begin
   Result := '';
   for i := 0 to Length(Self.Sources)-1 do
-    Result := Result + Self.Sources[i] + ASep;
+    Result := Result + Self.Sources[i].DisplayText + ASep;
   if Result <> '' then
     SetLength(Result, Length(Result) - Length(ASep));
 end;
@@ -393,6 +424,11 @@ begin
     Result := '';
 end;
 
+
+{
+ETW providers
+Created and populated on first access.
+}
 
 var
   EtwProviders: TGuidDictionary = nil;
@@ -466,12 +502,113 @@ begin
 end;
 
 
+{
+Local RPC interfaces (not all are available).
+Created and populated on first access.
+}
+
+{$IFDEF QUERYLOCALRPC}
+var
+  LocalRpcInterfaces: TGuidDictionary = nil;
+
+procedure PopulateLocalRpcInterfaces(AList: TGuidDictionary; AProtocol, AServer: PChar); overload;
+var hRpc: RPC_BINDING_HANDLE;
+  hInq: RPC_EP_INQ_HANDLE;
+  pStringBinding: PWideChar;
+  pAnnot: PWideChar;
+  ifId: RPC_IF_ID;
+begin
+  pStringBinding := nil;
+  hRPC := nil;
+  hInq := nil;
+  pAnnot := nil;
+
+  try
+    if RpcStringBindingCompose(nil, AProtocol, nil, AServer, nil, &pStringBinding) <> 0 then
+      exit;
+    if RpcBindingFromStringBinding(pStringBinding, hRpc) <> 0 then
+      exit;
+    if RpcMgmtEpEltInqBegin(hRpc, RPC_C_EP_ALL_ELTS, nil, 0, nil, hInq) <> 0 then
+      exit;
+
+    while RpcMgmtEpEltInqNext(hInq, ifId, nil, nil, pAnnot) = 0 do begin
+      AList.AddOrSetValue(ifId.Uuid, pAnnot);
+      RpcStringFree(pAnnot);
+      pAnnot := nil;
+    end;
+  finally
+    if pAnnot <> nil then RpcStringFree(pAnnot);
+    if hInq <> nil then RpcMgmtEpEltInqDone(hInq);
+    if hRPC <> nil then RpcBindingFree(hRpc);
+    if pStringBinding <> nil then RpcStringFree(pStringBinding);
+  end;
+end;
+
+var
+ //Possible protocol sequence constants:
+ //  https://msdn.microsoft.com/en-us/library/windows/desktop/aa374395(v=vs.85).aspx
+ //We don't scan some either because they're slow and rare (_http, _mq) or obsolete (_ipx, _spx, etc)
+  LocalRpcProtocols: array[0..4] of string = (
+    'ncalrpc',       //local procedure call
+    'ncacn_ip_tcp',  //tcp
+    'ncadg_ip_udp',  //udp
+    'ncacn_np',      //named pipes
+    'ncacn_nb_tcp'   //netbios over tcp
+  );
+
+procedure PopulateLocalRpcInterfaces(AList: TGuidDictionary); overload;
+var i: integer;
+begin
+  for i := 0 to Length(LocalRpcProtocols)-1 do
+    PopulateLocalRpcInterfaces(AList, PChar(LocalRpcProtocols[i]), nil);
+  Log(intToStr(Alist.Count));
+end;
+
+procedure __LoadLocalRpcInterfaces;
+var AList: TGuidDictionary;
+begin
+  AList := TGuidDictionary.Create;
+  try
+    PopulateLocalRpcInterfaces(AList);
+  except
+    FreeAndNil(AList);
+    raise;
+  end;
+
+  if InterlockedCompareExchangePointer(pointer(LocalRpcInterfaces), AList, nil) <> nil then
+    FreeAndNil(AList);
+end;
+
+procedure LoadLocalRpcInterfaces; inline;
+begin
+  if LocalRpcInterfaces <> nil then exit;
+  __LoadLocalRpcInterfaces;
+end;
+
+function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
+begin
+  LoadLocalRpcInterfaces;
+  Result := LocalRpcInterfaces.TryGetValue(Guid, AName);
+end;
+
+function GetLocalRpcInterfaceName(const Guid: TGuid): string;
+begin
+  if not TryGetLocalRpcInterfaceName(Guid, Result) then
+    Result := '';
+end;
+
+{$ENDIF}
+
+
 initialization
   WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
   WellKnownRpcInterfaces := TGuidDictionary.Create;
 
 finalization
  {$IFDEF DEBUG}
+ {$IFDEF QUERYLOCALRPC}
+  FreeAndNil(LocalRpcInterfaces);
+ {$ENDIF}
   FreeAndNil(WellKnownRpcInterfaces);
   FreeAndNil(WellKnownDeviceInterfaceClasses);
   FreeAndNil(EtwProviders);

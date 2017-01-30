@@ -212,7 +212,7 @@ var ATriggerData: TTriggerData;
   AGroupNode: PVirtualNode;
   ANode: PVirtualNode;
   ANodeData: PNdTriggerData;
-  ASources: TArray<string>;
+  ASources: TArray<TTriggerSource>;
   i: integer;
 begin
   ATriggerData := ParseTrigger(AInfo);
@@ -229,12 +229,13 @@ begin
   ASources := ATriggerData.Sources;
   if Length(ASources) <= 0 then begin
     SetLength(ASources, 1);
-    ASources[0] := '';
+    ASources[0].Data := '';
+    ASources[0].DisplayText := '';
   end;
 
   for i := 0 to Length(ASources)-1 do begin
-    if ASources[i] <> '' then
-      ATriggerText := ATriggerData.Event + ' ('+ASources[i]+')'
+    if ASources[i].Data <> '' then
+      ATriggerText := ATriggerData.Event + ' ('+ASources[i].DisplayText+')'
     else
       ATriggerText := ATriggerData.Event;
     AGroupNode := GetGroupNode(AInfo.dwTriggerType, ATriggerText);

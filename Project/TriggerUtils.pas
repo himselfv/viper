@@ -584,11 +584,16 @@ begin
   if LocalRpcInterfaces <> nil then exit;
   __LoadLocalRpcInterfaces;
 end;
+{$ENDIF}
 
 function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
 begin
+ {$IFDEF QUERYLOCALRPC}
   LoadLocalRpcInterfaces;
   Result := LocalRpcInterfaces.TryGetValue(Guid, AName);
+ {$ELSE}
+  Result := false;
+ {$ENDIF}
 end;
 
 function GetLocalRpcInterfaceName(const Guid: TGuid): string;
@@ -596,8 +601,6 @@ begin
   if not TryGetLocalRpcInterfaceName(Guid, Result) then
     Result := '';
 end;
-
-{$ENDIF}
 
 
 initialization

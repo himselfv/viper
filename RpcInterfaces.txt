@@ -3,6 +3,9 @@
 # Also:
 #   http://redplait.blogspot.ru/search/label/rpc%20interfaces
 
+# Also from starting the services which list these triggers and then studying RPC ifids / annotations.
+
+
 # Core
 12345778-1234-abcd-ef00-0123456789ab = LSA interface
 12345778-1234-abcd-ef00-0123456789ac = SAMR interface
@@ -21,11 +24,32 @@ e3514235-4b06-11d1-ab04-00c04fc2dcd2 = Active Directory replication interface (d
 ecec0d70-a603-11d0-96b1-00a0c91ece30 = Active Directory backup interface (JetBack)
 16e0cf3a-a604-11d0-96b1-00a0c91ece30 = Active Directory restore interface (JetRest)
 
+# AppInfo (LUA)
+# All interfaces are annotated like below
+201ef99a-7fa0-444c-9399-19ba84f12a1a = AppInfo
+5f54ce7d-5b79-4175-8584-cb65313a0e98 = AppInfo
+fd7a0523-dc70-43dd-9b2e-9c5ed48225b1 = AppInfo
+58e604e8-9adb-4d2e-a464-3b0683fb1480 = AppInfo
+fb9a3757-cff0-4db0-b9fc-bd6c131612fd = AppInfo
+
+# Biometric Service / WbioSrvc
+C0E9671E-33C6-4438-9464-56B2E1B1C7B4 = Biometric Service (wbiosrvc)
+4BE96A0F-9F52-4729-A51D-C70610F118B0 = Biometric Service (wbiosrvc)
+
+# ClipSvc
+64D1D045-F675-460B-8A94-570246B36DAB = CLIPSVC Default RPC Interface
+
 # Cryptographic Services
 8d0ffe72-d252-11d0-bf8f-00c04fd9126b = Cryptographic Services (IKeySvc)
 68b58241-c259-4f03-a2e5-a2651dcbc930 = Cryptographic Services (IKeySvc2
 0d72a7d4-6148-11d1-b4aa-00c04fb66ea0 = Cryptographic Services (ICertProtect)
 f50aac00-c7f3-428e-a022-a6b71bfb9d43 = Cryptographic Services (ICatDBSvc)
+
+# Device Association Framework / Service
+bd84cd86-9825-4376-813d-334c543f89b1 = Device Association Framework Query RPC Interface
+850cee52-3038-4277-b9b4-e05db8b2c35c = Device Association Framework Association RPC Interface
+2e7d4935-59d2-4312-a2c8-41900aa5495f = Device Association Framework Challenge RPC Interface
+a1d4eae7-39f8-4bca-8e72-832767f5082a = Device Association Framework Inbound RPC Interface
 
 # Distributed Link Tracking
 300f3532-38cc-11d0-a3f0-0020af6b0add = Distributed Link Tracking Client (trkwks)
@@ -44,6 +68,10 @@ f50aac00-c7f3-428e-a022-a6b71bfb9d43 = Cryptographic Services (ICatDBSvc)
 3c4728c5-f0ab-448b-bda1-6ce01eb0a6d6 = DHCP Client(dhcpcsvc6)
 6bffd098-a112-3610-9833-46c3f874532d = DHCP Server(dhcpsrv)
 5b821720-f63b-11d0-aad2-00c04fc324db = DHCP Server(dhcpsrv2)
+
+# EFS
+df1941c5-fe89-4e79-bf10-463657acf44d = EFS RPC Interface
+04EEB297-CBF4-466b-8A2A-BFD6A2F10BBA = EFSK RPC Interface
 
 # Event log
 82273fdc-e32a-18c3-3f78-827929dc23ea = Event Log (eventlog)
@@ -95,6 +123,10 @@ bfa951d1-2f0e-11d3-bfd1-00c04fa3490a = IIS Admin Service (inetinfo.exe)
 d335b8f6-cb31-11d0-b0f9-006097ba4e54 = IPSec Policy Agent (PolicyAgent)
 12345678-1234-abcd-ef00-0123456789ab = IPSec Services (winipsec)
 
+# KeyIso / CNG key isolation
+b25a52bf-e5dd-4f4a-aea6-8ca7272a0e86 = KeyIso
+8FB74744-B2FF-4C00-BE0D-9EF9A191FE1B = Ngc Pop Key Service
+
 # Lanman / Samba
 4b324fc8-1670-01d3-1278-5a47bf6ee188 = Lanman Server Control (srvsvc)
 6bffd098-a112-3610-9833-46c3f87e345a = Lanman Workstation Control (wkssvc)
@@ -103,6 +135,9 @@ d335b8f6-cb31-11d0-b0f9-006097ba4e54 = IPSec Policy Agent (PolicyAgent)
 # License logging
 57674cd0-5200-11ce-a897-08002b2e9c6d = License Logging (lls_license)
 342cfd40-3c6c-11ce-a893-08002b2e9c6d = License Logging (llsrpc)
+
+# LicenseManager (Windows Store)
+A4B8D482-80CE-40D6-934D-B22A01A44FE7 = LicenseManager
 
 # Message Queuing (mqsvc.exe)
 fdb3a030-065f-11d1-bb9b-00a024ea5525 = Message Queueing (qmcomm)
@@ -115,8 +150,25 @@ fdb3a030-065f-11d1-bb9b-00a024ea5525 = Message Queueing (qmcomm)
 17fdd703-1827-4e34-79d4-24a55c53bb37 = Messenger Service (msgsvc)
 5a7b91f8-ff00-11d0-a9b2-00c04fb6e6fc = Messenger Service (msgsvcsend)
 
+# Microsoft Passport (NgcSvc)
+0e3ae095-8a23-48f4-9782-03c1594a890e = NGC Service KSP RPC Interface
+c225e799-29de-42af-bc05-1e2127cc056e = NGC Service Management RPC Interface
+2b70bed6-1757-4d22-9f39-448589fbebf5 = NGC Service Ticket RPC Interface
+9cbc9d3a-7586-4814-8d70-18737dcbe523 = NGC Service LocalAccount Vault Interface
+2c2fd034-05cb-4f44-a75d-2a5cf81499c1 = NGC Service Remote Pairing RPC Interface
+4E25F4A2-21E8-40CE-B401-32050413143A = Device Credential RPC Interface
+8337AEBC-5564-46FD-BC41-7798F18D2E4B = Device Credential Manager RPC Interface
+30034843-029d-46ec-8fff-5d12987f85c4 = Microsoft Passport Container (INgcProvisioningHandler)
+2d24ff0b-1bab-404c-a0fd-42c85577bf68 = Microsoft Passport Container (INgcHandler)
+e6f89680-fc98-11e3-80d4-10604b681cfa = Microsoft Passport Container (INgcGidsHandler)
+
 # NetDDE
 2f5f3220-c126-1076-b549-074d078619da = nddeapi
+
+# Network connection broker (NcbService)
+e40f7b57-7a25-4cd3-a135-7f7d3df9d16b = Network Connection Broker server endpoint
+5222821f-d5e2-4885-84f1-5f6185a0ec41 = Network Connection Broker server endpoint for NCB Reset module
+880fd55e-43b9-11e0-b1a8-cf4edfd72085 = KAPI Service endpoint
 
 # Network location awareness
 c33b9f46-2088-4dbc-97e3-6125f127661c = Network Location Awareness (nlaapi)
@@ -144,6 +196,9 @@ d6d70ef0-0e3b-11cb-acc3-08002b1d29c4 = RPC Locator (NsiM)
 0a74ef1c-41a4-4e06-83ae-dc74fb1cdd53 = Task Scheduler (idletask)
 86d35949-83c9-4044-b424-db363231fd0c = Task Scheduler (ITaskSchedulerService)
 
+# Smart Cards
+169C453B-5955-4672-BE44-21F61E9EF18F = Smart Card Device Enumerator (INgcContainerEnum)
+
 # Spooler
 12345678-1234-abcd-ef00-0123456789ab = Spooler (winspool / spoolss)
 
@@ -158,6 +213,9 @@ d6d70ef0-0e3b-11cb-acc3-08002b1d29c4 = RPC Locator (NsiM)
 # Terminal Services
 2f59a331-bf7d-48cb-9ec5-7c090d76e8b8 = Terminal Services (lcrpc)
 5ca4a760-ebb1-11cf-8611-00a0245420ed = Terminal Services (winstation_rpc)
+
+# User Manager
+B18FBAB6-56F8-4702-84E0-41053293A869 = UserMgrCli
 
 # Windows Audio
 3faf4738-3a21-4307-b46c-fdda9bb8c0d5 = Windows Audio (AudioSrv)
@@ -175,6 +233,10 @@ a002b3a0-c9b7-11d1-ae88-0080c75e4ec1 = Winlogon (GetUserToken)
 2fb92682-6599-42dc-ae13-bd2ca89bd11c = Windows Firewall (FwRpc)
 7f9d11bf-7fb9-436b-a812-b2d50c5d4c03 = Windows Firewall (Fw_Resource_Indication)
 
+# wlidsvc / Windows LiveID Login Assistant
+CC105610-DA03-467E-BC73-5B9E2937458D = LiveIdSvc RPC Interface
+FAF2447B-B348-4FEB-8DBE-BEEE5B7F7778 = OnlineProviderCert RPC Interface
+
 # WINS
 45f52c28-7f9f-101a-b52b-08002b2efabe = WINS (winsif)
 811109bf-a4e1-11d1-ab54-00a0c91e9b45 = WINS (winsi2)
@@ -191,6 +253,7 @@ a002b3a0-c9b7-11d1-ae88-0080c75e4ec1 = Winlogon (GetUserToken)
 8c7daf44-b6dc-11d1-9a4c-0020af6e7c57 = Application Management (appmgmt)
 91ae6020-9e3c-11cf-8d7c-00aa00c091be = Certificate Services (ICertPassage)
 e67ab081-9844-3521-9d32-834f038001c0 = Client Services for Netware (nwwks)
+5c9a4cd7-ba75-45d2-9898-1773b3d1e5f1 = Device Install Service RPC Interface
 4fc742e0-4a10-11cf-8273-00aa004ae673 = Distributed File System service (netdfs)
 c681d488-d850-11d0-8c52-00c04fd90f7e = EFS (efsrpc)
 69510fa1-2f99-4eeb-a4ff-af259f0f9749 = Event Collector (ICollectorService)
@@ -211,3 +274,4 @@ c8cb7687-e6d3-11d2-a958-00c04f682e16 = WebClient (davclntrpc)
 06bba54a-be05-49f9-b0a0-30f790261023 = Windows Security Center (SecurityCenter)
 8fb6d884-2388-11d0-8c35-00c04fda2795 = Windows Time Service (w32time)
 621dff68-3c39-4c6c-aae3-e68e2c6503ad = Wireless Configuration Service (winwzc)
+F6C98708-C7B8-4919-887C-2CE66E78B9A0 = XblGameSaveService # Xbox Live Game Save

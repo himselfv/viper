@@ -1,0 +1,213 @@
+# Most of the data taken from this excellent handbook by Jean-Baptiste Machand
+#   http://www.hsc.fr/ressources/articles/win_net_srv/
+# Also:
+#   http://redplait.blogspot.ru/search/label/rpc%20interfaces
+
+# Core
+12345778-1234-abcd-ef00-0123456789ab = LSA interface
+12345778-1234-abcd-ef00-0123456789ac = SAMR interface
+12345678-1234-abcd-ef00-01234567cffb = Netlogon
+338cd001-2244-31f1-aaaa-900038001003 = Registry (winreg)
+367aeb81-9844-35f1-ad32-98f038001003 = Service Control Manager (svcctl)
+8d9f4e40-a03d-11ce-8f69-08003e30051b = Plug and Play (pnp)
+9b8699ae-0e44-47b1-8e7f-86a461d7ecdc = DCOM Server Process Launcher
+
+
+# Active Directory
+e3514235-4b06-11d1-ab04-00c04fc2dcd2 = Active Directory replication interface (drsuapi)
+3919286a-b10c-11d0-9ba8-00c04fd92ef5 = Directory Services Setup (dssetup)
+
+# Active Directory domain controllers RPC
+ecec0d70-a603-11d0-96b1-00a0c91ece30 = Active Directory backup interface (JetBack)
+16e0cf3a-a604-11d0-96b1-00a0c91ece30 = Active Directory restore interface (JetRest)
+
+# Cryptographic Services
+8d0ffe72-d252-11d0-bf8f-00c04fd9126b = Cryptographic Services (IKeySvc)
+68b58241-c259-4f03-a2e5-a2651dcbc930 = Cryptographic Services (IKeySvc2
+0d72a7d4-6148-11d1-b4aa-00c04fb66ea0 = Cryptographic Services (ICertProtect)
+f50aac00-c7f3-428e-a022-a6b71bfb9d43 = Cryptographic Services (ICatDBSvc)
+
+# Distributed Link Tracking
+300f3532-38cc-11d0-a3f0-0020af6b0add = Distributed Link Tracking Client (trkwks)
+4da1c422-943d-11d1-acae-00c04fc2aa3f = Distributed Link Tracking Server (trksvr)
+
+# Distributed Transaction Coordinator
+906b0ce0-c70b-1067-b317-00dd010662da = MS DTC Ole Transactions Interface (IXnRemote)
+
+# DNS
+65a93890-fab9-43a3-b2a5-1e330ac28f11 = DNS Client (dnsrslvr) # Caching DNS resolver
+45776b01-5956-4485-9f80-f428f7d60129 = DNS Client (DnsResolver) # Since XP
+50abc2a4-574d-40b3-9d66-ee4fd5fba076 = DNS Server service (dns.exe)
+
+# DHCP
+3c4728c5-f0ab-448b-bda1-6ce01eb0a6d5 = DHCP Client(RpcSrvDHCPC)
+3c4728c5-f0ab-448b-bda1-6ce01eb0a6d6 = DHCP Client(dhcpcsvc6)
+6bffd098-a112-3610-9833-46c3f874532d = DHCP Server(dhcpsrv)
+5b821720-f63b-11d0-aad2-00c04fc324db = DHCP Server(dhcpsrv2)
+
+# Event log
+82273fdc-e32a-18c3-3f78-827929dc23ea = Event Log (eventlog)
+f6beaff7-1e19-4fbb-9f8f-b89e2018337c = Event Log (IEventService)
+
+# Exchange RPC services
+a4f1db00-ca47-1067-b31f-00dd010662da = Exchange MAPI Interface (exchange_mapi)
+99e64010-b032-11d0-97a4-00c04fd6551d = Exchange Server STORE ADMIN Interface
+89742ace-a9ed-11cf-9c0c-08002be7ae86 = Exchange Server STORE ADMIN Interface
+a4f1db00-ca47-1067-b31e-00dd010662da = Exchange Server STORE ADMIN Interface
+a4f1db00-ca47-1067-b31f-00dd010662da = Exchange Server STORE EMSMDB Interface
+9e8ee830-4459-11ce-979b-00aa005ffebe = MS Exchange MTA 'Mta' Interface
+f5cc5a18-4264-101a-8c59-08002b2f8426 = MS Exchange Directory NSPI Proxy
+38a94e72-a9bc-11d2-8faf-00c04fa378ff = MS Exchange MTA 'QAdmin' Interface
+0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde = Microsoft Information Store (MS Exchange)
+1453c42c-0fa6-11d2-a910-00c04f990f3b = Microsoft Information Store (MS Exchange)
+10f24e8e-0fa6-11d2-a910-00c04f990f3b = Microsoft Information Store (MS Exchange)
+1544f5e0-613c-11d1-93df-00c04fd7bd09 = MS Exchange Directory RFR Interface (exchange_rfr)
+f930c514-1215-11d3-99a5-00a0c9b61b04 = MS Exchange System Attendant Cluster Interface
+83d72bf0-0d89-11ce-b13f-00aa003bac6c = MS Exchange System Attendant Private Interface
+469d6ec0-0d87-11ce-b13f-00aa003bac6c = MS Exchange System Attendant Public Interface
+
+# Exchange RPC services in Active Directory domains
+f5cc5a7c-4264-101a-8c59-08002b2f8426 = Active Directory Extended Directory Service (XDS) (rxds)
+f5cc5a18-4264-101a-8c59-08002b2f8426 = Active Directory Name Service Provider (NSP) (nspi)
+f5cc5a18-4264-101a-8c59-08002b2f8426 = MS Exchange Directory NSPI Proxy
+f5cc5a18-4264-101a-8c59-08002b2f8426 = MS Exchange Directory NSPI Proxy
+
+# File replication service
+f5cc59b4-4264-101a-8c59-08002b2f8426 = File Replication (FrsRpc)
+d049b186-814f-11d1-9a3c-00c04fc9b232 = File Replication (NtFrsApi)
+a00c021c-2be2-11d2-b678-0000f87a8f8e = File Replication (PerfFrs)
+
+# IIS
+82ad4280-036b-11cf-972c-00aa006887b0 = IIS (inetinfo, IISAdmin)
+8cfb5d70-31a4-11cf-a7d8-00805f48a135 = IIS SMTP (iis_smpt)
+4f82f460-0e21-11cf-909e-00805f48a135 = IIS NNTP (iis_nntp)
+2465e9e0-a873-11d0-930b-00a0c90ab17c = IIS IMAP (iis_imap)
+1be617c0-31a5-11cf-a7d8-00805f48a135 = IIS POP3 (iis_pop)
+70b51430-b6ca-11d0-b9b9-00a0c922e750 = IIS: IMSAdminBaseW
+a9e69612-b80d-11d0-b9b9-00a0c922e750 = IIS: IADMCOMSINK
+bfa951d1-2f0e-11d3-bfd1-00c04fa3490a = IIS Admin Service (inetinfo.exe)
+
+# Inter-site Messaging
+68dcd486-669e-11d1-ab0c-00c04fc2dcd2 = Inter-site Messaging (ismapi)
+130ceefb-e466-11d1-b78b-00c04fa32883 = Active Directory ISM IP Transport (ismserv_ip)
+
+# IPSec
+d335b8f6-cb31-11d0-b0f9-006097ba4e54 = IPSec Policy Agent (PolicyAgent)
+12345678-1234-abcd-ef00-0123456789ab = IPSec Services (winipsec)
+
+# Lanman / Samba
+4b324fc8-1670-01d3-1278-5a47bf6ee188 = Lanman Server Control (srvsvc)
+6bffd098-a112-3610-9833-46c3f87e345a = Lanman Workstation Control (wkssvc)
+6bffd098-a112-3610-9833-012892020162 = Computer Browser (browser)
+
+# License logging
+57674cd0-5200-11ce-a897-08002b2e9c6d = License Logging (lls_license)
+342cfd40-3c6c-11ce-a893-08002b2e9c6d = License Logging (llsrpc)
+
+# Message Queuing (mqsvc.exe)
+fdb3a030-065f-11d1-bb9b-00a024ea5525 = Message Queueing (qmcomm)
+76d12b80-3467-11d3-91ff-0090272f9ea3 = Message Queueing (qmcomm2)
+1088a980-eae5-11d0-8d9b-00a02453c337 = Message Queueing (qm2qm)
+5b5b3580-b0e0-11d1-b92d-0060081e87f0 = Message Queueing (qmrepl)
+41208ee0-e970-11d1-9b9e-00e02c064c39 = Message Queueing (qmmgmt)
+
+# Messenger
+17fdd703-1827-4e34-79d4-24a55c53bb37 = Messenger Service (msgsvc)
+5a7b91f8-ff00-11d0-a9b2-00c04fb6e6fc = Messenger Service (msgsvcsend)
+
+# NetDDE
+2f5f3220-c126-1076-b549-074d078619da = nddeapi
+
+# Network location awareness
+c33b9f46-2088-4dbc-97e3-6125f127661c = Network Location Awareness (nlaapi)
+aa411582-9bdf-48fb-b42b-faa1eee33949 = Network Location Awareness (nlaplg)
+
+# Peer Networking
+8174bb16-571b-4c38-8386-1102b449044a = Peer Networking Identity Manager (IP2pIMSvc)
+3f31c91e-2545-4b7b-9311-9529e8bffef6 = Peer Networking (IPeerGroupSvc)
+a2d47257-12f7-4beb-8981-0ebfa935c407 = Peer Networking (pnrpsvc)
+
+# Protected Storage
+c9378ff1-16f7-11d0-a0b2-00aa0061426a = Protected Storage (IPStoreProv)
+11220835-5b26-4d94-ae86-c3e475a809de = Protected Storage (ICryptProtect)
+5cbe92cb-f4be-45c9-9fc9-33e73e557b20 = Protected Storage (PasswordRecovery)
+3dde7c30-165d-11d1-ab8f-00805f14db40 = Protected Storage (BackupKey)
+
+# RPC locator
+d6d70ef0-0e3b-11cb-acc3-08002b1d29c3 = RPC Locator (NsiS)
+d3fbb514-0e3b-11cb-8fad-08002b1d29c3 = RPC Locator (NsiC)
+d6d70ef0-0e3b-11cb-acc3-08002b1d29c4 = RPC Locator (NsiM)
+
+# Task Scheduler
+1ff70682-0a51-30e8-076d-740be8cee98b = Task Scheduler (atsvc)
+378e52b0-c0a9-11cf-822d-00aa0051e40f = Task Scheduler (sasec)
+0a74ef1c-41a4-4e06-83ae-dc74fb1cdd53 = Task Scheduler (idletask)
+86d35949-83c9-4044-b424-db363231fd0c = Task Scheduler (ITaskSchedulerService)
+
+# Spooler
+12345678-1234-abcd-ef00-0123456789ab = Spooler (winspool / spoolss)
+
+# System Event Notification Service (SENSE)
+63fbe424-2029-11d1-8db8-00aa004abd5e = SENS (SensApi)
+629b9f66-556c-11d1-8dd2-00aa004abd5e = SENS (SENSNotify)
+
+# TCP/IP Services
+5b821720-f63b-11d0-aad2-00c04fc324db = TCP/IP Services (tcpsvcs.exe)
+6bffd098-a112-3610-9833-46c3f874532d = TCP/IP Services (tcpsvcs.exe)
+
+# Terminal Services
+2f59a331-bf7d-48cb-9ec5-7c090d76e8b8 = Terminal Services (lcrpc)
+5ca4a760-ebb1-11cf-8611-00a0245420ed = Terminal Services (winstation_rpc)
+
+# Windows Audio
+3faf4738-3a21-4307-b46c-fdda9bb8c0d5 = Windows Audio (AudioSrv)
+c386ca3e-9061-4a72-821e-498d83be188f = Windows Audio (AudioRpc)
+
+# Winlogon
+894de0c0-0d55-11d3-a322-00c04fa321a1 = Winlogon (InitShutdown)
+369ce4f0-0fdc-11d3-bde8-00c04f8eee78 = Winlogon (pmapapi)
+a002b3a0-c9b7-11d1-ae88-0080c75e4ec1 = Winlogon (GetUserToken)
+326731e3-c1c0-4a69-ae20-7d9044a4ea5c = Winlogon (IUserProfile)
+4825ea41-51e3-4c2a-8406-8f2d2698395f = Winlogon (IProfileDialog)
+95958c94-a424-4055-b62b-b7f4d5c47770 = Winlogon (IRPCSCLogon)
+
+# Windows Firewall
+2fb92682-6599-42dc-ae13-bd2ca89bd11c = Windows Firewall (FwRpc)
+7f9d11bf-7fb9-436b-a812-b2d50c5d4c03 = Windows Firewall (Fw_Resource_Indication)
+
+# WINS
+45f52c28-7f9f-101a-b52b-08002b2efabe = WINS (winsif)
+811109bf-a4e1-11d1-ab54-00a0c91e9b45 = WINS (winsi2)
+
+# Wireless LAN Auto-Configuration
+266f33b4-c7c1-4bd1-8f52-ddb8f2214ea9 = Wireless LAN Auto-Configuration (winwlan)
+25952c5d-7976-4aa1-a3cb-c35f7ae79d1b = Wireless LAN Auto-Configuration (winwdiag)
+
+# Wired Auto-configuration Service
+1bddb2a6-c0c3-41be-8703-ddbdf4f0e80a = Wired Auto-Configuration (winlan)
+
+
+# Misc
+8c7daf44-b6dc-11d1-9a4c-0020af6e7c57 = Application Management (appmgmt)
+91ae6020-9e3c-11cf-8d7c-00aa00c091be = Certificate Services (ICertPassage)
+e67ab081-9844-3521-9d32-834f038001c0 = Client Services for Netware (nwwks)
+4fc742e0-4a10-11cf-8273-00aa004ae673 = Distributed File System service (netdfs)
+c681d488-d850-11d0-8c52-00c04fd90f7e = EFS (efsrpc)
+69510fa1-2f99-4eeb-a4ff-af259f0f9749 = Event Collector (ICollectorService)
+ea0a3165-4834-11d2-a6f8-00c04fa346cc = Fax Server (fax_Server)
+4b324fc8-1670-01d3-1278-5a47bf6ee188 = File Server for Macintosh (sfmsvc)
+2eb08e3e-639f-4fba-97b1-14f878961076 = Group Policy Client (IGroupPolicyUtilities)
+3f99b900-4d87-101b-99b7-aa0004007f07 = MS SQL Server (RPCnetlib)
+7ea70bcf-48af-4f6a-8968-6a440754d5fa = Network Store Interface (WinNsi)
+# 1dfce5a8-dd8a-aace-f603922fd9e7 = Parental Controls (WPCSvc) # Something is missing!
+# 0da5a86c5-12c2-4943-30ab-7f74a813d853 = Remote Registry (perflibv2) # Something is odd!
+8f09f000-b7ed-11ce-bbd2-00001a181cad = Routing and Remote Access (rras)
+12b81e99-f207-4a4c-85d3-77b42f76fd14 = Secondary Logon (ISeclogon)
+93149ca2-973b-11d1-8c39-00c04fb984f9 = Security Configuration Editor (SceSvc)
+4b112204-0e19-11d3-b42b-0000f81feb9f = SSDP Discovery (ssdpsrv)
+2f5f6520-ca46-1067-b319-00dd010662da = Telephony (tapsrv)
+c8cb7687-e6d3-11d2-a958-00c04f682e16 = WebClient (davclntrpc)
+83da7c00-e84f-11d2-9807-00c04f8ec850 = Windows File Protection (sfcapi)
+06bba54a-be05-49f9-b0a0-30f790261023 = Windows Security Center (SecurityCenter)
+8fb6d884-2388-11d0-8c35-00c04fda2795 = Windows Time Service (w32time)
+621dff68-3c39-4c6c-aae3-e68e2c6503ad = Wireless Configuration Service (winwzc)

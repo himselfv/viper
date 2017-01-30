@@ -256,6 +256,7 @@ begin
   FServiceCat := TServiceCatalogue.Create();
   FServices := TServiceEntryList.Create;
   WellKnownDeviceInterfaceClasses.LoadFromFile(AppFolder()+'\DeviceInterfaceClasses.txt');
+  WellKnownRpcInterfaces.LoadFromFile(AppFolder()+'\RpcInterfaces.txt');
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);

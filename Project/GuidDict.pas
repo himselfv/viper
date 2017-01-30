@@ -41,8 +41,8 @@ begin
       if i_pos <= 0 then
         raise EInvalidFormat.Create('');
 
-      guid := StringToGuid(Trim(copy(ln, i_pos+1, MaxInt)));
-      ln := Trim(copy(ln, 1, i_pos-1));
+      guid := StringToGuid('{'+Trim(copy(ln, 1, i_pos-1))+'}');
+      ln := Trim(copy(ln, i_pos+1, MaxInt));
 
       Self.AddOrSetValue(guid, ln);
     end;

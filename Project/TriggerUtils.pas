@@ -56,6 +56,7 @@ function ParseTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
 
 var
   WellKnownDeviceInterfaceClasses: TGuidDictionary; //someone has to load this
+  WellKnownRpcInterfaces: TGuidDictionary;
 
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 
@@ -120,7 +121,7 @@ end;
 // pTriggerSubtype specifies the device interface class GUID.
 // pDataItems specifies one or more hardware ID and compatible ID strings.
 //
-function ParseDeviceInterfaceTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
+procedure ParseDeviceInterfaceTrigger(const ATrigger: PSERVICE_TRIGGER; var Result: TTriggerData);
 var param: PTriggerParam;
   tmp: string;
 begin
@@ -151,6 +152,41 @@ Unfortunately, default implementations for most classes are unavailable as well.
     Result.AddSource(param.StringValue);
 end;
 
+procedure ParseRPCRequestTrigger(const ATrigger: PSERVICE_TRIGGER; var Result: TTriggerData);
+var param: PTriggerParam;
+  tmpGuid: TGuid;
+  tmpGuidStr, sourceStr: string;
+  i_pos: integer;
+begin
+  Result.Event := 'RPC request';
+  while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do begin
+    tmpGuidStr := param.StringValue;
+    i_pos := pos(':', tmpGuidStr);
+    if i_pos > 0 then
+      delete(tmpGuidStr, i_pos, MaxInt);
+    try
+      tmpGuid := StringToGuid(tmpGuidStr);
+    except
+      on EConvertError do begin //can't decode guid
+        Result.AddSource(param.StringValue);
+        continue;
+      end;
+    end;
+
+    if not WellKnownRpcInterfaces.TryGetValue(tmpGuid, sourceStr) then
+      Result.AddSource(param.StringValue)
+    else begin
+      if i_pos > 0 then begin
+        //Append the unparsed part to the translated string
+        tmpGuidStr := param.StringValue;
+        delete(tmpGuidStr, 1, i_pos);
+        sourceStr := sourceStr + ':' + tmpGuidStr;
+      end;
+      Result.AddSource(sourceStr);
+    end;
+  end;
+end;
+
 
 {$POINTERMATH ON}
 
@@ -169,7 +205,7 @@ begin
 
   //Mostly DONE.
    SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL:
-     Result := ParseDeviceInterfaceTrigger(ATrigger);
+     ParseDeviceInterfaceTrigger(ATrigger, Result);
 
 
    // DONE.
@@ -271,17 +307,18 @@ begin
     //
     SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: begin
       if ATrigger.pTriggerSubtype^ = RPC_INTERFACE_EVENT_GUID then
-        Result.Event := 'RPC request'
-      else
-      if ATrigger.pTriggerSubtype^ = NAMED_PIPE_EVENT_GUID then
-        Result.Event := 'Named pipe request'
-      else
-        Result.Event := Format('Network request via %s', [GuidToString(ATrigger.pTriggerSubtype^)]);
-      //NOTE: From the docs, there are also TCP_PORT_EVENT_GUID and UDP_EVENT_PORT_GUID,
-      //   but their values are not documented.
+        ParseRpcRequestTrigger(ATrigger, Result)
+      else begin
+        if ATrigger.pTriggerSubtype^ = NAMED_PIPE_EVENT_GUID then
+          Result.Event := 'Named pipe request'
+        else
+          Result.Event := Format('Network request via %s', [GuidToString(ATrigger.pTriggerSubtype^)]);
+        //NOTE: From the docs, there are also TCP_PORT_EVENT_GUID and UDP_EVENT_PORT_GUID,
+        //   but their values are not documented.
 
-      while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
-        Result.AddSource(param.StringValue);
+        while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
+          Result.AddSource(param.StringValue);
+      end;
     end;
 
    //
@@ -431,9 +468,11 @@ end;
 
 initialization
   WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
+  WellKnownRpcInterfaces := TGuidDictionary.Create;
 
 finalization
  {$IFDEF DEBUG}
+  FreeAndNil(WellKnownRpcInterfaces);
   FreeAndNil(WellKnownDeviceInterfaceClasses);
   FreeAndNil(EtwProviders);
  {$ENDIF}

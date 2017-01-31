@@ -357,7 +357,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Height = 25
     BevelInner = bvLowered
     BevelOuter = bvNone
-    Caption = 'Pausing'
+    Caption = 'Paused'
     Color = clWindow
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

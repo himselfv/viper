@@ -103,6 +103,7 @@ begin
     SetColors(pnlStateResuming, clWindow, DefaultFont);
     SetColors(pnlStatePausing, clWindow, DefaultFont);
     SetColors(pnlStatePaused, clWindow, DefaultFont);
+    pnlStatePaused.Font.Color := clGrayText;
     SetColors(pnlStateOther, clWindow, DefaultFont);
   finally
     FreeAndNil(DefaultFont);

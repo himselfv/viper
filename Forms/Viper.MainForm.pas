@@ -142,6 +142,7 @@ type
     procedure aRenameFolderExecute(Sender: TObject);
     procedure aDeleteFolderExecute(Sender: TObject);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
+    procedure aShowDriversExecute(Sender: TObject);
     procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -633,8 +634,8 @@ begin
         ntRunningServices: CellText := sFolderRunningServices;
         ntUnknownServices: CellText := sFolderUnknownServices;
         ntAllServices: CellText := sFolderAllServices;
-        ntRunningDrivers: CellText := sFolderAllDrivers;
-        ntAllDrivers: CellText := sFolderRunningDrivers;
+        ntRunningDrivers: CellText := sFolderRunningDrivers;
+        ntAllDrivers: CellText := sFolderAllDrivers;
       else CellText := Data.Name;
       end;
   end;
@@ -1178,6 +1179,12 @@ procedure TMainForm.Alltriggers1Click(Sender: TObject);
 begin
   TriggerBrowserForm.Services := Self.FServices;
   TriggerBrowserForm.Show;
+end;
+
+procedure TMainForm.aShowDriversExecute(Sender: TObject);
+begin
+  FilterFolders;
+  FilterServices;
 end;
 
 

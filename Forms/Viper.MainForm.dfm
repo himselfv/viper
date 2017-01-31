@@ -337,6 +337,7 @@ object MainForm: TMainForm
     object aShowDrivers: TAction
       AutoCheck = True
       Caption = 'Show drivers'
+      OnExecute = aShowDriversExecute
     end
     object aIncludeSubfolders: TAction
       AutoCheck = True

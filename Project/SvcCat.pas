@@ -121,11 +121,11 @@ begin
   try
     sl.LoadFromFile(AFilename);
     i := sl.Count;
-    while i > 0 do begin
+    while i > 0 do begin  //process lines in the reverse order
       Dec(i);
       ln := Trim(sl[i]);
       if (ln <> '') and (ln[1]='#') then begin
-        FComments := FComments + ln + #13#10;
+        FComments := ln + #13#10 + FComments;   // remember, reverse order
         sl.Delete(i);
         continue;
       end;

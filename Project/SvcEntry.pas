@@ -124,8 +124,20 @@ end;
 function TServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
   if not FConfigQueried then begin
-    FConfig := QueryServiceConfig(Self.Handle);
-    FConfigQueried := true;
+    FConfigQueried := true; //BEFORE we run potentially exception-throwing code
+    try
+      FConfig := QueryServiceConfig(Self.Handle);
+    except
+      on E: EOsError do begin
+        //OS likes to fail this, especially for drivers
+        //We don't want to crash and burn, but we cannot just ignore ALL errors. Sigh.
+        if (E.ErrorCode = ERROR_RESOURCE_TYPE_NOT_FOUND)
+        or (E.ErrorCode = 1168) then //element not found
+          FConfig := nil
+        else
+          raise;
+      end;
+    end;
   end;
   Result := FConfig;
 end;
@@ -133,8 +145,8 @@ end;
 function TServiceEntry.GetDescription: string;
 begin
   if not FDescriptionQueried then begin
-    FDescription := QueryServiceDescription(Self.Handle);
     FDescriptionQueried := true;
+    FDescription := QueryServiceDescription(Self.Handle);
   end;
   Result := FDescription;
 end;
@@ -142,6 +154,7 @@ end;
 function TServiceEntry.GetServiceDll: string;
 begin
   if not FServiceDllQueried then begin
+    FServiceDllQueried := true;
     if Self.Config <> nil then
       if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
       or (pos('lsass.exe', Self.Config.lpBinaryPathName)>0) then
@@ -150,7 +163,6 @@ begin
      // from the system dir and not an impostor.
      // We just optimize away unneccessary registry checks.
       FServiceDll := ExpandEnvironmentStrings(QueryServiceServiceDll(Self.ServiceName));
-    FServiceDllQueried := true;
   end;
   Result := FServiceDll;
 end;

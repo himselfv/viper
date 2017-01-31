@@ -27,6 +27,8 @@
 * Save and load services auto-start configuration
 * Export the service and/or delete it
 
+[More details](https://bitbucket.org/himselfv/viper/src/tip/Docs/)
+
 
 # Q&A
 

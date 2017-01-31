@@ -148,17 +148,10 @@ object ServiceList: TServiceList
       Category = 'ServiceSetup'
       Caption = 'Export to .reg...'
     end
-    object aColorByStartType: TAction
+    object aUseColors: TAction
       Category = 'Coloring'
       AutoCheck = True
-      Caption = 'By start type'
-      Checked = True
-      OnExecute = aColorByStartTypeExecute
-    end
-    object aColorByStatus: TAction
-      Category = 'Coloring'
-      AutoCheck = True
-      Caption = 'By status'
+      Caption = 'Use colors'
       Checked = True
       OnExecute = aColorByStartTypeExecute
     end

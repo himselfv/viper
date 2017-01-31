@@ -174,8 +174,6 @@ object MainForm: TMainForm
             Width = 849
             Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitLeft = 0
-            ExplicitTop = 0
             ExplicitWidth = 849
             ExplicitHeight = 208
           end
@@ -198,8 +196,6 @@ object MainForm: TMainForm
             Width = 849
             Height = 208
             TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitLeft = 0
-            ExplicitTop = 0
             ExplicitWidth = 849
             ExplicitHeight = 208
           end
@@ -218,7 +214,7 @@ object MainForm: TMainForm
           TabOrder = 0
           ExplicitWidth = 849
           ExplicitHeight = 208
-          inherited vtTriggers: TVirtualStringTree
+          inherited Tree: TVirtualStringTree
             Width = 849
             Height = 208
             ExplicitWidth = 849
@@ -231,7 +227,7 @@ object MainForm: TMainForm
               end
               item
                 Position = 1
-                Width = 406
+                Width = 412
                 WideText = 'Trigger'
               end
               item
@@ -271,8 +267,6 @@ object MainForm: TMainForm
         OnFocusChanged = MainServiceListvtServicesFocusChanged
         OnKeyAction = MainServiceListvtServicesKeyAction
         OnNewText = MainServiceListvtServicesNewText
-        ExplicitLeft = 0
-        ExplicitTop = 0
         ExplicitWidth = 857
         ExplicitHeight = 384
       end
@@ -406,6 +400,10 @@ object MainForm: TMainForm
       ShortCut = 115
       OnExecute = aEditServiceNotesExecute
     end
+    object aConfigureColors: TAction
+      Caption = 'Configure colors'
+      OnExecute = aConfigureColorsExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -413,7 +411,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800840010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800940010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -596,16 +594,15 @@ object MainForm: TMainForm
         Action = aIncludeSubfolders
         AutoCheck = True
       end
-      object Colorize1: TMenuItem
-        Caption = 'Colorize'
-        object Bystarttype1: TMenuItem
-          Action = MainServiceList.aColorByStartType
-          AutoCheck = True
-        end
-        object Bystatus1: TMenuItem
-          Action = MainServiceList.aColorByStatus
-          AutoCheck = True
-        end
+      object N7: TMenuItem
+        Caption = '-'
+      end
+      object Bystatus1: TMenuItem
+        Action = MainServiceList.aUseColors
+        AutoCheck = True
+      end
+      object Configurecolors1: TMenuItem
+        Action = aConfigureColors
       end
     end
     object Debug1: TMenuItem

@@ -82,16 +82,25 @@
             <Form>CommonRes</Form>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.Settings.pas">
+            <Form>SettingsForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Forms\Viper.StyleSettings.pas">
+            <Form>StyleSettingsForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Forms\Viper.StyleEdit.pas">
+            <Form>StyleEditForm</Form>
+        </DCCReference>
         <DCCReference Include="..\Forms\Viper.ServiceList.pas">
             <Form>ServiceList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.RestoreServiceConfig.pas">
+            <Form>RestoreServiceConfigForm</Form>
+        </DCCReference>
         <DCCReference Include="..\Forms\Viper.TriggerList.pas">
             <Form>TriggerList</Form>
             <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="..\Forms\Viper.RestoreServiceConfig.pas">
-            <Form>RestoreServiceConfigForm</Form>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.TriggerBrowser.pas">
             <Form>TriggerBrowserForm</Form>

@@ -21,8 +21,7 @@ type
     aStartTypeDisabled: TAction;
     aDeleteService: TAction;
     aExportService: TAction;
-    aColorByStartType: TAction;
-    aColorByStatus: TAction;
+    aUseColors: TAction;
     aCopyServiceID: TAction;
     aCopyServiceName: TAction;
     aCopyServiceDescription: TAction;
@@ -121,6 +120,15 @@ type
     function GetCommonProtectionType(const Services: TServiceEntries): DWORD;
     procedure FindServiceNode_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer;
       var Abort: Boolean);
+  public const
+    colServiceName = 0;
+    colDisplayName = 1;
+    colStatus = 2;
+    colStartMode = 3;
+    colTriggers = 4;
+    colDescription = 5;
+    colFilename = 6;
+    colProtection = 7;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -138,18 +146,8 @@ type
 
   end;
 
-const
-  colServiceName = 0;
-  colDisplayName = 1;
-  colStatus = 2;
-  colStartMode = 3;
-  colTriggers = 4;
-  colDescription = 5;
-  colFilename = 6;
-  colProtection = 7;
-
 implementation
-uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
+uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl, Viper.StyleSettings,
   Viper.Log;
 
 {$R *.dfm}
@@ -283,15 +281,12 @@ var Data: TServiceEntry;
 begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
 
-  if (Data.Config <> nil) and aColorByStartType.Checked then
-    case Data.Config.dwStartType of
-      SERVICE_BOOT_START,
-      SERVICE_SYSTEM_START,
-      SERVICE_AUTO_START: begin
-        EraseAction := eaColor;
-        ItemColor := $00FFF7DD;//$00DDF5FF;
-      end;
-    end;
+  if aUseColors.Checked then begin
+    ItemColor := StyleSettingsForm.GetCombinedBgColor(Data);
+    if ItemColor <> clWindow then
+      EraseAction := eaColor;
+  end;
+
 end;
 
  //Customize the font
@@ -302,21 +297,10 @@ var Data: TServiceEntry;
 begin
   Data := TServiceEntry(Sender.GetNodeData(Node)^);
 
-  if aColorByStatus.Checked then
-    case Data.Status.dwCurrentState of
-      SERVICE_STOPPED: begin end;
-    else
-      TargetCanvas.Font.Style := [fsBold];
-    end;
+  if aUseColors.Checked then begin
+    StyleSettingsForm.GetCombinedFont(Data, TargetCanvas.Font);
+  end;
 
-  if (Data.Config <> nil) and aColorByStartType.Checked then
-    case Data.Config.dwStartType of
-      SERVICE_BOOT_START,
-      SERVICE_SYSTEM_START,
-      SERVICE_AUTO_START: begin end;
-      SERVICE_DISABLED:
-        TargetCanvas.Font.Color := $AAAAAA;
-    end;
 end;
 
 procedure TServiceList.vtServicesGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;

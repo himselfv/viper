@@ -44,8 +44,6 @@ type
     miHideEmptyFolders: TMenuItem;
     pnlMain: TPanel;
     Splitter2: TSplitter;
-    Colorize1: TMenuItem;
-    Bystarttype1: TMenuItem;
     File1: TMenuItem;
     aShowDrivers: TAction;
     Showdrivers1: TMenuItem;
@@ -105,6 +103,9 @@ type
     Splitter3: TSplitter;
     aEditServiceNotes: TAction;
     NotesFrame: TRichEditFrame;
+    aConfigureColors: TAction;
+    Configurecolors1: TMenuItem;
+    N7: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -169,6 +170,7 @@ type
     procedure MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure aEditServiceNotesExecute(Sender: TObject);
+    procedure aConfigureColorsExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -231,7 +233,8 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils, Viper.TriggerBrowser;
+  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils, Viper.TriggerBrowser,
+  Viper.StyleSettings, Viper.Settings;
 
 {$R *.dfm}
 
@@ -267,6 +270,10 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
+  //Load settings
+  SettingsForm.LoadSettings;
+  StyleSettingsForm.LoadStyles;
+
   aRestartAsAdmin.Visible := not IsUserAdmin();
   pcBottom.ActivePage := tsDescription;
   ReloadServiceTree;
@@ -293,6 +300,12 @@ begin
   end;
   if err <> ERROR_CANCELLED then
     RaiseLastOsError(err);
+end;
+
+procedure TMainForm.aConfigureColorsExecute(Sender: TObject);
+begin
+  StyleSettingsForm.ShowModal;
+  MainServiceList.Invalidate;
 end;
 
 {
@@ -1137,12 +1150,18 @@ begin
 end;
 
 procedure TMainForm.aRestoreServiceConfigExecute(Sender: TObject);
+var AForm: TRestoreServiceConfigForm;
 begin
   if not OpenServiceConfigDialog.Execute then
     exit;
 
-  if IsPositiveResult(RestoreServiceConfigForm.OpenRestore(OpenServiceConfigDialog.Filename)) then
-    Refresh(); //all configurations could've changed
+  AForm := TRestoreServiceConfigForm.Create(Self);
+  try
+    if IsPositiveResult(AForm.OpenRestore(OpenServiceConfigDialog.Filename)) then
+      Refresh(); //all configurations could've changed
+  finally
+    FreeAndNil(AForm);
+  end;
 end;
 
 procedure TMainForm.Alltriggers1Click(Sender: TObject);
@@ -1342,7 +1361,7 @@ var Node: PVirtualNode;
 begin
   Node := MainServiceList.vtServices.FocusedNode;
   if Node = nil then exit;
-  MainServiceList.vtServices.EditNode(Node, Viper.ServiceList.colDisplayName); //only Name column is editable
+  MainServiceList.vtServices.EditNode(Node, TServiceList.colDisplayName); //only Name column is editable
 end;
 
 procedure TMainForm.MainServiceListvtServicesKeyAction(Sender: TBaseVirtualTree; var CharCode: Word;
@@ -1354,14 +1373,14 @@ begin
    We want to always edit the Display Name.
    Solution: Enable toExtendedFocus and move focus to Display Name column.
    }
-    Sender.FocusedColumn := Viper.ServiceList.colDisplayName;
+    Sender.FocusedColumn := TServiceList.colDisplayName;
   end;
 end;
 
 procedure TMainForm.MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; var Allowed: Boolean);
 begin
-  Allowed := CanEditServiceInfo and (Column = Viper.ServiceList.colDisplayName);
+  Allowed := CanEditServiceInfo and (Column = TServiceList.colDisplayName);
 end;
 
 {
@@ -1390,7 +1409,7 @@ procedure TMainForm.MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; N
   Column: TColumnIndex; NewText: string);
 var service: TExtServiceEntry;
 begin
-  if (not CanEditServiceInfo) or (Column <> Viper.ServiceList.colDisplayName) then
+  if (not CanEditServiceInfo) or (Column <> TServiceList.colDisplayName) then
     exit;
   service := TExtServiceEntry(MainServiceList.GetServiceEntry(Node));
 

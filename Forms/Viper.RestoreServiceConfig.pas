@@ -33,9 +33,6 @@ type
     function OpenRestore(const AFilename: string): TModalResult;
   end;
 
-var
-  RestoreServiceConfigForm: TRestoreServiceConfigForm;
-
 //Just writes the file
 function WriteServiceConfigFile(AServices: TServiceEntries; const AFilename: string): string;
 

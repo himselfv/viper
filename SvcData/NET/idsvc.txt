@@ -1,4 +1,4 @@
 # Windows CardSpace
-# microsoft.net\framework64\v3.0\windows communication foundation\infocard.exe
+# Windows Communication Foundation\infocard.exe
 Related to: Windows Communication Foundation (WCF)
 

@@ -1,9 +1,6 @@
 # Data Collection and Publishing (Crowdsourcing Service)
 # The DCP (Data Collection and Publishing) service supports first party apps to upload data to cloud.
-
-TITLE: Telemetry\%1
 TELEMETRY
-
 Seems to be related to Windows Phone and "crowdsourcing", telemetry. Contains URLs below.
 
 In dcpsvc.dll:
@@ -16,6 +13,6 @@ In dcpsvc.dll:
 > Microsoft.Windows.Telemetry.DataCollectionAndPublish
 > Microsoft-Windows-DataCollectionServiceChannel
 
-Seems to have been called "CrowdsourcingService" before, as all functions start with that.
+Seems to have been called "CrowdsourcingService" before, as all function names start with that.
 
-RESUME: Probably better off disabled and/or deleted. Looks like a remnant from something deprecated.
+Probably better off disabled and/or deleted. Looks like a remnant from something deprecated.

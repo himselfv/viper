@@ -1,3 +1,2 @@
-NVIDIA Stereoscopic 3D Driver Service
-
+# NVIDIA Stereoscopic 3D Driver Service
 Provides system support for NVIDIA Stereoscopic 3D driver.

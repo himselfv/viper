@@ -1,4 +1,2 @@
-VIA Karaoke Service
-
-> Служба драйверов звуковой карты. Ничего страшного.
-> У VIA чипов есть такая фишка, некая псевдо-караоке система. Вот эта одна из ее служб. 
+# VIA Karaoke Service
+Audio card driver support service.

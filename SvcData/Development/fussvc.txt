@@ -1,6 +1,4 @@
-Fast User Switching Utility Service
-
-\Program Files (x86)\windows kits\8.1\app certification kit\fussvc.exe
-
+# Fast User Switching Utility Service
+# app certification kit\fussvc.exe
 Related to: Windows Kits\8.1
 May be related to Te.Service.

@@ -1,4 +1,3 @@
 # Microsoft Accound Sign-in Assistant
 # Enables user sign-in through Microsoft account identity services. If this service is stopped, users will not be able to logon to the computer with their Microsoft account.
-
-IMPORTANT: Required to install software from Windows Store, or you'll get error 0x80070426.
+Required to install software from Windows Store, or you'll get error 0x80070426.

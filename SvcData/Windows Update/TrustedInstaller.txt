@@ -7,4 +7,3 @@ Required to install or uninstall any updates (CBS components, assemblies), inclu
 * also required for uninstallation
 
 Can be safely stopped when you're not installing/uninstalling things. Various software will give cryptic errors when it is disabled, but otherwise it's fine to only enable it when needed.
-

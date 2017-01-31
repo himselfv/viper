@@ -1,2 +1,2 @@
 # Windows Phone IP over USB Transport
-Enables communication between Windows Phone SDK and Windows Phone device. If the service is stopped, application deployment and debugging will fail on device.
+# Enables communication between Windows Phone SDK and Windows Phone device. If the service is stopped, application deployment and debugging will fail on device.

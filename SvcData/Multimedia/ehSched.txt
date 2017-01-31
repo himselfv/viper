@@ -1,4 +1,2 @@
 # Windows Media Center Scheduler Service
 Starts and stops TV broadcast recording in Windows Media Center.
-
-+Windows 7

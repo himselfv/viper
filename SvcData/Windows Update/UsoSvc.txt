@@ -1,3 +1,2 @@
 # Update Orchestrator Service for Windows Update
-
 Companion service for Windows Update, manages staging for already downloaded updates.

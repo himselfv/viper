@@ -1,6 +1,2 @@
-UMVPFSrv
-
-UMVPF is a user mode Logitech driver
-
-ѕроцесс UMVPFSrv.exe Ч это кусок драйвера от фирмы производител€ камер Logitech Webcam Software, точное им€ Ч Logitech User mode UMVPF service. ¬исит в процессах, никак себ€ не про€вл€€, отключение файла из авто запуска никак не сказываетс€ на работе камеры.
-http://www.makak.ru/2012/06/09/chto-takoe-umvpfsrv-exe/
+# UMVPFSrv
+User mode Logitech driver. Part of Logitech Webcam and Logitech mouse/keyboard drivers. Disabling does not break neither webcam nor keyboard/mouse functionality.

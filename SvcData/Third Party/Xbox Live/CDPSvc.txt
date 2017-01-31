@@ -1,7 +1,6 @@
-
-> Connected Device Platform Service
-> This service is used for Connected Devices and Universal Glass scenarios
-> Xbox/SmartGlass stuff
+# Connected Device Platform Service
+# This service is used for Connected Devices and Universal Glass scenarios
+Xbox/SmartGlass related.
 
 Xbox SmartGlass is a technology which lets mobiles function as a controller with a screen for XBox.
 https://en.wikipedia.org/wiki/Xbox_SmartGlass

@@ -1,3 +1,2 @@
 # Windows Presentation Foundation Font Cache
-\microsoft.net\framework64\v3.0\wpf\presentationfontcache.exe
-
+# presentationfontcache.exe

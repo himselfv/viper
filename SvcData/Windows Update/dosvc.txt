@@ -1,1 +1,4 @@
 # Delivery optimization
+Used by Windows Update for downloading updates from the local peers.
+
+https://privacy.microsoft.com/en-US/windows-10-windows-update-delivery-optimization

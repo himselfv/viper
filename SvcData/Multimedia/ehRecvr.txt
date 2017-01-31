@@ -1,4 +1,2 @@
 # Windows Media Center Receiver Service
 Windows Media Center Service to receive TV and FM broadcasts.
-
-+Windows 7

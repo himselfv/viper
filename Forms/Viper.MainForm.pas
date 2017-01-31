@@ -427,7 +427,7 @@ var i: integer;
 begin
   SetLength(Result, 0);
   for i := 0 to FServices.Count-1 do
-    if (FServices[i].Config.dwServiceType and ATypeFilter <> 0) then begin
+    if (FServices[i].Config <> nil) and (FServices[i].Config.dwServiceType and ATypeFilter <> 0) then begin
       SetLength(Result, Length(Result)+1);
       Result[Length(Result)-1] := FServices[i];
     end;

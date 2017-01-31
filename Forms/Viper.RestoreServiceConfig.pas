@@ -253,8 +253,9 @@ begin
       try
         //Do not bother if it already matches. This way we ignore the services which we can't change, but don't need to.
         AConfig := QueryServiceConfig(hSC, AService);
+        //okay to throw, will catch below
         try
-          if ACOnfig.dwStartType = AStartType then
+          if AConfig.dwStartType = AStartType then
             continue;
         finally
           FreeMem(AConfig);

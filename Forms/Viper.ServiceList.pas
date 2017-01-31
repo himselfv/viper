@@ -642,7 +642,8 @@ begin
   str := '';
   for service in GetSelectedServices() do begin
     if str <> '' then str := str + #13;
-    str := str + Service.Config.lpBinaryPathName;
+    if Service.Config <> nil then
+      str := str + Service.Config.lpBinaryPathName;
   end;
   Clipboard.AsText := str;
 end;

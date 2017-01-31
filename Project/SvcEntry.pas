@@ -48,7 +48,7 @@ type
     function IsLaunchProtected: boolean; inline;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
-    property Config: LPQUERY_SERVICE_CONFIG read GetConfig;
+    property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil
     property ServiceDll: string read GetServiceDll;
     property LaunchProtection: cardinal read GetLaunchProtection;
     property TriggerCount: integer read GetTriggerCount;

@@ -106,6 +106,9 @@ type
     aConfigureColors: TAction;
     Configurecolors1: TMenuItem;
     N7: TMenuItem;
+    miEdit: TMenuItem;
+    Editfolders1: TMenuItem;
+    Editnotes1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -173,6 +176,8 @@ type
     procedure aEditServiceNotesExecute(Sender: TObject);
     procedure aConfigureColorsExecute(Sender: TObject);
     procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
+      NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -944,10 +949,21 @@ begin
   FilterServices();
 end;
 
+
+procedure TMainForm.MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
+  NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
+begin
+  if OldNode <> NewNode then begin
+    //Save notes on focus change
+    if aEditServiceNotes.Checked then
+      SaveNotes;
+  end;
+end;
+
 procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 begin
-  MainServiceList.vtServicesFocusChanged(Sender, Node, Column);
+  MainServiceList.vtServicesFocusChanged(Sender, Node, Column); //inherited
   ReloadDetails;
   //Action availability checking is done in OnChanged, depends on Selection
 end;
@@ -1209,21 +1225,14 @@ begin
  //Also enable editing
   if aEditFolders.Checked then
     Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
-      Self.MainServiceList.vtServices.TreeOptions.MiscOptions + [toFullRowDrag, toEditable]
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions + [toFullRowDrag]
   else
     Self.MainServiceList.vtServices.TreeOptions.MiscOptions :=
-      Self.MainServiceList.vtServices.TreeOptions.MiscOptions - [toFullRowDrag, toEditable];
+      Self.MainServiceList.vtServices.TreeOptions.MiscOptions - [toFullRowDrag];
 
   //Services
   aRenameService.Visible := aEditFolders.Checked;
   aRemoveServiceFromFolder.Visible := aEditFolders.Checked;
-
-  //Enable note editing
-  if aEditFolders.Checked then
-    mmNotes.Color := clWindow
-  else
-    mmNotes.Color := clBtnFace;
-  mmNotes.ReadOnly := not aEditFolders.Checked;
 end;
 
 function TMainForm.CanEditFolders: boolean;
@@ -1314,9 +1323,38 @@ end;
 
 // Service editing
 
+//Enters/exits notes edit mode for a currently focused service
+procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
+begin
+  //If no service is focused, abort
+  if aEditServiceNotes.Checked and (MainServiceList.GetFocusedService = nil) then begin
+    aEditServiceNotes.Checked := false;
+    exit;
+  end;
+
+  //Enable note editing
+  if aEditServiceNotes.Checked then begin
+    mmNotes.Color := clWindow;
+    //Auto-switch to the editor
+    if pcBottom.ActivePage <> tsDescription then
+      pcBottom.ActivePage := tsDescription;
+    mmNotes.SetFocus;
+  end else
+    mmNotes.Color := clBtnFace;
+  mmNotes.ReadOnly := not aEditServiceNotes.Checked;
+
+  //Can't save notes unless we're editing
+  aSaveNotes.Visible := aEditServiceNotes.Checked;
+  aSaveNotes.Enabled := aEditServiceNotes.Checked;
+
+  //Return to the list if the editor was focused (but not if something else)
+  if mmNotes.Focused and not aEditServiceNotes.Checked then
+    MainServiceList.vtServices.SetFocus;
+end;
+
 function TMainForm.CanEditServiceInfo: boolean;
 begin
-  Result := aEditFolders.Checked; //Edit mode is common for folders and service info
+  Result := aEditServiceNotes.Checked; //Edit mode is common for folders and service info
 end;
 
 procedure TMainForm.mmNotesExit(Sender: TObject);
@@ -1324,6 +1362,7 @@ begin
   SaveNotes;
 end;
 
+//Saves the service notes if they are currently being edited and there are changes
 procedure TMainForm.SaveNotes;
 var service: TExtServiceEntry;
 begin
@@ -1335,7 +1374,7 @@ begin
   if (service.Info = nil) and (mmNotes.Text = '') then exit; //do not create a file unless there's a point
 
   if service.Info = nil then
-    service.Info := FServiceCat.Get(service.Info.ServiceName);
+    service.Info := FServiceCat.Get(service.ServiceName);
 
   if service.Info.Description = mmNotes.Text then exit; //nothing changed
 
@@ -1348,33 +1387,6 @@ begin
   //Ctrl-S shortcut for saving notes while editing
   if (not mmNotes.ReadOnly) and mmNotes.Focused then
     SaveNotes;
-end;
-
-//Enters/exits notes edit mode for a currently focused service
-procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
-begin
- //Enter editing when service list or notes are focused + not yet editing
- //Exit when notes are focused + editing
-
-  if (MainServiceList.vtServices.Focused or mmNotes.Focused) and mmNotes.ReadOnly then begin
-    //Switch editing on
-    if MainServiceList.GetFocusedService = nil then exit;
-
-    if not aEditFolders.Checked then
-      aEditFolders.Execute; //Enter edit mode
-    if pcBottom.ActivePage <> tsDescription then
-      pcBottom.ActivePage := tsDescription;
-    mmNotes.SetFocus;
-  end else
-
-  if mmNotes.Focused and not mmNotes.ReadOnly then begin
-    //Switch editing off
-    if aEditFolders.Checked then
-      aEditFolders.Execute;
-    MainServiceList.vtServices.SetFocus;
-  end;
-
-
 end;
 
 procedure TMainForm.aRenameServiceExecute(Sender: TObject);
@@ -1401,7 +1413,7 @@ end;
 procedure TMainForm.MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; var Allowed: Boolean);
 begin
-  Allowed := CanEditServiceInfo and (Column = TServiceList.colDisplayName);
+  Allowed := Column = TServiceList.colDisplayName;
 end;
 
 {

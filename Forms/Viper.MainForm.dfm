@@ -261,10 +261,12 @@ object MainForm: TMainForm
       inherited vtServices: TVirtualStringTree
         Width = 857
         Height = 384
+        TreeOptions.MiscOptions = [toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
         OnCreateEditor = MainServiceListvtServicesCreateEditor
         OnDragAllowed = MainServiceListvtServicesDragAllowed
         OnEditing = MainServiceListvtServicesEditing
         OnFocusChanged = MainServiceListvtServicesFocusChanged
+        OnFocusChanging = MainServiceListvtServicesFocusChanging
         OnKeyAction = MainServiceListvtServicesKeyAction
         OnNewText = MainServiceListvtServicesNewText
         ExplicitWidth = 857
@@ -398,6 +400,7 @@ object MainForm: TMainForm
     end
     object aEditServiceNotes: TAction
       Category = 'Services'
+      AutoCheck = True
       Caption = 'Edit notes'
       ShortCut = 115
       OnExecute = aEditServiceNotesExecute
@@ -580,6 +583,17 @@ object MainForm: TMainForm
       end
       object Close1: TMenuItem
         Action = aClose
+      end
+    end
+    object miEdit: TMenuItem
+      Caption = 'Edit'
+      object Editfolders1: TMenuItem
+        Action = aEditFolders
+        AutoCheck = True
+      end
+      object Editnotes1: TMenuItem
+        Action = aEditServiceNotes
+        AutoCheck = True
       end
     end
     object Settings1: TMenuItem

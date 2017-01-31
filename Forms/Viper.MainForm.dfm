@@ -301,6 +301,7 @@ object MainForm: TMainForm
       Align = alTop
       TabOrder = 0
       OnChange = edtQuickFilterChange
+      OnKeyDown = edtQuickFilterKeyDown
     end
   end
   object ActionList: TActionList

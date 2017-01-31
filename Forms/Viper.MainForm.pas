@@ -171,6 +171,7 @@ type
       Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure aEditServiceNotesExecute(Sender: TObject);
     procedure aConfigureColorsExecute(Sender: TObject);
+    procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -502,6 +503,15 @@ end;
 procedure TMainForm.edtQuickFilterChange(Sender: TObject);
 begin
   FilterServices();
+end;
+
+procedure TMainForm.edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_ESCAPE then begin
+    edtQuickfilter.Text := '';
+    edtQuickFilterChange(edtQuickfilter);
+  end;
+
 end;
 
 
@@ -1336,9 +1346,11 @@ end;
 //Enters/exits notes edit mode for a currently focused service
 procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
 begin
-  if MainServiceList.vtServices.Focused then begin
+ //Enter editing when service list or notes are focused + not yet editing
+ //Exit when notes are focused + editing
+
+  if (MainServiceList.vtServices.Focused or mmNotes.Focused) and mmNotes.ReadOnly then begin
     //Switch editing on
-    if not MainServiceList.vtServices.Focused then exit; //only works when a service is focused
     if MainServiceList.GetFocusedService = nil then exit;
 
     if not aEditFolders.Checked then
@@ -1346,14 +1358,16 @@ begin
     if pcBottom.ActivePage <> tsDescription then
       pcBottom.ActivePage := tsDescription;
     mmNotes.SetFocus;
-
   end else
-  if (not mmNotes.ReadOnly) and mmNotes.Focused then begin
+
+  if mmNotes.Focused and not mmNotes.ReadOnly then begin
     //Switch editing off
     if aEditFolders.Checked then
       aEditFolders.Execute;
     MainServiceList.vtServices.SetFocus;
   end;
+
+
 end;
 
 procedure TMainForm.aRenameServiceExecute(Sender: TObject);

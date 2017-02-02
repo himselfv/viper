@@ -899,7 +899,9 @@ begin
   hadPermissionsChanged := false;
   pSidAdmin := nil;
 
+{$IFDEF DEBUG}
   AclHelpers.OnLog := LogForm.Log;
+{$ENDIF}
 
   //Try to claim SE_TAKE_OWNERSHIP_NAME but tolerate if it's unavailable
   ClaimPrivilege(SE_TAKE_OWNERSHIP_NAME, hPriv);

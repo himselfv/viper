@@ -1,0 +1,9 @@
+# Microsoft Passport
+# Provides process isolation for cryptographic keys used to authenticate to a user’s associated identity providers.
+Microsoft Passport (now part of Microsoft Hello) is a two-factor authentication method with PIN or biometrics (fingerprint or face recognition) + Trusted Platform Module (TPM).
+The user can be authenticated locally, against Active Directory, Azure AD and third-party authentication centers.
+It is supported as an authentication method on Windows. 
+
+Microsoft Passport covers the underlying authentication and only the PIN and biometrics part was previously called Microsoft Hello.
+
+RELATED: NgcCtnrSvc

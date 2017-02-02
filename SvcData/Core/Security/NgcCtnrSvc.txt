@@ -1,0 +1,6 @@
+# Microsoft Passport Container
+# Manages local user identity keys used to authenticate user to identity providers as well as TPM virtual smart cards.
+
+See NgcSvc for the description of Microsoft Passport / Microsoft Hello.
+
+RELATED: NgcSvc

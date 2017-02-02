@@ -1,0 +1,15 @@
+# User Experience Virtualization Service
+Monitors registered applications and the operating system for any settings changes, then synchronizes those settings between computers.
+
+UEV is a facility for enterprise setting sync, something like partial Roaming profiles.
+
+Settings form various places (AppData, Registry) are grouped into packages by application, then stored on a network share.
+
+Settings for Desktop applications are synchronized on app exit, Windows settings on logout.
+
+UE-V uses XML files as settings location templates to monitor and synchronize desktop application settings and Windows desktop settings between computers. By default, some settings location templates are included in UE-V.
+
+You can also create, edit, or validate custom settings location templates by managing settings synchronization for custom applications.
+WinRT apps do not need these templates.
+
+https://technet.microsoft.com/itpro/mdop/uev-v2/index

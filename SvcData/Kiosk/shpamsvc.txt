@@ -1,0 +1,4 @@
+# Shared PC Account Manager
+# Manages profiles and accounts on a SharedPC configured device
+Shared PC mode optimizes Windows 10 for shared use scenarios, such as touchdown spaces in an enterprise and temporary customer use in retail.
+https://technet.microsoft.com/en-us/itpro/windows/manage/set-up-shared-or-guest-pc

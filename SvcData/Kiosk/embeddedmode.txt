@@ -1,0 +1,2 @@
+# Embedded Mode
+# The Embedded Mode service enables scenarios related to Background Applications.  Disabling this service will prevent Background Applications from being activated.

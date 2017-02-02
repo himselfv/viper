@@ -1,0 +1,7 @@
+# Windows Push Notifications System Service
+# This service runs in session 0 and hosts the notification platform and connection provider which handles the connection between the device and WNS server.
+Push notifications let the web services notify the users of events without maintaining a separate network connection each. Subscriber PCs register in WNS network and maintain a connection to it. Web services send event notifications to WNS which pushes these to subscribers.
+
+https://en.wikipedia.org/wiki/Windows_Push_Notification_Service
+
+This service runs in session 0 and dispatches the notifications. Each user has their separate WpnUserService_* instance which handles notifications for that particular user.

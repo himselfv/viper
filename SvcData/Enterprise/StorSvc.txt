@@ -1,2 +1,3 @@
 # Storage Service
 > Enforces group policy settings for storage devices. Provides enabling services for storage settings and external storage expansion.
+Unsure if this is limited to this category.

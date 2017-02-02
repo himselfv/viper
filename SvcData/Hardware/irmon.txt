@@ -1,0 +1,2 @@
+# Infrared monitor service
+# Detects other Infrared devices that are in range and launches the file transfer application. Stopping the service will prevent file transfer from working

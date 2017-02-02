@@ -1,0 +1,4 @@
+# Device Management Enrollment Service
+# Performs Device Enrollment Activities for Device Management
+RELATED TO: Mobile Device Management (MDM) / DeviceManagement (DM) / Enterprise Management
+SEE ALSO: DmEnrollmentSvc

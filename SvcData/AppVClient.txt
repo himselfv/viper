@@ -1,0 +1,5 @@
+Client for App-V.
+App-V is an application virtualization and application streaming solution. Enables you to make applications available to end users without installing the applications directly on end user computers, by streaming them from servers.
+
+https://technet.microsoft.com/en-us/windows/hh826068
+https://en.wikipedia.org/wiki/Microsoft_App-V

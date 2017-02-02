@@ -1,0 +1,3 @@
+# DevQuery Background Discovery Broker
+# Enables apps to discover devices with a backgroud task
+One of WinRT BackgroundBrokers.

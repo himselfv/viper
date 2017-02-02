@@ -1,0 +1,2 @@
+# Xbox Live Networking Service
+# This service supports the Windows.Networking.XboxLive application programming interface.

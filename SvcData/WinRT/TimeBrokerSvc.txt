@@ -1,2 +1,3 @@
 # Time Broker
 # Coordinates execution of background work for WinRT application. If this service is stopped or disabled, then background work might not be triggered.
+One of WinRT BackgroundBrokers.

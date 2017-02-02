@@ -1,0 +1,3 @@
+# Retail Demo Service
+# The Retail Demo service controls device activity while the device is in retail demo mode.
+Retail demo mode is a locked-down mode intended for running the device in a store.

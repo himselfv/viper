@@ -1,0 +1,2 @@
+# CoreMessaging
+# Manages communication between system components.

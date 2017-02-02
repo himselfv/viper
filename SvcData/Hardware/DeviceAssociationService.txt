@@ -1,4 +1,3 @@
-
 Probably Bluetooth-related.
 
 Enables pairing between the system and wired or wireless devices.

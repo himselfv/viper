@@ -1,0 +1,2 @@
+# HV Host Service
+# Provides an interface for the Hyper-V hypervisor to provide per-partition performance counters to the host operating system.

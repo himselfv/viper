@@ -199,7 +199,7 @@ type
   protected // Folder editing
     function CanEditFolders: boolean;
     procedure FoldersDropFolder(Sender: TBaseVirtualTree; SourceNode: PVirtualNode; Mode: TDropMode);
-    procedure FoldersDropService(Sender: TBaseVirtualTree; Source: TServiceList; SourceNode: PVirtualNode; Mode: TDropMode);
+    procedure FoldersDropService(Sender: TBaseVirtualTree; Service: TServiceEntry; Mode: TDropMode); overload;
 
   protected
     FServices: TServiceEntryList;
@@ -718,6 +718,7 @@ end;
 procedure TMainForm.vtFoldersDragDrop(Sender: TBaseVirtualTree; Source: TObject;
   DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint;
   var Effect: Integer; Mode: TDropMode);
+var Service: TServiceEntry;
 begin
   if not Self.CanEditFolders then exit;
 
@@ -725,7 +726,8 @@ begin
     FoldersDropFolder(Sender, TVirtualStringTree(Source).FocusedNode, Mode)
   else
   if Source = MainServiceList.vtServices then
-    FoldersDropService(Sender, MainServiceList, TVirtualStringTree(Source).FocusedNode, Mode);
+    for Service in MainServiceList.GetSelectedServices do
+      FoldersDropService(Sender, Service, Mode);
 
  //else ignore
 end;
@@ -759,20 +761,17 @@ begin
 end;
 
 //Called to handle a service node dropped onto the folder tree
-procedure TMainForm.FoldersDropService(Sender: TBaseVirtualTree; Source: TServiceList;
-  SourceNode: PVirtualNode; Mode: TDropMode);
+procedure TMainForm.FoldersDropService(Sender: TBaseVirtualTree; Service: TServiceEntry; Mode: TDropMode);
 var TargetNode: PVirtualNode;
-  SvcEntry: TServiceEntry;
   SvcInfo: TServiceInfo;
   TargetFolder: TNdFolderData;
 begin
-  SvcEntry := Source.GetServiceEntry(SourceNode);
-  SvcInfo := FServiceCat.Get(SvcEntry.ServiceName); // Find or create one
+  SvcInfo := FServiceCat.Get(Service.ServiceName); // Find or create one
 
   //We could've created SvcInfo just now, so update the field
   //Thankfully, all TServiceEntries are global between the ServiceList instances! So we only need to update in one place.
-  if SvcEntry is TExtServiceEntry then
-    TExtServiceEntry(SvcEntry).Info := SvcInfo;
+  if Service is TExtServiceEntry then
+    TExtServiceEntry(Service).Info := SvcInfo;
 
   TargetNode := Sender.DropTargetNode;
   TargetFolder := GetFolderData(TargetNode);

@@ -30,6 +30,7 @@ object TriggerList: TTriggerList
     OnGetImageIndexEx = TreeGetImageIndexEx
     OnGetNodeDataSize = TreeGetNodeDataSize
     OnInitNode = TreeInitNode
+    OnKeyDown = TreeKeyDown
     Columns = <
       item
         Position = 0
@@ -72,7 +73,6 @@ object TriggerList: TTriggerList
     object aCopySummary: TAction
       Category = 'Copy'
       Caption = 'Summary'
-      ShortCut = 16451
       OnExecute = aCopySummaryExecute
     end
     object aCopyTriggerText: TAction

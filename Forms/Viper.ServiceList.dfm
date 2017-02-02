@@ -170,11 +170,10 @@ object ServiceList: TServiceList
       Caption = 'Description'
       OnExecute = aCopyServiceDescriptionExecute
     end
-    object aCopyServiceShortSummary: TAction
+    object aCopyServiceSummary: TAction
       Category = 'Copy'
-      Caption = 'Short summary'
-      ShortCut = 16451
-      OnExecute = aCopyServiceShortSummaryExecute
+      Caption = 'Summary'
+      OnExecute = aCopyServiceSummaryExecute
     end
     object aCopyExecutableFilename: TAction
       Category = 'Copy'
@@ -256,6 +255,12 @@ object ServiceList: TServiceList
     end
     object Copy1: TMenuItem
       Caption = 'Copy'
+      object Shortsummary1: TMenuItem
+        Action = aCopyServiceSummary
+      end
+      object N5: TMenuItem
+        Caption = '-'
+      end
       object Ident1: TMenuItem
         Action = aCopyServiceID
       end

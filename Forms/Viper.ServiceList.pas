@@ -25,7 +25,7 @@ type
     aCopyServiceID: TAction;
     aCopyServiceName: TAction;
     aCopyServiceDescription: TAction;
-    aCopyServiceShortSummary: TAction;
+    aCopyServiceSummary: TAction;
     aCopyExecutableFilename: TAction;
     aJumpToBinary: TAction;
     aJumpToRegistry: TAction;
@@ -66,6 +66,8 @@ type
     Security1: TMenuItem;
     miUnlockSecurity: TMenuItem;
     N4: TMenuItem;
+    Shortsummary1: TMenuItem;
+    N5: TMenuItem;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -85,7 +87,7 @@ type
     procedure aCopyServiceIDExecute(Sender: TObject);
     procedure aCopyServiceNameExecute(Sender: TObject);
     procedure aCopyServiceDescriptionExecute(Sender: TObject);
-    procedure aCopyServiceShortSummaryExecute(Sender: TObject);
+    procedure aCopyServiceSummaryExecute(Sender: TObject);
     procedure aCopyExecutableFilenameExecute(Sender: TObject);
     procedure aStartServiceExecute(Sender: TObject);
     procedure aForceStartServiceExecute(Sender: TObject);
@@ -386,7 +388,7 @@ end;
 procedure TServiceList.vtServicesKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
-    aCopyServiceShortSummary.Execute;
+    aCopyServiceSummary.Execute;
 end;
 
 procedure TServiceList.vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -611,7 +613,7 @@ begin
   Clipboard.AsText := str;
 end;
 
-procedure TServiceList.aCopyServiceShortSummaryExecute(Sender: TObject);
+procedure TServiceList.aCopyServiceSummaryExecute(Sender: TObject);
 var service: TServiceEntry;
   str: string;
 begin

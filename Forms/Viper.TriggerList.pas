@@ -7,10 +7,6 @@ uses
   VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
   TriggerUtils;
 
-//TODO: Fix Ctrl-C sharing between this and main service list!
-//  Note that secondary service lists handle Ctrl-C fine (perhaps because trigger list is invisible
-//  at that moment?)
-
 //TODO: Parse Firewall Rule details (it's multistring)
 
 type
@@ -47,10 +43,11 @@ type
     procedure TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
       var ImageList: TCustomImageList);
+    procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure aCopyTriggerTextExecute(Sender: TObject);
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
-    procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   const
     colAction = 0;
     colTrigger = 1;
@@ -153,6 +150,12 @@ begin
   aCopyTriggerText.Visible := Tree.SelectedCount > 0;
   aCopySourceData.Visible := Tree.SelectedCount > 0;
   aCopyParams.Visible := Tree.SelectedCount > 0;
+end;
+
+procedure TTriggerList.TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
+    aCopySummary.Execute;
 end;
 
 procedure TTriggerList.Clear;

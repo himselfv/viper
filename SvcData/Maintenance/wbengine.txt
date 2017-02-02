@@ -1,10 +1,10 @@
 # Block Level Backup Engine Service
-# The WBENGINE service is used by Windows Backup to perform backup and recovery operations. If this service is stopped by a user, it may cause the currently running backup or recovery operation to fail. Disabling this service may disable backup and recovery operations using Windows Backup on this computer.
+Performs block level backup and recovery of data. Used by Windows Backup to perform backup and recovery operations.
 
-The Block Level Backup Engine Service (wbengine) performs block level backup and recovery of data. This service is used by the Backup and Restore feature in the Control Panel of Windows 7 and by the Windows Server Backup feature of Windows Server 2008 R2. It allows for backups to occur at the hard disk level, instead of just file by file, in a process similar to disk imaging.
+The service allows for backups to occur at the hard disk level, instead of just file by file, in a process similar to disk imaging.
 
-This service is installed by default and its startup type is Manual. When started in the default configuration it will log on using the Local System account.
+Manual by default and okay to keep so.
 
-This service is not dependent on any other system service, nor is any service dependent on it.
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_wbengine
 
+RELATED: VSS, swprv

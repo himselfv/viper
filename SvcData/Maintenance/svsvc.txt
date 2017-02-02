@@ -1,4 +1,3 @@
 # Spot verifier
 # Verifies potential file system corruptions.
-
 Scans for potential damage in the file system.

@@ -1,4 +1,3 @@
 # Local Session Manager
 # Core Windows Service that manages local user sessions. Stopping or disabling this service will result in system instability.
-
 CRITICAL: Won't log in.

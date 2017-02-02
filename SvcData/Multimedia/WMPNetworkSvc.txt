@@ -1,4 +1,3 @@
-# Shares Windows Media Player libraries to other networked players and media devices using Universal Plug and Play.
 # Windows Media Player Network Sharing Service
+Shares Windows Media Player libraries to other networked players and media devices using UPnP.
 Can be added or removed from "Turn Windows Features on or off".
-

@@ -1,0 +1,4 @@
+# Event Collector Service
+Maintains permanent subscriptions to events via WS-Management protocol.
+
+DISABLE: If you don't use WS-Management.

@@ -1,5 +1,4 @@
 # IIS Application Host Helper Service
-
 Enables IIS configuration history and application pool SID (security identifier) mapping. It enables the configuration history functionality by saving the ApplicationHost.config file to separate configuration history subdirectories at set intervals. 
 
 https://technet.microsoft.com/en-us/library/cc735036(v=ws.10).aspx

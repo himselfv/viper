@@ -1,6 +1,5 @@
 # Thread Ordering Service
 TITLE:MMCSS\%1
-
 Controls the execution of one or more client threads. Ensures that each client thread runs once during the specified period and in relative order.
 
 Off by default and must be started by the user. While the thread ordering service is running, it is activated every 5 seconds to check whether there is a new request, even if the system is idle. This prevents the system from sleeping for longer than 5 seconds, causing it to consume more power.

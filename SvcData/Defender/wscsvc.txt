@@ -4,5 +4,3 @@ Provides COM APIs for independent software vendors to register and record the st
 The Security and Maintenance UI uses the service to provide systray alerts and a graphical view of the security health states in the Security and Maintenance control panel.
 Network Access Protection (NAP) uses the service to report the security health states of clients to the NAP Network Policy Server to make network quarantine decisions.
 The service also has a public API that allows external consumers to programmatically retrieve the aggregated security health state of the system.
-
-

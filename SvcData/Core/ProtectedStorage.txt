@@ -2,8 +2,8 @@ Provides protected storage for sensitive data, such as passwords, to prevent acc
 
 Not to be confused with VaultSvc. Seems to be unrelated to saved passwords from "Manage your credentials" (see VaultSvc for that).
 
-+Windows 7
--Windows 10: Deprecated in Windows 10.
++W7
+-W10: Deprecated in Windows 10.
 
 > Protected Storage service was deprecated and made read-only in Vista and removed in Windows 8. It was not very secure.
 > The replacement to be used by app developers is a more secure API like the Windows Data Protection API. IE, EFS, CredMan, EFS all use that.

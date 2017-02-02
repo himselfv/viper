@@ -4,4 +4,3 @@ Determines and verifies the identity of an application. Disabling this service w
 https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_appidsvc
 
 RELATED: AppLocker
-

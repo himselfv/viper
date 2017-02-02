@@ -1,5 +1,4 @@
 # Multimedia Class Scheduler service
-
 Enables multimedia applications to schedule time-sensitive tasks for priority CPU processing.
 
 Uses information stored in the registry to identify supported tasks and determine the relative priority of threads performing these tasks. Each thread that is performing work related to a particular task calls AvSetMmThreadCharacteristics to inform MMCSS of it.

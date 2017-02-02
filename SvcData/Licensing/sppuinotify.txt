@@ -1,7 +1,3 @@
 # SPP Notification Service
-The SPP Notification Service (sppuinotify) provides software licensing activation and notification.
-
-Default: Manual
-
+# Provides software licensing activation and notification.
 RELATED: sppsvc
-

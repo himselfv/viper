@@ -1,10 +1,12 @@
 # Windows Time
 # Maintains date and time synchronization on all clients and servers in the network.
+On a workstation, synchronizes time with external sources. On a domain controller, also provides time to domain participants.
 
-The service itself is not required, but time must be kept synchronized finely enough because the following depends on it:
+Set to manual and can be kept manual.
+
+Synchronization itself is optional, but the following requires computer clock to be precise enough:
 * Cryptography (various handshakes)
 * Domain authentication
 * HTTPS / SSL / TLS / Secure connections
 
-Can be set to manual.
-
+https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_w32time

@@ -1,2 +1,4 @@
 # Problem Reports and Solutions Control Panel Support
 # Provides support for viewing, sending, and deleting system-level problem reports for the Problem Reports and Solutions control panel. This service is part of the Windows Diagnostic Infrastructure.
+
+RELATED: WerSvc

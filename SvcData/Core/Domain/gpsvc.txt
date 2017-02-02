@@ -1,0 +1,10 @@
+# Group Policy Client
+Applies group policy settings for this computer and its users.
+
+Group policies are OS commands, policies and settings configured by the administrators of the domain or local computer. One way to configure policies is through Group Policy MMC snap-in.
+
+Policies are distributed throughout the domain and applied to each participating PC with the help of this component. PCs
+
+https://technet.microsoft.com/en-us/library/hh125927%28v=ws.10%29.aspx#BKMK_gpsvc
+
+DISABLE: Group Policies will not be applied. Since even local operation depends on group policies these days, probably leave running.

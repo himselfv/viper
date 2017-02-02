@@ -105,6 +105,9 @@ type
     );
   end;
 
+const
+  SC_AGGREGATE_STORAGE_KEY = 'System\CurrentControlSet\Control\ServiceAggregatedEvents';
+
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;
 

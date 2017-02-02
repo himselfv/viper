@@ -42,6 +42,9 @@ type
     btnReset: TButton;
     pnlStatePaused: TPanel;
     btnOk: TButton;
+    pnlTypeInteractive: TPanel;
+    pnlTypeUser: TPanel;
+    pnlTypePkgService: TPanel;
     procedure pnlTypeServiceClick(Sender: TObject);
     procedure pnlTypeServiceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
       Y: Integer);
@@ -283,6 +286,18 @@ procedure TStyleSettingsForm.GetCombinedStyle(Service: TServiceEntry; var Result
 begin
   if Service.Status.dwServiceType and SERVICE_DRIVER <> 0 then
     AdjustStyle(Result, pnlTypeDriver, Elements)
+  else
+  if Service.Status.dwServiceType and SERVICE_USER_SERVICE <> 0 then
+    AdjustStyle(Result, pnlTypeUser, Elements)
+  else
+  if Service.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE <> 0 then
+    AdjustStyle(Result, pnlTypeUser, Elements)
+  else
+  if Service.Status.dwServiceType and SERVICE_INTERACTIVE_PROCESS <> 0 then
+    AdjustStyle(Result, pnlTypeInteractive, Elements)
+  else
+  if Service.Status.dwServiceType and SERVICE_PKG_SERVICE <> 0 then
+    AdjustStyle(Result, pnlTypePkgService, Elements)
   else
     AdjustStyle(Result, pnlTypeService, Elements);
 

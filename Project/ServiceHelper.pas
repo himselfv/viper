@@ -3,6 +3,26 @@ unit ServiceHelper;
 interface
 uses Windows, WinSvc, Registry;
 
+const //New service types from winnt.h
+  SERVICE_USER_SERVICE          = $00000040;
+  SERVICE_USERSERVICE_INSTANCE  = $00000080;
+
+  SERVICE_USER_SHARE_PROCESS    = (SERVICE_USER_SERVICE or
+                                   SERVICE_WIN32_SHARE_PROCESS);
+  SERVICE_USER_OWN_PROCESS      = (SERVICE_USER_SERVICE or
+                                   SERVICE_WIN32_OWN_PROCESS);
+
+  SERVICE_INTERACTIVE_PROCESS   = $00000100;
+  SERVICE_PKG_SERVICE           = $00000200;
+
+  SERVICE_TYPE_ALL              = (SERVICE_WIN32 or
+                                   SERVICE_ADAPTER or
+                                   SERVICE_DRIVER or
+                                   SERVICE_INTERACTIVE_PROCESS or
+                                   SERVICE_USER_SERVICE or
+                                   SERVICE_USERSERVICE_INSTANCE or
+                                   SERVICE_PKG_SERVICE);
+
 const
   SERVICE_READ_ACCESS = SERVICE_QUERY_CONFIG
      or SERVICE_QUERY_STATUS
@@ -52,9 +72,12 @@ function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoL
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
-//Missing from headers
-const
-  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT = 6;
+
+const // New triggers from WinSvc.h
+  SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT                 = 6;
+  SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE       = 7;
+  SERVICE_TRIGGER_TYPE_CUSTOM                           = 20;
+  SERVICE_TRIGGER_TYPE_AGGREGATE                        = 30;
 
 const
   SERVICE_TRIGGER_DATA_TYPE_LEVEL          = 3;
@@ -64,6 +87,23 @@ const
 const
   RPC_INTERFACE_EVENT_GUID: TGuid = '{BC90D167-9470-4139-A9BA-BE0BBBF5B74D}';
   NAMED_PIPE_EVENT_GUID: TGuid = '{1F81D131-3FAC-4537-9E0C-7E7B0C2F4B55}';
+  CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID: TGuid = '{2d7a2816-0c5e-45fc-9ce7-570e5ecde9c9}'; //used with TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE
+
+//
+// Service notification trigger identifier
+//
+type
+  SERVICE_TRIGGER_CUSTOM_STATE_ID = packed record
+    Data: array[0..1] of DWORD;
+  end;
+  SERVICE_CUSTOM_SYSTEM_STATE_CHANGE_DATA_ITEM = packed record
+  case byte of
+    0: (CustomStateId: SERVICE_TRIGGER_CUSTOM_STATE_ID);
+    1: (
+      DataOffset: DWORD;
+      Data: array[0..0] of Byte;
+    );
+  end;
 
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;

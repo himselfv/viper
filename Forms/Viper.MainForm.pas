@@ -37,7 +37,6 @@ type
     vtFolders: TVirtualStringTree;
     ilImages: TImageList;
     MainMenu: TMainMenu;
-    Settings1: TMenuItem;
     cbHideEmptyFolders: TMenuItem;
     aHideEmptyFolders: TAction;
     pmFolders: TPopupMenu;
@@ -46,8 +45,8 @@ type
     Splitter2: TSplitter;
     File1: TMenuItem;
     aShowDrivers: TAction;
-    Showdrivers1: TMenuItem;
-    Bystatus1: TMenuItem;
+    miShowDrivers: TMenuItem;
+    miUseColors: TMenuItem;
     aRefresh: TAction;
     Refresh1: TMenuItem;
     pcBottom: TPageControl;
@@ -104,13 +103,20 @@ type
     aEditServiceNotes: TAction;
     NotesFrame: TRichEditFrame;
     aConfigureColors: TAction;
-    Configurecolors1: TMenuItem;
-    N7: TMenuItem;
+    miConfigureColors: TMenuItem;
     miEdit: TMenuItem;
     Editfolders1: TMenuItem;
     Editnotes1: TMenuItem;
     aShowUserPrototypes: TAction;
-    Showprototypes1: TMenuItem;
+    miShowPrototypes: TMenuItem;
+    miView: TMenuItem;
+    N8: TMenuItem;
+    miColors: TMenuItem;
+    N7: TMenuItem;
+    miTools: TMenuItem;
+    N9: TMenuItem;
+    miRunServicesMsc: TMenuItem;
+    aRunServicesMsc: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -181,6 +187,7 @@ type
     procedure MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
     procedure aShowUserPrototypesExecute(Sender: TObject);
+    procedure aRunServicesMscExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -967,7 +974,6 @@ begin
   FilterServices();
 end;
 
-
 procedure TMainForm.MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
   NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
 begin
@@ -990,6 +996,11 @@ procedure TMainForm.MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTre
   Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
 begin
   Allowed := CanEditFolders;
+end;
+
+procedure TMainForm.aRunServicesMscExecute(Sender: TObject);
+begin
+  ShellOpen('services.msc');
 end;
 
 

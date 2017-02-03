@@ -343,12 +343,14 @@ object MainForm: TMainForm
       OnExecute = aShowDriversExecute
     end
     object aIncludeSubfolders: TAction
+      Category = 'View'
       AutoCheck = True
       Caption = 'Include subfolders contents'
       Hint = 'Show each folder with all of its subfolders contents included'
       OnExecute = aIncludeSubfoldersExecute
     end
     object aSaveAllServicesConfig: TAction
+      Category = 'View'
       Caption = 'Save service config...'
       Hint = 'Save the startup configuration of services on this computer'
       OnExecute = aSaveAllServicesConfigExecute
@@ -359,6 +361,7 @@ object MainForm: TMainForm
       OnExecute = aSaveSelectedServicesConfigExecute
     end
     object aRestoreServiceConfig: TAction
+      Category = 'View'
       Caption = 'Restore service config...'
       Hint = 'Restore the startup configuration of services to a saved one'
       OnExecute = aRestoreServiceConfigExecute
@@ -407,6 +410,7 @@ object MainForm: TMainForm
       OnExecute = aEditServiceNotesExecute
     end
     object aConfigureColors: TAction
+      Category = 'View'
       Caption = 'Configure colors'
       OnExecute = aConfigureColorsExecute
     end
@@ -416,6 +420,10 @@ object MainForm: TMainForm
       Caption = 'Show prototypes'
       Hint = 'Show prototype services for user services'
       OnExecute = aShowUserPrototypesExecute
+    end
+    object aRunServicesMsc: TAction
+      Caption = 'services.msc'
+      OnExecute = aRunServicesMscExecute
     end
   end
   object ilImages: TImageList
@@ -604,15 +612,31 @@ object MainForm: TMainForm
         AutoCheck = True
       end
     end
-    object Settings1: TMenuItem
-      Caption = 'Settings'
-      object Showdrivers1: TMenuItem
+    object miView: TMenuItem
+      Caption = 'View'
+      object miShowDrivers: TMenuItem
         Action = aShowDrivers
         AutoCheck = True
       end
-      object Showprototypes1: TMenuItem
+      object miShowPrototypes: TMenuItem
         Action = aShowUserPrototypes
         AutoCheck = True
+      end
+      object miColors: TMenuItem
+        Caption = 'Colors'
+        object miUseColors: TMenuItem
+          Action = MainServiceList.aUseColors
+          AutoCheck = True
+        end
+        object N7: TMenuItem
+          Caption = '-'
+        end
+        object miConfigureColors: TMenuItem
+          Action = aConfigureColors
+        end
+      end
+      object N8: TMenuItem
+        Caption = '-'
       end
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
@@ -622,15 +646,18 @@ object MainForm: TMainForm
         Action = aIncludeSubfolders
         AutoCheck = True
       end
-      object N7: TMenuItem
+    end
+    object miTools: TMenuItem
+      Caption = 'Tools'
+      object Alltriggers1: TMenuItem
+        Caption = 'Trigger browser'
+        OnClick = Alltriggers1Click
+      end
+      object N9: TMenuItem
         Caption = '-'
       end
-      object Bystatus1: TMenuItem
-        Action = MainServiceList.aUseColors
-        AutoCheck = True
-      end
-      object Configurecolors1: TMenuItem
-        Action = aConfigureColors
+      object miRunServicesMsc: TMenuItem
+        Action = aRunServicesMsc
       end
     end
     object Debug1: TMenuItem
@@ -638,10 +665,6 @@ object MainForm: TMainForm
       object miShowLog: TMenuItem
         Caption = 'Show log'
         OnClick = miShowLogClick
-      end
-      object Alltriggers1: TMenuItem
-        Caption = 'Trigger browser'
-        OnClick = Alltriggers1Click
       end
     end
   end

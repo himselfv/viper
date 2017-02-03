@@ -44,7 +44,7 @@ type
     btnOk: TButton;
     pnlTypeInteractive: TPanel;
     pnlTypeUser: TPanel;
-    pnlTypePkgService: TPanel;
+    pnlTypePkg: TPanel;
     procedure pnlTypeServiceClick(Sender: TObject);
     procedure pnlTypeServiceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
       Y: Integer);
@@ -85,9 +85,16 @@ begin
     DefaultFont.Style := [];
 
     SetColors(pnlTypeService, clWindow, DefaultFont);
+    SetColors(pnlTypeUser, clWindow, DefaultFont);
+    pnlTypeUser.Font.Color := clGreen;
+    SetColors(pnlTypePkg, clWindow, DefaultFont);
+    pnlTypePkg.Font.Color := clNavy;
     SetColors(pnlTypeDriver, clWindow, DefaultFont);
+    pnlTypeDriver.Font.Color := clOlive;
     SetColors(pnlTypeProtected, clWindow, DefaultFont);
     pnlTypeProtected.Font.Color := $009D009D;
+    SetColors(pnlTypeInteractive, clWindow, DefaultFont);
+    pnlTypeInteractive.Font.Color := clNavy;
 
     SetColors(pnlStartAuto, $00FFF7DD, DefaultFont);
     SetColors(pnlStartAutoBoot, $00FFF7DD, DefaultFont);
@@ -162,8 +169,11 @@ begin
   ini := Viper.Settings.GetSettings;
   try
     LoadStyle(ini, pnlTypeService);
+    LoadStyle(ini, pnlTypeUser);
+    LoadStyle(ini, pnlTypePkg);
     LoadStyle(ini, pnlTypeDriver);
     LoadStyle(ini, pnlTypeProtected);
+    LoadStyle(ini, pnlTypeInteractive);
     LoadStyle(ini, pnlStartAuto);
     LoadStyle(ini, pnlStartAutoBoot);
     LoadStyle(ini, pnlStartManual);
@@ -188,8 +198,11 @@ begin
   ini := Viper.Settings.GetSettings;
   try
     SaveStyle(ini, pnlTypeService);
+    SaveStyle(ini, pnlTypeUser);
+    SaveStyle(ini, pnlTypePkg);
     SaveStyle(ini, pnlTypeDriver);
     SaveStyle(ini, pnlTypeProtected);
+    SaveStyle(ini, pnlTypeInteractive);
     SaveStyle(ini, pnlStartAuto);
     SaveStyle(ini, pnlStartAutoBoot);
     SaveStyle(ini, pnlStartManual);
@@ -297,7 +310,7 @@ begin
     AdjustStyle(Result, pnlTypeInteractive, Elements)
   else
   if Service.Status.dwServiceType and SERVICE_PKG_SERVICE <> 0 then
-    AdjustStyle(Result, pnlTypePkgService, Elements)
+    AdjustStyle(Result, pnlTypePkg, Elements)
   else
     AdjustStyle(Result, pnlTypeService, Elements);
 

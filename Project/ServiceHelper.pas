@@ -15,13 +15,23 @@ const //New service types from winnt.h
   SERVICE_INTERACTIVE_PROCESS   = $00000100;
   SERVICE_PKG_SERVICE           = $00000200;
 
-  SERVICE_TYPE_ALL              = (SERVICE_WIN32 or
+ //<=W7 does not support new W10 service types and will return ERROR_INVALID_PARAM,
+ //so we keep <=W7 version under a different name so that people may try it.
+  SERVICE_TYPE_ALL_W7           = (SERVICE_WIN32 or
+                                   SERVICE_ADAPTER or
+                                   SERVICE_DRIVER or
+                                   SERVICE_INTERACTIVE_PROCESS);
+
+  SERVICE_TYPE_ALL_W10          = (SERVICE_WIN32 or
                                    SERVICE_ADAPTER or
                                    SERVICE_DRIVER or
                                    SERVICE_INTERACTIVE_PROCESS or
                                    SERVICE_USER_SERVICE or
                                    SERVICE_USERSERVICE_INSTANCE or
                                    SERVICE_PKG_SERVICE);
+
+ //We still redefine normal TYPE_ALL since that's what WinSvc.h does.
+  SERVICE_TYPE_ALL              = SERVICE_TYPE_ALL_W10;
 
 const
   SERVICE_READ_ACCESS = SERVICE_QUERY_CONFIG

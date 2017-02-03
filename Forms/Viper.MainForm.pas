@@ -324,7 +324,7 @@ var hSC: SC_HANDLE;
   ServiceTypes: dword;
   Services, S: PEnumServiceStatus;
   ServicesReturned: cardinal;
-  i, j: integer;
+  i, j, err: integer;
   svc: TExtServiceEntry;
   ServiceFound: array of boolean;
   Node: PVirtualNode;
@@ -332,7 +332,7 @@ var hSC: SC_HANDLE;
 begin
   //Let's load all services since we need all for dependencies, just make sure to handle
   //permission denials well.
-  ServiceTypes := SERVICE_TYPE_ALL;
+  ServiceTypes := SERVICE_TYPE_ALL_W10;
 
   //Mark already known services for sweeping
   SetLength(ServiceFound, FServices.Count);
@@ -343,8 +343,16 @@ begin
   Services := nil;
   hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
-    if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then
-      RaiseLastOsError();
+    if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then begin
+      err := GetLastError;
+      if err <> ERROR_INVALID_PARAMETER then
+        RaiseLastOsError(err);
+
+     //Windows <= W7 will return error when asked for W10 service types, so try again
+      ServiceTypes := SERVICE_TYPE_ALL_W7;
+      if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then
+        RaiseLastOsError();
+    end;
 
     S := Services;
     for i := 0 to ServicesReturned - 1 do begin

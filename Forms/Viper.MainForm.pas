@@ -111,12 +111,11 @@ type
     miShowPrototypes: TMenuItem;
     miView: TMenuItem;
     N8: TMenuItem;
-    miColors: TMenuItem;
-    N7: TMenuItem;
     miTools: TMenuItem;
     N9: TMenuItem;
     miRunServicesMsc: TMenuItem;
     aRunServicesMsc: TAction;
+    N7: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);

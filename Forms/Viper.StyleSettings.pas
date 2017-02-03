@@ -86,8 +86,6 @@ begin
     SetColors(pnlTypeService, clWindow, DefaultFont);
     SetColors(pnlTypeUser, clWindow, DefaultFont);
     pnlTypeUser.Font.Color := clGreen;
-    SetColors(pnlTypePkg, clWindow, DefaultFont);
-    pnlTypePkg.Font.Color := clNavy;
     SetColors(pnlTypeDriver, clWindow, DefaultFont);
     pnlTypeDriver.Font.Color := $00005B5B;
     SetColors(pnlTypeProtected, clWindow, DefaultFont);
@@ -169,7 +167,6 @@ begin
   try
     LoadStyle(ini, pnlTypeService);
     LoadStyle(ini, pnlTypeUser);
-    LoadStyle(ini, pnlTypePkg);
     LoadStyle(ini, pnlTypeDriver);
     LoadStyle(ini, pnlTypeProtected);
     LoadStyle(ini, pnlTypeInteractive);
@@ -198,7 +195,6 @@ begin
   try
     SaveStyle(ini, pnlTypeService);
     SaveStyle(ini, pnlTypeUser);
-    SaveStyle(ini, pnlTypePkg);
     SaveStyle(ini, pnlTypeDriver);
     SaveStyle(ini, pnlTypeProtected);
     SaveStyle(ini, pnlTypeInteractive);
@@ -307,9 +303,6 @@ begin
   else
   if Service.Status.dwServiceType and SERVICE_INTERACTIVE_PROCESS <> 0 then
     AdjustStyle(Result, pnlTypeInteractive, Elements)
-  else
-  if Service.Status.dwServiceType and SERVICE_PKG_SERVICE <> 0 then
-    AdjustStyle(Result, pnlTypePkg, Elements)
   else
     AdjustStyle(Result, pnlTypeService, Elements);
 

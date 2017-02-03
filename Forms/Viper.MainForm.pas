@@ -109,6 +109,7 @@ type
     miEdit: TMenuItem;
     Editfolders1: TMenuItem;
     Editnotes1: TMenuItem;
+    aShowUserPrototypes: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -178,6 +179,7 @@ type
     procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
+    procedure aShowUserPrototypesExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -482,7 +484,11 @@ begin
   end;
 
   //Filter out drivers if disabled
-  if not isService and not aShowDrivers.Checked then
+  if not aShowDrivers.Checked and not isService then
+    isVisible := false;
+
+  //Filter UserService prototypes. Instances would have SERVICE_USERSERVICE_INSTANCE
+  if not aShowUserPrototypes.Checked and (svc.Status.dwServiceType and SERVICE_USER_SERVICE <> 0) then
     isVisible := false;
 
   //Quickfilter
@@ -1210,6 +1216,10 @@ begin
   FilterServices;
 end;
 
+procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
+begin
+  FilterServices;
+end;
 
 
 // Edit mode

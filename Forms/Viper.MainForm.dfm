@@ -337,6 +337,7 @@ object MainForm: TMainForm
       OnExecute = aHideEmptyFoldersExecute
     end
     object aShowDrivers: TAction
+      Category = 'Service filter'
       AutoCheck = True
       Caption = 'Show drivers'
       OnExecute = aShowDriversExecute
@@ -408,6 +409,13 @@ object MainForm: TMainForm
     object aConfigureColors: TAction
       Caption = 'Configure colors'
       OnExecute = aConfigureColorsExecute
+    end
+    object aShowUserPrototypes: TAction
+      Category = 'Service filter'
+      AutoCheck = True
+      Caption = 'Show prototypes'
+      Hint = 'Show prototype services for user services'
+      OnExecute = aShowUserPrototypesExecute
     end
   end
   object ilImages: TImageList

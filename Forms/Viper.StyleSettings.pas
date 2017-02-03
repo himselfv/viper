@@ -44,7 +44,6 @@ type
     btnOk: TButton;
     pnlTypeInteractive: TPanel;
     pnlTypeUser: TPanel;
-    pnlTypePkg: TPanel;
     procedure pnlTypeServiceClick(Sender: TObject);
     procedure pnlTypeServiceMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X,
       Y: Integer);
@@ -90,7 +89,7 @@ begin
     SetColors(pnlTypePkg, clWindow, DefaultFont);
     pnlTypePkg.Font.Color := clNavy;
     SetColors(pnlTypeDriver, clWindow, DefaultFont);
-    pnlTypeDriver.Font.Color := clOlive;
+    pnlTypeDriver.Font.Color := $00005B5B;
     SetColors(pnlTypeProtected, clWindow, DefaultFont);
     pnlTypeProtected.Font.Color := $009D009D;
     SetColors(pnlTypeInteractive, clWindow, DefaultFont);

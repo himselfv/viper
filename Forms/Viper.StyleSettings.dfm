@@ -3,7 +3,7 @@ object StyleSettingsForm: TStyleSettingsForm
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Customize colors'
-  ClientHeight = 453
+  ClientHeight = 419
   ClientWidth = 529
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,7 +15,7 @@ object StyleSettingsForm: TStyleSettingsForm
   Position = poOwnerFormCenter
   DesignSize = (
     529
-    453)
+    419)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -27,7 +27,7 @@ object StyleSettingsForm: TStyleSettingsForm
   end
   object Label2: TLabel
     Left = 8
-    Top = 213
+    Top = 185
     Width = 71
     Height = 13
     Caption = 'By start mode:'
@@ -49,7 +49,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Stopped'
     Color = clWindow
     ParentBackground = False
-    TabOrder = 12
+    TabOrder = 11
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -70,7 +70,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 13
+    TabOrder = 12
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -91,7 +91,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 14
+    TabOrder = 13
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -112,7 +112,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 15
+    TabOrder = 14
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -133,7 +133,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 16
+    TabOrder = 15
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -154,7 +154,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 17
+    TabOrder = 16
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -175,14 +175,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 19
+    TabOrder = 18
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlStartAuto: TPanel
     Left = 8
-    Top = 232
+    Top = 204
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -190,14 +190,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Auto'
     Color = 16775133
     ParentBackground = False
-    TabOrder = 6
+    TabOrder = 5
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlStartManual: TPanel
     Left = 8
-    Top = 332
+    Top = 304
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -205,14 +205,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Manual'
     Color = clWindow
     ParentBackground = False
-    TabOrder = 10
+    TabOrder = 9
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlStartDisabled: TPanel
     Left = 8
-    Top = 357
+    Top = 329
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -226,14 +226,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = []
     ParentBackground = False
     ParentFont = False
-    TabOrder = 11
+    TabOrder = 10
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlStartAutoBoot: TPanel
     Left = 8
-    Top = 257
+    Top = 229
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -241,7 +241,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Auto (boot)'
     Color = 16775133
     ParentBackground = False
-    TabOrder = 7
+    TabOrder = 6
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -263,7 +263,7 @@ object StyleSettingsForm: TStyleSettingsForm
   end
   object pnlTypeDriver: TPanel
     Left = 8
-    Top = 102
+    Top = 77
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -271,20 +271,20 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Driver'
     Color = clWindow
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clOlive
+    Font.Color = 23387
     Font.Height = -11
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentBackground = False
     ParentFont = False
-    TabOrder = 3
+    TabOrder = 2
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlStartAutoDelayed: TPanel
     Left = 8
-    Top = 282
+    Top = 254
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -292,14 +292,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Caption = 'Auto (delayed)'
     Color = 16775133
     ParentBackground = False
-    TabOrder = 8
+    TabOrder = 7
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlHasTriggers: TPanel
     Left = 8
-    Top = 307
+    Top = 279
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -313,14 +313,14 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = []
     ParentBackground = False
     ParentFont = False
-    TabOrder = 9
+    TabOrder = 8
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object pnlTypeProtected: TPanel
     Left = 8
-    Top = 136
+    Top = 108
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -334,32 +334,34 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = []
     ParentBackground = False
     ParentFont = False
-    TabOrder = 4
+    TabOrder = 3
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object btnClose: TButton
     Left = 424
-    Top = 420
+    Top = 386
     Width = 97
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 22
+    TabOrder = 21
     OnClick = btnCloseClick
+    ExplicitTop = 420
   end
   object btnReset: TButton
     Left = 8
-    Top = 420
+    Top = 386
     Width = 97
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Reset colors'
-    TabOrder = 20
+    TabOrder = 19
     OnClick = btnResetClick
+    ExplicitTop = 420
   end
   object pnlStatePaused: TPanel
     Left = 288
@@ -377,26 +379,27 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = [fsBold]
     ParentBackground = False
     ParentFont = False
-    TabOrder = 18
+    TabOrder = 17
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
   end
   object btnOk: TButton
     Left = 312
-    Top = 420
+    Top = 386
     Width = 97
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 21
+    TabOrder = 20
     OnClick = btnOkClick
+    ExplicitTop = 420
   end
   object pnlTypeInteractive: TPanel
     Left = 8
-    Top = 161
+    Top = 133
     Width = 233
     Height = 25
     BevelInner = bvLowered
@@ -410,7 +413,7 @@ object StyleSettingsForm: TStyleSettingsForm
     Font.Style = []
     ParentBackground = False
     ParentFont = False
-    TabOrder = 5
+    TabOrder = 4
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown
@@ -432,27 +435,6 @@ object StyleSettingsForm: TStyleSettingsForm
     ParentBackground = False
     ParentFont = False
     TabOrder = 1
-    TabStop = True
-    OnClick = pnlTypeServiceClick
-    OnMouseDown = pnlTypeServiceMouseDown
-  end
-  object pnlTypePkg: TPanel
-    Left = 8
-    Top = 77
-    Width = 233
-    Height = 25
-    BevelInner = bvLowered
-    BevelOuter = bvNone
-    Caption = 'Package Service'
-    Color = clWindow
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clNavy
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentBackground = False
-    ParentFont = False
-    TabOrder = 2
     TabStop = True
     OnClick = pnlTypeServiceClick
     OnMouseDown = pnlTypeServiceMouseDown

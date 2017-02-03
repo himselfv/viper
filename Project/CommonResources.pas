@@ -30,6 +30,7 @@ type
     iService: integer;
     iShield: integer;
     iShieldOverlay: integer;
+    iDriver: integer;
     function LoadIcon16(const ALibName: string; AResId: integer): integer; overload;
     function LoadIcon16(const ALibName: string; const AResName: string): integer; overload;
     function LoadIcon8(const ALibName: string; const AResName: string): integer;
@@ -53,6 +54,7 @@ begin
     ilOverlays.Add(nil, nil);
 
   iFolder := LoadIcon16('shell32.dll', 4); //Folder icon from Explorer
+  iDriver := LoadIcon16('shell32.dll', 12); //Chip icon from Explorer
   iService := LoadIcon16('filemgmt.dll', 0); //Service icon in services.msc
   iShield := LoadIcon16('imageres.dll', 'SHIDI_SHIELD_INTERNAL');
   iShieldOverlay := LoadIcon8('imageres.dll', 'SHIDI_SHIELD_INTERNAL');

@@ -260,7 +260,10 @@ end;
 procedure TExtServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
 begin
   AImageList := CommonRes.ilImages;
-  AIndex := CommonRes.iService;
+  if Self.Status.dwServiceType and SERVICE_DRIVER <> 0 then
+    AIndex := CommonRes.iDriver
+  else
+    AIndex := CommonRes.iService;
 end;
 
 

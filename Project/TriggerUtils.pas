@@ -30,6 +30,7 @@ resourcestring
   sTriggerGroupPolicyChangedOther = 'Group Policy Changed (Other)';
 
   sTriggerSystemStateChange = 'System State Change';
+  sTriggerSystemStateChangeParam = 'System State Change: %s';
   sTriggerSystemStateChangeUnusual = 'System State Change: %s';
 
   sTriggerEtwEvent = 'ETW Event from %s';
@@ -351,9 +352,12 @@ begin
 
    // Not much is known about this type of trigger
     SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE:
-      if ATrigger.pTriggerSubtype^ = CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID then
-        Result.Event := Format(sTriggerSystemStateChange, [])
-      else
+      if ATrigger.pTriggerSubtype^ = CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID then begin
+        if Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_BINARY, param) then
+          Result.Event := Format(sTriggerSystemStateChangeParam, [BinToHex(param.pData, param.cbData)]) //this is in fact SERVICE_TRIGGER_CUSTOM_STATE_ID
+        else
+          Result.Event := Format(sTriggerSystemStateChange, []);
+      end else
         Result.Event := Format(sTriggerSystemStateChangeUnusual, [GuidToString(ATrigger.pTriggerSubtype^)]);
 
    //

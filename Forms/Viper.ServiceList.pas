@@ -131,6 +131,7 @@ type
     colDescription = 5;
     colFilename = 6;
     colProtection = 7;
+    colType = 8;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -228,6 +229,11 @@ resourcestring
 
   sTriggerCount = '%d triggers';
 
+  sTypeDriver = 'Driver';
+  sTypeService = 'Service';
+  sTypeUserService = 'User service';
+  sTypeUserProto = 'User service prototype';
+
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -272,6 +278,18 @@ begin
          CellText := IntToStr(Data.TriggerCount)
        else
          CellText := '';
+    colType:
+      if Data.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE <> 0 then
+        CellText := sTypeUserService
+      else
+      if Data.Status.dwServiceType and SERVICE_USER_SERVICE <> 0 then
+        CellText := sTypeUserProto
+      else
+      if Data.Status.dwServiceType and SERVICE_DRIVER <> 0 then
+        CellText := sTypeDriver
+      else
+        CellText := sTypeService;
+
   end;
 end;
 
@@ -360,6 +378,7 @@ begin
     colDescription: Result := CompareText(Data1.Description, Data2.Description);
     colFilename: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
     colTriggers: Result := Data2.TriggerCount - Data1.TriggerCount; //Triggers are by default sorted from biggest
+    colType: Result := Data2.Status.dwServiceType - Data1.Status.dwServiceType;
   end;
 end;
 

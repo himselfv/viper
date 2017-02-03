@@ -83,6 +83,11 @@ object ServiceList: TServiceList
         Position = 7
         Width = 100
         WideText = 'Protection'
+      end
+      item
+        Position = 8
+        Width = 100
+        WideText = 'Type'
       end>
   end
   object ActionList: TActionList

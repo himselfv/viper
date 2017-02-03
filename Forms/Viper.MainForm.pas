@@ -110,6 +110,7 @@ type
     Editfolders1: TMenuItem;
     Editnotes1: TMenuItem;
     aShowUserPrototypes: TAction;
+    Showprototypes1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);

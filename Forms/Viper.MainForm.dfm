@@ -610,6 +610,10 @@ object MainForm: TMainForm
         Action = aShowDrivers
         AutoCheck = True
       end
+      object Showprototypes1: TMenuItem
+        Action = aShowUserPrototypes
+        AutoCheck = True
+      end
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
         AutoCheck = True

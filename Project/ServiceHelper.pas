@@ -4,8 +4,8 @@ interface
 uses Windows, WinSvc, Registry;
 
 const //New service types from winnt.h
-  SERVICE_USER_SERVICE          = $00000040;
-  SERVICE_USERSERVICE_INSTANCE  = $00000080;
+  SERVICE_USER_SERVICE          = $00000040;                        //set for user service prototypes AND instances
+  SERVICE_USERSERVICE_INSTANCE  = $00000080;                        //set only for instances
 
   SERVICE_USER_SHARE_PROCESS    = (SERVICE_USER_SERVICE or
                                    SERVICE_WIN32_SHARE_PROCESS);

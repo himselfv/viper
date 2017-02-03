@@ -489,7 +489,8 @@ begin
     isVisible := false;
 
   //Filter UserService prototypes. Instances would have SERVICE_USERSERVICE_INSTANCE
-  if not aShowUserPrototypes.Checked and (svc.Status.dwServiceType and SERVICE_USER_SERVICE <> 0) then
+  if not aShowUserPrototypes.Checked and (svc.Status.dwServiceType and SERVICE_USER_SERVICE <> 0)
+    and (svc.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE = 0) then
     isVisible := false;
 
   //Quickfilter

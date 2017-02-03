@@ -232,7 +232,7 @@ resourcestring
   sTypeDriver = 'Driver';
   sTypeService = 'Service';
   sTypeUserService = 'User service';
-  sTypeUserProto = 'User service prototype';
+  sTypeUserProto = 'Prototype';
 
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;

@@ -49,12 +49,26 @@ function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 
 function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 
+type
+  PEnumServiceStatusProcessA = ^TEnumServiceStatusProcessA;
+  PEnumServiceStatusProcessW = ^TEnumServiceStatusProcessW;
+  PEnumServiceStatusProcess = PEnumServiceStatusProcessW;
+  TEnumServiceStatusProcessA = ENUM_SERVICE_STATUS_PROCESSA;
+  TEnumServiceStatusProcessW = ENUM_SERVICE_STATUS_PROCESSW;
+  TEnumServiceStatusProcess = TEnumServiceStatusProcessW;
+
 function EnumServicesStatus(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
   out Services: PEnumServiceStatus; out ServicesReturned: cardinal): boolean;
+function EnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
+  out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
 
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS; overload;
 function QueryServiceStatus(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS; overload;
 function QueryServiceStatus(const AServiceName: string): SERVICE_STATUS; overload;
+
+function QueryServiceStatusProcess(hSvc: SC_HANDLE): SERVICE_STATUS_PROCESS; overload;
+function QueryServiceStatusProcess(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS_PROCESS; overload;
+function QueryServiceStatusProcess(const AServiceName: string): SERVICE_STATUS_PROCESS; overload;
 
 //Result has to be freed
 function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG; overload;
@@ -218,6 +232,32 @@ begin
   Result := true;
 end;
 
+//Same but returns the new extended structures
+function EnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
+  out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
+var BytesNeeded, ResumeHandle: DWORD;
+begin
+  Result := false;
+  Services := nil;
+  ServicesReturned := 0;
+  ResumeHandle := 0;
+  if WinSvc.EnumServicesStatusEx(hSC, SC_ENUM_PROCESS_INFO, ServiceTypes, SERVICE_STATE_ALL,
+     PByte(Services), 0, @BytesNeeded, @ServicesReturned, @ResumeHandle, GroupName) then exit; //no services
+  if GetLastError <> ERROR_MORE_DATA then
+    exit;
+
+  GetMem(Services, BytesNeeded);
+  ServicesReturned := 0;
+  ResumeHandle := 0;
+  if not WinSvc.EnumServicesStatusEx(hSC, SC_ENUM_PROCESS_INFO, ServiceTypes, SERVICE_STATE_ALL,
+    PByte(Services), BytesNeeded, @BytesNeeded, @ServicesReturned, @ResumeHandle, GroupName) then
+  begin
+    FreeMem(Services); //dont screw LastError plz
+    exit;
+  end;
+  Result := true;
+end;
+
 
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS;
 begin
@@ -247,6 +287,39 @@ begin
     CloseServiceHandle(hSC);
   end;
 end;
+
+
+function QueryServiceStatusProcess(hSvc: SC_HANDLE): SERVICE_STATUS_PROCESS;
+var bytesNeeded: cardinal;
+begin
+  if not WinSvc.QueryServiceStatusEx(hSvc, SC_STATUS_PROCESS_INFO, @Result, SizeOf(Result), bytesNeeded) then
+    RaiseLastOsError();
+end;
+
+function QueryServiceStatusProcess(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS_PROCESS;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_STATUS);
+  if hSvc = 0 then FillChar(Result, sizeof(Result), 0) else
+  try
+    Result := QueryServiceStatusProcess(hSvc);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+function QueryServiceStatusProcess(const AServiceName: string): SERVICE_STATUS_PROCESS;
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_CONNECT);
+  try
+    Result := QueryServiceStatusProcess(hSC, AServiceName);
+  finally
+    CloseServiceHandle(hSC);
+  end;
+end;
+
+
 
 
 function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG;

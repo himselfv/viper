@@ -334,7 +334,7 @@ To do a full reload, clear everything then refresh. Otherwise tries to keep chan
 procedure TMainForm.Refresh;
 var hSC: SC_HANDLE;
   ServiceTypes: dword;
-  Services, S: PEnumServiceStatus;
+  Services, S: PEnumServiceStatusProcess;
   ServicesReturned: cardinal;
   i, j, err: integer;
   svc: TExtServiceEntry;
@@ -355,14 +355,14 @@ begin
   Services := nil;
   hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
-    if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then begin
+    if not EnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then begin
       err := GetLastError;
       if err <> ERROR_INVALID_PARAMETER then
         RaiseLastOsError(err);
 
      //Windows <= W7 will return error when asked for W10 service types, so try again
       ServiceTypes := SERVICE_TYPE_ALL_W7;
-      if not EnumServicesStatus(hSC, ServiceTypes, SERVICE_STATE_ALL, Services, ServicesReturned) then
+      if not EnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then
         RaiseLastOsError();
     end;
 

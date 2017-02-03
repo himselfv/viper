@@ -132,6 +132,8 @@ type
     colFilename = 6;
     colProtection = 7;
     colType = 8;
+    colPID = 9;
+    colLoadOrderGroup = 10;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -266,7 +268,7 @@ begin
        else CellText := '';
        end;
     colDescription: CellText := Data.Description;
-    colFilename: CellText := Data.GetExecutableFilename;
+    colFilename: CellText := Data.GetImageFilename;
     colProtection: case Data.LaunchProtection of
          SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
          SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
@@ -289,7 +291,12 @@ begin
         CellText := sTypeDriver
       else
         CellText := sTypeService;
-
+    colPID:
+      if Data.Status.dwCurrentState = SERVICE_STOPPED then
+        CellText := ''
+      else
+        CellText := IntToStr(Data.Status.dwProcessId);
+    colLoadOrderGroup: CellText := Data.LoadOrderGroup;
   end;
 end;
 
@@ -376,9 +383,24 @@ begin
          else
            Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
     colDescription: Result := CompareText(Data1.Description, Data2.Description);
-    colFilename: Result := CompareText(Data1.GetExecutableFilename, Data2.GetExecutableFilename);
     colTriggers: Result := Data2.TriggerCount - Data1.TriggerCount; //Triggers are by default sorted from biggest
-    colType: Result := Data2.Status.dwServiceType - Data1.Status.dwServiceType;
+    colFilename: Result := CompareText(Data1.GetImageFilename, Data2.GetImageFilename);
+    colProtection: Result := Data2.LaunchProtection - Data1.LaunchProtection; //reverse order so that 0 goes last
+    colType: Result := Data1.Status.dwServiceType - Data2.Status.dwServiceType;
+    colPID: begin
+      if Data1.Status.dwCurrentState = SERVICE_STOPPED then
+        if Data2.Status.dwCurrentState = SERVICE_STOPPED then
+          Result := 0
+        else
+          Result := 1 // STOPPED are sorted later
+      else
+        if Data2.Status.dwCurrentState = SERVICE_STOPPED then
+          Result := -1
+        else
+          Result := Data1.Status.dwProcessId - Data2.Status.dwProcessId;
+    end;
+    colLoadOrderGroup: Result := CompareText(Data1.LoadOrderGroup, Data2.LoadOrderGroup); //though this puts empty strings to the top
+
   end;
 end;
 
@@ -766,7 +788,7 @@ begin
       hSvcs[i].h := OpenService(hSC, services[i].ServiceName);
       if hSvcs[i].h = 0 then RaiseLastOsError();
       if services[i].CanStop then begin
-        services[i].Status := StopService(hSvcs[i].h);
+        PServiceStatus(@services[i].Status)^ := StopService(hSvcs[i].h);
         RefreshService(services[i]);
         hSvcs[i].waiting := true;
       end else
@@ -778,7 +800,7 @@ begin
       all_stopped := true;
       for i := 0 to Length(hSvcs)-1 do
         if hSvcs[i].waiting then begin
-          services[i].Status := QueryServiceStatus(hSvcs[i].h);
+          services[i].Status := QueryServiceStatusProcess(hSvcs[i].h);
           if services[i].Status.dwCurrentState = SERVICE_STOPPED then
             hSvcs[i].waiting := false
           else
@@ -986,8 +1008,8 @@ var Service: TServiceEntry;
 begin
   Service := GetFirstSelectedService();
   Assert(Service <> nil);
-  if Service.GetExecutableFilename <> '' then
-    ExplorerAtFile(Service.GetExecutableFilename);
+  if Service.GetImageFilename <> '' then
+    ExplorerAtFile(Service.GetImageFilename);
 end;
 
 procedure TServiceList.aJumpToRegistryExecute(Sender: TObject);

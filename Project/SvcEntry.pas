@@ -4,6 +4,13 @@ interface
 uses SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections, ImgList;
 
 type
+  TServiceQueriedBit = (
+    qbLaunchProtectionQueried,
+    qbTriggerCountQueried,
+    qbDelayedAutostartQueried
+  );
+  TServiceQueriedData = set of TServiceQueriedBit;
+
  //Actual registered service on a live system
  //We load a lot of these and querying the info is rather slow, so we do it on-demand.
   TServiceEntry = class
@@ -20,25 +27,27 @@ type
     FConfig: LPQUERY_SERVICE_CONFIG;
     FServiceDllQueried: boolean;
     FServiceDll: string;
-    FLaunchProtectionQueried: boolean;
+    FQueriedData: TServiceQueriedData;
     FLaunchProtection: cardinal;
-    FTriggerCountQueried: boolean;
     FTriggerCount: integer;
+    FDelayedAutostart: boolean;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
     function GetDescription: string; inline;
     function GetServiceDll: string; inline;
     function GetLaunchProtection: cardinal; inline;
     function GetTriggerCount: integer;
+    function GetDelayedAutostart: boolean;
   public
     ServiceName: string;
     DisplayName: string;
-    Status: SERVICE_STATUS;
-    constructor CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatus);
+    Status: SERVICE_STATUS_PROCESS;
+    constructor CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatusProcess);
     destructor Destroy; override;
     procedure Refresh(); overload;
     function GetEffectiveDisplayName: string; virtual;
-    function GetExecutableFilename: string;
+    function GetImageFilename: string;
+    function GetLoadOrderGroup: string; inline;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
     function CanStart: boolean; inline;
     function CanForceStart: boolean; inline;
@@ -50,6 +59,8 @@ type
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil
     property ServiceDll: string read GetServiceDll;
+    property LoadOrderGroup: string read GetLoadOrderGroup;
+    property DelayedAutostart: boolean read GetDelayedAutostart;
     property LaunchProtection: cardinal read GetLaunchProtection;
     property TriggerCount: integer read GetTriggerCount;
   end;
@@ -88,7 +99,7 @@ begin
 end;
 
 
-constructor TServiceEntry.CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatus);
+constructor TServiceEntry.CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatusProcess);
 begin
   inherited Create;
   Self.ServiceName := S^.lpServiceName;
@@ -107,11 +118,11 @@ end;
 
 procedure TServiceEntry.Refresh();
 begin
-  Self.Status := QueryServiceStatus(Self.Handle);
+  Self.Status := QueryServiceStatusProcess(Self.Handle);
   Self.FConfigQueried := false;
   FreeMem(Self.FConfig);
   Self.FConfig := nil;
-  Self.FLaunchProtectionQueried := false;
+  Self.FQueriedData := [];
 end;
 
 function TServiceEntry.GetHandle: SC_HANDLE;
@@ -170,7 +181,7 @@ end;
 function TServiceEntry.GetLaunchProtection: cardinal;
 var tmp: PSERVICE_LAUNCH_PROTECTED;
 begin
-  if not FLaunchProtectionQueried then begin
+  if not (qbLaunchProtectionQueried in FQueriedData) then begin
     try
       tmp := QueryServiceLaunchProtected(Self.Handle);
       if tmp <> nil then begin
@@ -186,7 +197,7 @@ begin
           raise;
       end;
     end;
-    FLaunchProtectionQueried := true;
+    FQueriedData := FQueriedData + [qbLaunchProtectionQueried];
   end;
   Result := FLaunchProtection;
 end;
@@ -194,7 +205,7 @@ end;
 function TServiceEntry.GetTriggerCount: integer;
 var triggers: PSERVICE_TRIGGER_INFO;
 begin
-  if not FTriggerCountQueried then begin
+  if not (qbTriggerCountQueried in FQueriedData) then begin
     triggers := QueryServiceTriggers(Self.Handle);
     if triggers = nil then
       FTriggerCount := 0
@@ -202,8 +213,34 @@ begin
       FTriggerCount := triggers.cTriggers;
       FreeMem(triggers);
     end;
+    FQueriedData := FQueriedData + [qbTriggerCountQueried];
   end;
   Result := FTriggerCount;
+end;
+
+function TServiceEntry.GetDelayedAutostart: boolean;
+var info: LPSERVICE_DELAYED_AUTO_START_INFO;
+begin
+  if not (qbDelayedAutostartQueried in FQueriedData) then begin
+    try
+      info := LPSERVICE_DELAYED_AUTO_START_INFO(
+        QueryServiceConfig2(Self.Handle, SERVICE_CONFIG_DELAYED_AUTO_START_INFO));
+    except
+      on E: EOsError do begin
+        if (E.ErrorCode = ERROR_INVALID_PARAMETER) then
+          info := nil
+        else
+          raise;
+      end;
+    end;
+    try
+      Self.FDelayedAutostart := info.fDelayedAutostart;
+    finally
+      FreeMem(info);
+    end;
+    FQueriedData := FQueriedData + [qbDelayedAutostartQueried];
+  end;
+  Result := Self.FDelayedAutostart;
 end;
 
 
@@ -218,7 +255,7 @@ begin
   Result := Self.DisplayName;
 end;
 
-function TServiceEntry.GetExecutableFilename: string;
+function TServiceEntry.GetImageFilename: string;
 begin
   if Self.ServiceDll <> '' then
     Result := Self.ServiceDll
@@ -227,6 +264,14 @@ begin
     Result := Config.lpBinaryPathName
   else
     Result := '';
+end;
+
+function TServiceEntry.GetLoadOrderGroup: string;
+begin
+  if (Self.Config = nil) or (Self.Config.lpLoadOrderGroup = nil) then
+    Result := ''
+  else
+    Result := Self.Config.lpLoadOrderGroup;
 end;
 
 function TServiceEntry.CanStart: boolean;

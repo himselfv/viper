@@ -1,0 +1,2 @@
+# Contact Data
+# Indexes contact data for fast contact searching. If you stop or disable this service, contacts might be missing from your search results.

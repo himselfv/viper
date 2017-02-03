@@ -1,0 +1,2 @@
+# User Data Storage
+# Handles storage of structured user data, including contact info, calendars, messages, and other content. If you stop or disable this service, apps that use this data might not work correctly.

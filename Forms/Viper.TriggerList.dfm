@@ -51,20 +51,41 @@ object TriggerList: TTriggerList
   object PopupMenu: TPopupMenu
     Left = 16
     Top = 64
+    object miAddTrigger: TMenuItem
+      Action = aAddTrigger
+    end
+    object miImportTrigger: TMenuItem
+      Action = aImportTrigger
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
     object miCopy: TMenuItem
       Caption = 'Copy'
       object miCopySummary: TMenuItem
         Action = aCopySummary
       end
-      object Sourcetext1: TMenuItem
+      object miCopyTriggerText: TMenuItem
         Action = aCopyTriggerText
       end
-      object SourceID1: TMenuItem
+      object miCopySourceData: TMenuItem
         Action = aCopySourceData
       end
-      object Additionalparams1: TMenuItem
+      object miCopyParams: TMenuItem
         Action = aCopyParams
       end
+    end
+    object miEditTrigger: TMenuItem
+      Action = aEditTrigger
+    end
+    object miExportTrigger: TMenuItem
+      Action = aExportTrigger
+    end
+    object miDisableTrigger: TMenuItem
+      Action = aDisableTrigger
+    end
+    object miDeleteTrigger: TMenuItem
+      Action = aDeleteTrigger
     end
   end
   object ActionList: TActionList
@@ -89,6 +110,31 @@ object TriggerList: TTriggerList
       Category = 'Copy'
       Caption = 'Additional params'
       OnExecute = aCopyParamsExecute
+    end
+    object aAddTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Add...'
+    end
+    object aDisableTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Disable'
+    end
+    object aImportTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Import...'
+    end
+    object aExportTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Export'
+    end
+    object aDeleteTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Delete'
+      OnExecute = aDeleteTriggerExecute
+    end
+    object aEditTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Edit'
     end
   end
 end

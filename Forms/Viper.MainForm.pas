@@ -1176,11 +1176,11 @@ end;
 procedure TMainForm.ReloadTriggers;
 var service: TServiceEntry;
 begin
-  TriggerList.Clear;
   service := MainServiceList.GetFocusedService;
   if service = nil then
-    exit;
-  TriggerList.Reload(service.Handle);
+    TriggerList.SetService('')
+  else
+    TriggerList.SetService(service.ServiceName, service.Handle);
 end;
 
 

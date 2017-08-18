@@ -46,8 +46,53 @@ const
   SERVICE_WRITE_ACCESS = SERVICE_CHANGE_CONFIG;
 
 function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
+function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE; overload;
+procedure OpenScmAndService(out hSC: SC_HANDLE; out hSvc: SC_HANDLE;
+  const AServiceName: string; dwScmAccess: cardinal = SC_MANAGER_ALL_ACCESS;
+  dwServiceAccess: cardinal = SC_MANAGER_ALL_ACCESS);
 
-function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
+
+{
+RAAI service manager / service access.
+Usage:
+  with OpenScManager(RIGHTS) do
+    DoScManagerAction(ScmHandle)
+  with OpenService('ServiceName', RIGHTS) do
+    DoServiceAction(SvcHandle);
+}
+
+type
+  IAutoScm = interface
+    function ScmHandle: SC_HANDLE;
+  end;
+  TAutoScm = class(TInterfacedObject, IAutoScm)
+  protected
+    FScmHandle: SC_HANDLE;
+  public
+    constructor Create(AScmHandle: SC_HANDLE);
+    destructor Destroy; override;
+    function ScmHandle: SC_HANDLE;
+  end;
+
+  IAutoService = interface
+    function ScmHandle: SC_HANDLE;
+    function SvcHandle: SC_HANDLE;
+  end;
+  TAutoService = class(TInterfacedObject, IAutoService)
+  protected
+    FScmHandle: SC_HANDLE;
+    FSvcHandle: SC_HANDLE;
+  public
+    constructor Create(AScmHandle, ASvcHandle: SC_HANDLE);
+    destructor Destroy; override;
+    function ScmHandle: SC_HANDLE;
+    function SvcHandle: SC_HANDLE;
+  end;
+
+function OpenScm(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoScm;
+function OpenService(const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoService; overload;
+
+
 
 type
   PEnumServiceStatusProcessA = ^TEnumServiceStatusProcessA;
@@ -93,6 +138,9 @@ type
 function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload;
 function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte; overload;
 
+function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): BOOL; overload;
+function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): BOOL; overload;
+
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
@@ -134,6 +182,19 @@ const
 
 function QueryServiceTriggers(hSvc: SC_HANDLE): PSERVICE_TRIGGER_INFO; overload;
 function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_TRIGGER_INFO; overload;
+
+procedure ChangeServiceTriggers(hSvc: SC_HANDLE; lpTriggers: PSERVICE_TRIGGER_INFO); overload;
+procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTriggers: PSERVICE_TRIGGER_INFO); overload;
+
+//The following functions read, modify and store the trigger list.
+//There's no way to uniquely identify a trigger entry except by its full contents.
+
+function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
+function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
+
+procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
+procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
+procedure ChangeServiceTrigger(hSvc: SC_HANDLE; const OldTrigger: SERVICE_TRIGGER; const NewTrigger: SERVICE_TRIGGER); overload;
 
 function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED; overload;
 function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED; overload;
@@ -192,7 +253,6 @@ begin
     RaiseLastOsError();
 end;
 
-
 function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal): SC_HANDLE;
 var err: integer;
 begin
@@ -204,6 +264,77 @@ begin
     RaiseLastOsError(err);
   end;
 end;
+
+//Either returns BOTH handles to SC manager and Service opened with given access rights,
+//or opens NEITHER (closes any if any faults have occured)
+procedure OpenScmAndService(out hSC: SC_HANDLE; out hSvc: SC_HANDLE;
+  const AServiceName: string; dwScmAccess: cardinal = SC_MANAGER_ALL_ACCESS;
+  dwServiceAccess: cardinal = SC_MANAGER_ALL_ACCESS);
+begin
+  hSC := OpenScManager(dwScmAccess);
+  try
+    hSvc := OpenService(hSC, AServiceName, dwServiceAccess);
+  except
+    CloseServiceHandle(hSC);
+    raise;
+  end;
+end;
+
+
+constructor TAutoScm.Create(AScmHandle: SC_HANDLE);
+begin
+  inherited Create;
+  Self.FScmHandle := AScmHandle;
+end;
+
+destructor TAutoScm.Destroy;
+begin
+  CloseServiceHandle(Self.FScmHandle);
+  inherited;
+end;
+
+function TAutoScm.ScmHandle: SC_HANDLE;
+begin
+  Result := Self.FScmHandle;
+end;
+
+constructor TAutoService.Create(AScmHandle, ASvcHandle: SC_HANDLE);
+begin
+  inherited Create;
+  FScmHandle := AScmHandle;
+  FSvcHandle := ASvcHandle;
+end;
+
+destructor TAutoService.Destroy;
+begin
+  CloseServiceHandle(FSvcHandle);
+  CloseServiceHandle(FScmHandle);
+  inherited;
+end;
+
+function TAutoService.ScmHandle: SC_HANDLE;
+begin
+  Result := FScmHandle;
+end;
+
+function TAutoService.SvcHandle: SC_HANDLE;
+begin
+  Result := FSvcHandle;
+end;
+
+function OpenScm(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoScm;
+begin
+  Result := TAutoScm.Create(OpenScManager(dwAccess));
+end;
+
+function OpenService(const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoService;
+var hSC, hSvc: SC_HANDLE;
+begin
+  OpenScmAndService(hSC, hSvc, AServiceName, dwAccess, dwAccess);
+  Result := TAutoService.Create(hSC, hSvc);
+end;
+
+
 
 //Enumerates services and their status. The result has to be freed with FreeMem.
 //Returns nil on error, query GetLastError for details.
@@ -391,7 +522,24 @@ begin
   hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_CONFIG);
   if hSvc = 0 then Result := nil else
   try
-    Result := QueryServiceConfig2(dwInfoLevel, hSvc);
+    Result := QueryServiceConfig2(hSvc, dwInfoLevel);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): BOOL;
+begin
+  Result := WinSvc.ChangeServiceConfig2(hSvc, dwInfoLevel, lpInfo);
+end;
+
+function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): BOOL;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_CONFIG);
+  if hSvc = 0 then Result := false else
+  try
+    Result := ChangeServiceConfig2(hSvc, dwInfoLevel, lpInfo);
   finally
     CloseServiceHandle(hSvc);
   end;
@@ -433,6 +581,199 @@ begin
   Result := PSERVICE_TRIGGER_INFO(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO));
 end;
 
+procedure ChangeServiceTriggers(hSvc: SC_HANDLE; lpTriggers: PSERVICE_TRIGGER_INFO);
+begin
+  if not ChangeServiceConfig2(hSvc, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) then
+    RaiseLastOsError();
+end;
+
+procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTriggers: PSERVICE_TRIGGER_INFO);
+begin
+  if not ChangeServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) then
+    RaiseLastOsError();
+end;
+
+function IsSameServiceTriggerDataItem(Di1, Di2: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM): boolean; inline;
+begin
+  Result := (Di1.dwDataType = Di2.dwDataType)
+        and (Di1.cbData = Di2.cbData)
+        and CompareMem(Di1.pData, Di2.pData, Di1.cbData);
+end;
+
+//Returns true if two services triggers are the same.
+//Service manager implements no IDs for triggers, so the only way to locate
+//a particular one is to compare its data.
+function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
+var i: integer;
+begin
+  Result := (Tr1.dwTriggerType = Tr2.dwTriggerType)
+        and (Tr1.dwAction = Tr2.dwAction)
+        and IsEqualGuid(Tr1.pTriggerSubtype^, Tr2.pTriggerSubtype^)
+        and (Tr1.cDataItems  = Tr2.cDataItems);
+  if not Result then exit;
+
+  for i := 0 to Tr1.cDataItems-1 do begin
+    Result := IsSameServiceTriggerDataItem(@Tr1.pDataItems[i], @Tr2.pDataItems[i]);
+    if not Result then exit;
+  end;
+end;
+
+//Makes a copy of a given trigger. The copy has to be freed by the caller.
+function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
+var totalMem, i: integer;
+  freePtr: PByte;
+  pFromItem, pToItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+begin
+  totalMem := SizeOf(tr);
+  if Tr.pTriggerSubtype <> nil then
+    totalMem := totalMem + SizeOf(TGUID);
+  if tr.pDataItems <> nil then
+    for i := 0 to tr.cDataItems-1 do
+      totalMem := totalMem + sizeof(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM) + tr.pDataItems[i].cbData;
+
+  GetMem(Result, totalMem);
+  freePtr := PByte(Result);
+
+  Inc(freePtr, SizeOf(tr));
+  Result.dwTriggerType := Tr.dwTriggerType;
+  Result.dwAction := Tr.dwAction;
+  Result.cDataItems := Tr.cDataItems;
+
+  if tr.pTriggerSubtype <> nil then begin
+    Result.pTriggerSubtype := PGuid(freePtr);
+    Inc(freePtr, SizeOf(TGUID));
+    Result.pTriggerSubtype^ := tr.pTriggerSubtype^;
+  end;
+
+  if tr.pDataItems <> nil then begin
+    //Allocate memory for the DATA_ITEM headers
+    Result.pDataItems := PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM(freePtr);
+    Inc(freePtr, tr.cDataItems * SizeOf(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM));
+
+    //Allocate and copy memory for each item
+    pFromItem := tr.pDataItems;
+    pToItem := Result.pDataItems;
+    for i := 0 to tr.cDataItems-1 do begin
+      pToItem.dwDataType := pFromItem.dwDataType;
+      pToItem.cbData := pFromItem.cbData;
+      pToItem.pData := freePtr;
+      CopyMemory(pToItem.pData, pFromItem.pData, pToItem.cbData);
+      Inc(freePtr, pToItem.cbData);
+    end;
+  end;
+end;
+
+
+//Inserts one or more triggers into a set of all triggers for the service
+procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER);
+var trigHead: PSERVICE_TRIGGER_INFO;
+  trigData: array of SERVICE_TRIGGER;
+  i: integer;
+begin
+  if Length(Triggers) <= 0 then exit;
+
+  trigHead := QueryServiceTriggers(hSvc);
+  if trigHead = nil then begin
+    //We could not get the trigger info struct, but maybe we could still put a new one?
+    //Allocate and fill the structure as if there simply were no triggers originally.
+    GetMem(trigHead, sizeof(trigHead));
+    trigHead.cTriggers := 0;
+    trigHead.pTriggers := nil;
+    trigHead.pReserved := nil;
+  end;
+  try
+    //Edit inplace where possible since this is our own copy in our memory
+    trigHead.cTriggers := trigHead.cTriggers + cardinal(Length(Triggers));
+
+    //Copy old triggers
+    SetLength(trigData, trigHead.cTriggers);
+    for i := 0 to Length(trigData) - Length(Triggers) - 1 do
+      trigData[i] := trigHead.pTriggers[i]; //old triggers
+
+    //Copy new triggers
+    for i := 0 to Length(Triggers)-1 do
+      trigData[Length(trigData) - Length(Triggers) + i] := Triggers[i];
+
+    //Set
+    ChangeServiceTriggers(hSvc, trigHead);
+  finally
+    FreeMem(trigHead);
+  end;
+end;
+
+//Deletes one or more triggers from a set of all triggers for the service
+procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER);
+var trigHead: PSERVICE_TRIGGER_INFO;
+  ptrFrom, ptrTo: PSERVICE_TRIGGER;
+  i: integer;
+begin
+  if Length(Triggers) <= 0 then exit;
+
+  trigHead := QueryServiceTriggers(hSvc);
+  if trigHead = nil then begin
+    //There's already no triggers for the service or maybe they're not even supported.
+    //Let's not make a drama.
+    exit;
+  end;
+
+  try
+    if trigHead.cTriggers = 0 then
+      exit; //again, no triggers => nothing to delete
+
+    //Edit inplace where possible since this is our own copy in our memory
+
+    //We will delete all triggers which match one of the given ones.
+    ptrFrom := trigHead.pTriggers;
+    ptrTo := trigHead.pTriggers;
+    while ptrFrom < trigHead.pTriggers + trigHead.cTriggers do begin
+      for i := 0 to Length(Triggers)-1 do
+        if IsSameServiceTrigger(ptrFrom^, Triggers[i]) then begin
+          //Skip this one
+          Inc(ptrFrom);
+          Dec(trigHead.cTriggers);
+          continue;
+        end;
+      //Match not found, move the item to the next free slot
+      if ptrFrom <> ptrTo then
+        ptrTo^ := ptrFrom^;
+      Inc(ptrFrom);
+      Inc(ptrTo);
+    end;
+
+    //Set
+    ChangeServiceTriggers(hSvc, trigHead);
+  finally
+    FreeMem(trigHead);
+  end;
+end;
+
+//Replace the contents of the given trigger entry with a given new (changed) trigger entry
+procedure ChangeServiceTrigger(hSvc: SC_HANDLE; const OldTrigger: SERVICE_TRIGGER; const NewTrigger: SERVICE_TRIGGER);
+var trigHead: PSERVICE_TRIGGER_INFO;
+  i: integer;
+begin
+  trigHead := QueryServiceTriggers(hSvc);
+  if trigHead = nil then
+    raise Exception.Create('Source trigger not found');
+
+  try
+    if trigHead.cTriggers = 0 then
+      raise Exception.Create('Source trigger not found');
+
+    //Edit inplace since this is our own copy in our memory
+
+    for i := 0 to trigHead.cTriggers-1 do
+      if IsSameServiceTrigger(trigHead.pTriggers[i], OldTrigger) then
+        trigHead.pTriggers[i] := NewTrigger;
+
+    //Set
+    ChangeServiceTriggers(hSvc, trigHead);
+  finally
+    FreeMem(trigHead);
+  end;
+end;
+
+
 function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED;
 begin
   Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED));
@@ -442,7 +783,6 @@ function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string)
 begin
   Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_LAUNCH_PROTECTED));
 end;
-
 
 
 function OpenServiceKey(const AServiceName: string): TRegistry;

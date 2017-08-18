@@ -7,8 +7,6 @@ uses
   VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
   TriggerUtils;
 
-//TODO: Parse Firewall Rule details (it's multistring)
-
 type
   TNdTriggerData = record
     TriggerType: DWORD;
@@ -17,6 +15,7 @@ type
     Source: TTriggerSource;
     Params: string;
     Action: DWORD;
+    TriggerCopy: PSERVICE_TRIGGER;
   end;
   PNdTriggerData = ^TNdTriggerData;
 
@@ -30,9 +29,22 @@ type
     aCopySourceData: TAction;
     aCopyParams: TAction;
     miCopy: TMenuItem;
-    Sourcetext1: TMenuItem;
-    SourceID1: TMenuItem;
-    Additionalparams1: TMenuItem;
+    miCopyTriggerText: TMenuItem;
+    miCopySourceData: TMenuItem;
+    miCopyParams: TMenuItem;
+    aAddTrigger: TAction;
+    aDisableTrigger: TAction;
+    aImportTrigger: TAction;
+    aExportTrigger: TAction;
+    aDeleteTrigger: TAction;
+    miAddTrigger: TMenuItem;
+    miImportTrigger: TMenuItem;
+    miExportTrigger: TMenuItem;
+    miDisableTrigger: TMenuItem;
+    miDeleteTrigger: TMenuItem;
+    aEditTrigger: TAction;
+    miEditTrigger: TMenuItem;
+    N1: TMenuItem;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -44,18 +56,26 @@ type
       Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
       var ImageList: TCustomImageList);
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure aCopyTriggerTextExecute(Sender: TObject);
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
-    procedure TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure aDeleteTriggerExecute(Sender: TObject);
   const
     colAction = 0;
     colTrigger = 1;
     colParams = 2;
-  public
-    procedure Clear;
+  protected
+    //We need to be able to reload and edit
+    FServiceName: string;
+    FServiceHandle: SC_HANDLE;
+    FScmHandle: SC_HANDLE;
+    FOwnsServiceHandle: boolean;
     procedure Add(const ATrigger: PSERVICE_TRIGGER);
-    procedure Reload(ServiceHandle: SC_HANDLE);
+  public
+    procedure SetService(ServiceName: string; ServiceHandle: SC_HANDLE = 0);
+    procedure Clear;
+    procedure Reload;
     function SelectedTriggers: TArray<PNdTriggerData>;
 
   end;
@@ -82,6 +102,8 @@ procedure TTriggerList.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode
 var Data: PNdTriggerData;
 begin
   Data := Sender.GetNodeData(Node);
+  if Data.TriggerCopy <> nil then
+    FreeMem(Data.TriggerCopy);
   Finalize(Data^);
 end;
 
@@ -144,12 +166,23 @@ begin
 end;
 
 procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+var HaveService: boolean;
 begin
+  HaveService := Self.FServiceName <> '';
+
  //Selection changed
   aCopySummary.Visible := Tree.SelectedCount > 0;
   aCopyTriggerText.Visible := Tree.SelectedCount > 0;
   aCopySourceData.Visible := Tree.SelectedCount > 0;
   aCopyParams.Visible := Tree.SelectedCount > 0;
+  miCopy.Visible := aCopySummary.Visible or aCopyTriggerText.Visible
+    or aCopySourceData.Visible or aCopyParams.Visible;
+  aAddTrigger.Visible := HaveService;
+  aImportTrigger.Visible := HaveService;
+  aEditTrigger.Visible := Tree.SelectedCount = 1;
+  aDisableTrigger.Visible := Tree.SelectedCount > 0;
+  aExportTrigger.Visible := Tree.SelectedCount > 0;
+  aDeleteTrigger.Visible := Tree.SelectedCount > 0;
 end;
 
 procedure TTriggerList.TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -158,11 +191,40 @@ begin
     aCopySummary.Execute;
 end;
 
+procedure TTriggerList.SetService(ServiceName: string; ServiceHandle: SC_HANDLE = 0);
+begin
+  if Self.FServiceHandle <> 0 then begin
+    if Self.FOwnsServiceHandle then begin
+      CloseServiceHandle(Self.FServiceHandle);
+      CloseServiceHandle(Self.FScmHandle);
+    end;
+    Self.FServiceHandle := 0;
+    Self.FScmHandle := 0;
+  end;
+
+  Self.FServiceName := ServiceName;
+  if FServiceName = '' then begin
+    Clear;
+    exit;
+  end;
+
+  if ServiceHandle <> 0 then begin
+    Self.FServiceHandle := ServiceHandle;
+    Self.FOwnsServiceHandle := false;
+  end else begin
+    OpenScmAndService(Self.FScmHandle, Self.FServiceHandle, ServiceName);
+    Self.FOwnsServiceHandle := true;
+  end;
+
+  Reload;
+end;
+
 procedure TTriggerList.Clear;
 begin
   Tree.Clear;
 end;
 
+//Adds a trigger to the list. Trigger data is not ours and should be copied if needed.
 procedure TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER);
 var Node: PVirtualNode;
   NodeData: PNdTriggerData;
@@ -191,13 +253,14 @@ begin
     else
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
+    NodeData.TriggerCopy := CopyTrigger(ATrigger^);
   end;
 end;
 
-procedure TTriggerList.Reload(ServiceHandle: SC_HANDLE);
+procedure TTriggerList.Reload;
 var triggers: PSERVICE_TRIGGER_INFO;
 begin
-  triggers := QueryServiceTriggers(ServiceHandle);
+  triggers := QueryServiceTriggers(FServiceHandle);
   if triggers = nil then exit;
   try
     while triggers.cTriggers > 0 do begin
@@ -281,6 +344,20 @@ begin
   if Length(Result) >= 2 then
     SetLength(Result, Length(Result)-2);
   Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
+var Sel: TArray<PNdTriggerData>;
+  SelData: array of SERVICE_TRIGGER;
+  i: integer;
+begin
+  Sel := SelectedTriggers;
+  SetLength(SelData, Length(Sel));
+  for i := 0 to Length(Sel)-1 do
+    SelData[i] := Sel[i].TriggerCopy^;
+  with OpenService(Self.FServiceName) do
+    DeleteServiceTriggers(SvcHandle, SelData);
+  Reload;
 end;
 
 end.

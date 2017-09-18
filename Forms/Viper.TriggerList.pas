@@ -202,11 +202,11 @@ begin
     Self.FScmHandle := 0;
   end;
 
+  Clear;
+
   Self.FServiceName := ServiceName;
-  if FServiceName = '' then begin
-    Clear;
+  if FServiceName = '' then
     exit;
-  end;
 
   if ServiceHandle <> 0 then begin
     Self.FServiceHandle := ServiceHandle;

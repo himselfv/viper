@@ -227,7 +227,7 @@ object MainForm: TMainForm
               end
               item
                 Position = 1
-                Width = 406
+                Width = 412
                 WideText = 'Trigger'
               end
               item
@@ -242,6 +242,10 @@ object MainForm: TMainForm
         Caption = 'Operations'
         ImageIndex = -1
         TabVisible = False
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -428,7 +432,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C010102000800980010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101020008009C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

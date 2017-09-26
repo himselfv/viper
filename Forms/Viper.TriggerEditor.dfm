@@ -56,7 +56,7 @@ object TriggerEditorForm: TTriggerEditorForm
     Top = 35
     Width = 536
     Height = 62
-    ActivePage = tsPresetGeneric
+    ActivePage = tsPresetDevice
     Anchors = [akLeft, akTop, akRight]
     Style = tsFlatButtons
     TabOrder = 2
@@ -103,21 +103,17 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'Device'
       ImageIndex = 1
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 27
-      ExplicitWidth = 0
-      ExplicitHeight = 162
       DesignSize = (
         528
         52)
-      object lblDeviceInterfaceType: TLabel
+      object lblDeviceInterfaceClass: TLabel
         Left = 3
         Top = 6
-        Width = 114
+        Width = 115
         Height = 13
-        Caption = 'Device Interface Type: '
+        Caption = 'Device Interface Class: '
       end
-      object cbDeviceInterfaceType: TComboBox
+      object cbDeviceInterfaceClass: TComboBox
         Left = 136
         Top = 3
         Width = 389
@@ -130,10 +126,6 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'ETW'
       ImageIndex = 2
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 27
-      ExplicitWidth = 0
-      ExplicitHeight = 162
       DesignSize = (
         528
         52)

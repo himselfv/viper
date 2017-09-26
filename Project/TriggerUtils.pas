@@ -75,11 +75,16 @@ type
 //or devices) to watch for that action, and a set of remaining params.
 function ParseTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
 
-var
-  WellKnownDeviceInterfaceClasses: TGuidDictionary; //someone has to load this
-  WellKnownRpcInterfaces: TGuidDictionary;
 
+var
+ //Set by external code on load to point to files to load on first demand
+  DeviceInterfaceClassesFile: string = '';
+  RpcInterfacesFile: string = '';
+
+function GetWellKnownDeviceInterfaceClasses: TGuidDictionary;
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
+
+function GetWellKnownRpcInterfaces: TGuidDictionary;
 
 function GetEtwProviders: TGUIDDictionary;
 function TryGetEtwProviderName(const Guid: TGuid; out AName: string): boolean;
@@ -89,8 +94,8 @@ function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): bool
 function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 
 implementation
-uses SysUtils, Windows, UniStrUtils, ServiceHelper, SetupApiHelper, EtwUtils
-  {$IFDEF QUERYLOCALRPC}, JwaRpc, JwaRpcDce{$ENDIF}, Viper.Log;
+uses SysUtils, Classes, Windows, UniStrUtils, ServiceHelper, SetupApiHelper,
+  EtwUtils, {$IFDEF QUERYLOCALRPC}JwaRpc, JwaRpcDce,{$ENDIF} Viper.Log;
 
 type
   PInt64 = ^Int64;
@@ -202,7 +207,7 @@ begin
     end;
   end;
 
-  if not WellKnownRpcInterfaces.TryGetValue(srcGuid, Result)
+  if not GetWellKnownRpcInterfaces.TryGetValue(srcGuid, Result)
   and not TryGetLocalRpcInterfaceName(srcGuid, Result) then begin
     Result := ASource;
     exit;
@@ -441,11 +446,61 @@ begin
 end;
 
 
+{
+Well known Device Interface and RPC GUIDs.
+Loaded from files on first access. Silently skipped if no files are found.
+}
+
+var
+  WellKnownDeviceInterfaceClasses: TGuidDictionary = nil;
+  WellKnownRpcInterfaces: TGuidDictionary = nil;
+
+procedure __LoadWellKnownDeviceInterfaceClasses;
+begin
+  WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
+  try
+    WellKnownDeviceInterfaceClasses.LoadFromFile(DeviceInterfaceClassesFile);
+  except
+    on E: EFCreateError do begin end;
+  end;
+end;
+
+procedure __NeedWellKnownDeviceInterfaceClasses; inline;
+begin
+  if WellKnownDeviceInterfaceClasses <> nil then exit;
+  __LoadWellKnownDeviceInterfaceClasses;
+end;
+
+function GetWellKnownDeviceInterfaceClasses: TGuidDictionary;
+begin
+  __NeedWellKnownDeviceInterfaceClasses;
+  Result := WellKnownDeviceInterfaceClasses;
+end;
 
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 begin
+  __NeedWellKnownDeviceInterfaceClasses;
   if not WellKnownDeviceInterfaceClasses.TryGetValue(ClassGuid, Result) then
     Result := '';
+end;
+
+
+procedure __LoadWellKnownRpcInterfaces;
+begin
+  WellKnownRpcInterfaces := TGuidDictionary.Create;
+  WellKnownRpcInterfaces.LoadFromFile(RpcInterfacesFile);
+end;
+
+procedure __NeedWellKnownRpcInterfaces; inline;
+begin
+  if WellKnownRpcInterfaces <> nil then exit;
+  __LoadWellKnownRpcInterfaces;
+end;
+
+function GetWellKnownRpcInterfaces: TGuidDictionary;
+begin
+  __NeedWellKnownRpcInterfaces;
+  Result := WellKnownRpcInterfaces;
 end;
 
 
@@ -636,8 +691,6 @@ end;
 
 
 initialization
-  WellKnownDeviceInterfaceClasses := TGuidDictionary.Create;
-  WellKnownRpcInterfaces := TGuidDictionary.Create;
 
 finalization
  {$IFDEF DEBUG}

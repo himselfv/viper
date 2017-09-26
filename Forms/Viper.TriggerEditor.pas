@@ -20,8 +20,8 @@ type
     lblCustomSubtype: TLabel;
     edtCustomSubtype: TEdit;
     edtCustomType: TSpinEdit;
-    cbDeviceInterfaceType: TComboBox;
-    lblDeviceInterfaceType: TLabel;
+    cbDeviceInterfaceClass: TComboBox;
+    lblDeviceInterfaceClass: TLabel;
     lblEtwEventSource: TLabel;
     cbEtwEventSource: TComboBox;
     pnlData: TPanel;
@@ -40,7 +40,8 @@ type
   protected
     FTrigger: PSERVICE_TRIGGER;
     FTypePresetsLoaded: boolean;
-    FDeviceInterfaceListLoaded: boolean;
+    FDeviceInterfacesLoaded: boolean;
+    FDeviceInterfaces: TArray<TGUID>;
     FEtwSourcesLoaded: boolean;
     FEtwSources: TArray<TGUID>;
     procedure ReloadTypePresets;
@@ -145,7 +146,7 @@ procedure TTriggerEditorForm.FormCreate(Sender: TObject);
 begin
   FTrigger := nil;
   FTypePresetsLoaded := false;
-  FDeviceInterfaceListLoaded := false;
+  FDeviceInterfacesLoaded := false;
   FEtwSourcesLoaded := false;
 end;
 
@@ -251,8 +252,8 @@ begin
     ReloadTypePresets;
 
   //Select the type preset
-  cbTypePreset.ItemIndex := 1; //for now
-  cbTypePresetChange(cbTypePreset); //won't be called automatically
+  cbTypePreset.ItemIndex := -1; //for now
+  cbTypePresetChange(cbTypePreset); //wouldn't be called automatically
 
 
 end;
@@ -328,16 +329,49 @@ end;
 
 //Actualizes the information on the PresetDevice page
 procedure TTriggerEditorForm.UpdatePresetDevicePage;
+var classes: TGUIDDictionary;
+  i: integer;
+  pg: PGUID;
+  found: boolean;
 begin
- //Load the Device Interface List on first access
-  if not Self.FDeviceInterfaceListLoaded then begin
-    cbDeviceInterfaceType.Clear;
+  classes := GetWellKnownDeviceInterfaceClasses;
 
-    Self.FDeviceInterfaceListLoaded := true;
+ //Load the Device Interface List on first access
+  if not Self.FDeviceInterfacesLoaded then begin
+    cbDeviceInterfaceClass.Clear;
+    //TGuidDictionary is not indexed, so we need to store some indexed array locally
+    FDeviceInterfaces := classes.Keys.ToArray();
+    //Associated object points to the key guid
+    for i := 0 to Length(FDeviceInterfaces)-1 do begin
+      pg := @FDeviceInterfaces[i];
+      cbDeviceInterfaceClass.AddItem(classes[pg^], TObject(pg));
+    end;
+    cbDeviceInterfaceClass.Sorted := true;
+    Self.FDeviceInterfacesLoaded := true;
   end;
 
- //TODO: Update the contents with the actual GUID value
+ //New triggers start with no data
+  if FTrigger = nil then begin
+    cbDeviceInterfaceClass.ItemIndex := -1;
+    cbDeviceInterfaceClass.Text := '';
+    exit;
+  end;
 
+ //Select the value based on the data we have
+  found := false;
+  for i := 0 to cbDeviceInterfaceClass.Items.Count-1 do begin
+    pg := PGUID(cbDeviceInterfaceClass.Items.Objects[i]);
+    if FTrigger.pTriggerSubtype^ = pg^ then begin
+      cbDeviceInterfaceClass.ItemIndex := i;
+      found := true;
+      break;
+    end;
+  end;
+
+  if not found then begin
+    cbDeviceInterfaceClass.ItemIndex := -1;
+    cbDeviceInterfaceClass.Text := GuidToString(FTrigger.pTriggerSubtype^);
+  end;
 end;
 
 
@@ -359,6 +393,7 @@ begin
       pg := @FEtwSources[i];
       cbEtwEventSource.AddItem(providers[pg^], TObject(pg));
     end;
+    cbEtwEventSource.Sorted := true;
     Self.FEtwSourcesLoaded := true;
   end;
 

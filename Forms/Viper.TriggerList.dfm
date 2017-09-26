@@ -114,6 +114,7 @@ object TriggerList: TTriggerList
     object aAddTrigger: TAction
       Category = 'Modify'
       Caption = 'Add...'
+      OnExecute = aAddTriggerExecute
     end
     object aDisableTrigger: TAction
       Category = 'Modify'
@@ -135,6 +136,7 @@ object TriggerList: TTriggerList
     object aEditTrigger: TAction
       Category = 'Modify'
       Caption = 'Edit'
+      OnExecute = aEditTriggerExecute
     end
   end
 end

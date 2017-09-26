@@ -120,6 +120,10 @@
         <DCCReference Include="GuidDict.pas"/>
         <DCCReference Include="EtwUtils.pas"/>
         <DCCReference Include="SvcCat.pas"/>
+        <DCCReference Include="..\Forms\Viper.TriggerEditor.pas">
+            <Form>TriggerEditorForm</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

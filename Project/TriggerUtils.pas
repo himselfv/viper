@@ -12,6 +12,7 @@ function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;
 
 resourcestring
   sTriggerDeviceInterfaceAvailable = 'Device available: %s';
+  sTriggerDeviceInterfaceAvailableConst = 'Device available';
 
   sTriggerIpFirstAvailable = 'First IP address available';
   sTriggerIpLastLost = 'Last IP address lost';
@@ -34,8 +35,10 @@ resourcestring
   sTriggerSystemStateChangeUnusual = 'System State Change: %s';
 
   sTriggerEtwEvent = 'ETW Event from %s';
+  sTriggerEtwEventConst = 'ETW Event';
 
   sTriggerAggregateEvent = 'Aggregate event: %s';
+  sTriggerAggregateEventConst = 'Aggregate event';
 
   sUnknownDeviceInterfaceClass = 'Class %s';
 
@@ -78,6 +81,7 @@ var
 
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
 
+function GetEtwProviders: TGUIDDictionary;
 function TryGetEtwProviderName(const Guid: TGuid; out AName: string): boolean;
 function GetEtwProviderName(const Guid: TGuid): string; inline;
 
@@ -501,16 +505,24 @@ begin
     FreeAndNil(AProv);
 end;
 
-procedure LoadEtwProviders; inline;
+//Inline version for internal consumption
+procedure __NeedEtwProviders; inline;
 begin
   if EtwProviders <> nil then exit;
   __LoadEtwProviders;
 end;
 
+//Exported version - can't be inline
+function GetEtwProviders: TGUIDDictionary;
+begin
+  __NeedEtwProviders;
+  Result := EtwProviders;
+end;
+
 //Returns ETW provider textual name if available
 function TryGetEtwProviderName(const Guid: TGuid; out AName: string): boolean;
 begin
-  LoadEtwProviders;
+  __NeedEtwProviders;
   Result := EtwProviders.TryGetValue(Guid, AName);
 end;
 

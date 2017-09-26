@@ -23,7 +23,8 @@ uses
   TriggerUtils in 'TriggerUtils.pas',
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',
-  SvcCat in 'SvcCat.pas';
+  SvcCat in 'SvcCat.pas',
+  Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm};
 
 {$R *.res}
 
@@ -36,5 +37,6 @@ begin
   Application.CreateForm(TSettingsForm, SettingsForm);
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
   Application.CreateForm(TTriggerBrowserForm, TriggerBrowserForm);
+  Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
   Application.Run;
 end.

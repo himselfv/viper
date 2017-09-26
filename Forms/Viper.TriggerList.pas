@@ -61,6 +61,8 @@ type
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
     procedure aDeleteTriggerExecute(Sender: TObject);
+    procedure aAddTriggerExecute(Sender: TObject);
+    procedure aEditTriggerExecute(Sender: TObject);
   const
     colAction = 0;
     colTrigger = 1;
@@ -81,7 +83,7 @@ type
   end;
 
 implementation
-uses Clipbrd, CommonResources;
+uses UITypes, Clipbrd, CommonResources, Viper.TriggerEditor;
 
 {$R *.dfm}
 
@@ -344,6 +346,46 @@ begin
   if Length(Result) >= 2 then
     SetLength(Result, Length(Result)-2);
   Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aAddTriggerExecute(Sender: TObject);
+var EditForm: TTriggerEditorForm;
+  TriggerData: PSERVICE_TRIGGER;
+begin
+  EditForm := TTriggerEditorForm.Create(Self);
+  try
+    TriggerData := nil;
+    if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
+      then exit;
+  finally
+    FreeAndNil(EditForm);
+  end;
+
+//TODO: Create a new trigger based on TriggerData
+end;
+
+procedure TTriggerList.aEditTriggerExecute(Sender: TObject);
+var Sel: TArray<PNdTriggerData>;
+  EditForm: TTriggerEditorForm;
+  TriggerData: PSERVICE_TRIGGER;
+begin
+  if Length(Sel) <> 1 then exit;
+
+  TriggerData := nil;
+
+  EditForm := TTriggerEditorForm.Create(Self);
+  try
+   //Make our own copy so as not to edit Node copy directly
+    TriggerData := CopyTrigger(Sel[0].TriggerCopy^ );
+    if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
+      then exit;
+
+    //TODO: Handle the edited trigger data in TriggerData
+  finally
+    FreeAndNil(EditForm);
+    if TriggerData <> nil then
+      FreeMem(TriggerData);
+  end;
 end;
 
 procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);

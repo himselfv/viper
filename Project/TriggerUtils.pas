@@ -34,6 +34,10 @@ resourcestring
   sTriggerSystemStateChangeParam = 'System State Change: %s';
   sTriggerSystemStateChangeUnusual = 'System State Change: %s';
 
+  sTriggerNetworkEndpointRpc = 'RPC request';
+  sTriggerNetworkEndpointNamedPipe = 'Named pipe request';
+  sTriggerNetworkEndpointOther = 'Network request via %s';
+
   sTriggerEtwEvent = 'ETW Event from %s';
   sTriggerEtwEventConst = 'ETW Event';
 
@@ -46,12 +50,21 @@ type
   TTriggerParam = SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   PTriggerParam = PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
 
-  TTriggerParamHelper = record helper for TTriggerParam
-    function ToString: string;
+  TTriggerParamHelper = record helper for SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
+    function ToString: string; inline;
+    function DataTypeToString: string; inline;
+    function ValueToString: string;
     function HexValue: string; inline;
     function StringValue: string; inline;
+    function RawStringValue: string; inline;
+    function MultistringValue: TArray<string>;
+    function ByteValue: byte; inline;
+    function Int64Value: int64; inline;
   end;
 
+function TriggerDataTypeToStr(const dwDataType: cardinal): string;
+
+type
  //Trigger source is stuff like ETW queue name, Device class, RPC interface GUID
  //Sometimes we can decode it into something user-friendly, then DisplayText is different from OriginalData;
   TTriggerSource = record
@@ -97,37 +110,126 @@ implementation
 uses SysUtils, Classes, Windows, UniStrUtils, ServiceHelper, SetupApiHelper,
   EtwUtils, {$IFDEF QUERYLOCALRPC}JwaRpc, JwaRpcDce,{$ENDIF} Viper.Log;
 
-type
-  PInt64 = ^Int64;
+resourcestring
+  sTriggerDataTypeBinary = 'Binary';
+  sTriggerDataTypeString = 'String';
+  sTriggerDataTypeLevel = 'Level';
+  sTriggerDataTypeKeywordAny = 'Keyword (any)';
+  sTriggerDataTypeKeywordAll = 'Keyword (all)';
+  sTriggerDataTypeUnknown = 'Unknown (%d)';
 
-function TTriggerParamHelper.ToString: string;
+function TriggerDataTypeToStr(const dwDataType: cardinal): string;
 begin
-  case Self.dwDataType of
-  SERVICE_TRIGGER_DATA_TYPE_BINARY:
-    Result := 'Binary: '+Self.HexValue;
-  SERVICE_TRIGGER_DATA_TYPE_STRING:
-    Result := 'String: '+Self.StringValue;
-  SERVICE_TRIGGER_DATA_TYPE_LEVEL:
-    Result := 'Level: '+IntToStr(PByte(Self.pData)^);
-  //Keyword filters for ETW
-  //TODO: Can be further explained by querying the ETW provider
-  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY:
-    Result := 'Keyword (any): '+IntToStr(PInt64(Self.pData)^);
-  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL:
-    Result := 'Keyword (all): '+IntToStr(PInt64(Self.pData)^);
+  case dwDataType of
+  SERVICE_TRIGGER_DATA_TYPE_BINARY: Result := sTriggerDataTypeBinary;
+  SERVICE_TRIGGER_DATA_TYPE_STRING: Result := sTriggerDataTypeString;
+  SERVICE_TRIGGER_DATA_TYPE_LEVEL: Result := sTriggerDataTypeLevel;
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY: Result := sTriggerDataTypeKeywordAny;
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL: Result := sTriggerDataTypeKeywordAll;
   else
-    Result := 'Unknown data: '+Self.HexValue;
+    Result := Format(sTriggerDataTypeUnknown, [dwDataType]);
   end;
 end;
 
+//Formats the trigger content in the readable way
+function TTriggerParamHelper.ToString: string;
+begin
+  Result := DataTypeToString() + ': ' + ValueToString();
+end;
+
+function TTriggerParamHelper.DataTypeToString: string;
+begin
+  Result := TriggerDataTypeToStr(Self.dwDataType);
+end;
+
+//Formats the trigger value in the appropriate way
+function TTriggerParamHelper.ValueToString: string;
+begin
+  case Self.dwDataType of
+  SERVICE_TRIGGER_DATA_TYPE_BINARY: Result := Self.HexValue;
+  SERVICE_TRIGGER_DATA_TYPE_STRING: Result := Self.StringValue;
+  SERVICE_TRIGGER_DATA_TYPE_LEVEL: Result := IntToStr(Self.ByteValue);
+  //Keyword filters for ETW
+  //TODO: Can be further explained by querying the ETW provider
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY: Result := IntToStr(Self.Int64Value);
+  SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL: Result := IntToStr(Self.Int64Value);
+  else
+    Result := Self.HexValue;
+  end;
+end;
+
+//Returns the entire contents of the buffer formatted as hex data. Reversible.
 function TTriggerParamHelper.HexValue: string;
 begin
   Result := string(BinToHex(Self.pData, Self.cbData));
 end;
 
+//Returns the contents of the buffer treated and formatted as a string value.
+//Note that many STRING type entries are in reality MULTISZ and will be reformatted,
+//so the result will not be reversible.
 function TTriggerParamHelper.StringValue: string;
+var list: TArray<string>;
+  i: integer;
 begin
-  Result := StrFromBuf(PWideChar(Self.pData), Self.cbData);
+  //Most STRING values are really MULTISZ and we better be prepared
+  list := Self.MultistringValue;
+  //Concatenate the values with ';', but know this is not the true value
+  if Length(list) > 0 then
+    Result := list[0];
+  for i := 1 to Length(list)-1 do
+    Result := Result+';'+list[i];
+end;
+
+//Returns the entire contents of the buffer as a raw string value (without any processing).
+//Note that many STRING type entries are in reality MULTISZ and contain zeroes.
+function TTriggerParamHelper.RawStringValue: string;
+begin
+  SetLength(Result, Self.cbData div SizeOf(WideChar));
+  if Length(Result) > 0 then
+    Move(Result[1], Self.pData, Length(Result));
+end;
+
+//Returns the entire contents of the buffer treated as a STRING or multistring (MULTISZ) value.
+//Handles various edge and malformed cases.
+function TTriggerParamHelper.MultistringValue: TArray<string>;
+var ptr: PWideChar;
+  sz, len: cardinal;
+  str: string;
+begin
+  SetLength(Result, 0);
+  ptr := PWideChar(Self.pData);
+  sz := Self.cbData div SizeOf(WideChar);
+
+  while sz > 0 do begin
+    len := StrLen(ptr);
+    if len > sz then
+      len := sz; //do not go over end
+    if len <= 0 then
+      break; //double-termination (#00#00) ends MULTISZ
+
+    SetLength(str, len);
+    UniqueString(str); //if length was the same and SetLength left it non-unique
+    Move(ptr^, str[1], len*SizeOf(WideChar));
+
+    SetLength(Result, Length(Result)+1);
+    Result[Length(Result)-1] := str;
+
+    if len<sz then begin
+      Inc(ptr, len+1);
+      Dec(sz, len+1);
+    end else
+      sz := 0;
+  end;
+end;
+
+function TTriggerParamHelper.ByteValue: byte;
+begin
+  Result := PByte(Self.pData)^;
+end;
+
+function TTriggerParamHelper.Int64Value: int64;
+begin
+  Result := PInt64(Self.pData)^;
 end;
 
 function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;
@@ -343,14 +445,14 @@ begin
     //
     SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT: begin
       if ATrigger.pTriggerSubtype^ = RPC_INTERFACE_EVENT_GUID then begin
-        Result.Event := 'RPC request';
+        Result.Event := sTriggerNetworkEndpointRpc;
         while Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_STRING, param) do
           Result.AddSource(ParseRpcRequestSource(param.StringValue), param.StringValue);
       end else begin
         if ATrigger.pTriggerSubtype^ = NAMED_PIPE_EVENT_GUID then
-          Result.Event := 'Named pipe request'
+          Result.Event := sTriggerNetworkEndpointNamedPipe
         else
-          Result.Event := Format('Network request via %s', [GuidToString(ATrigger.pTriggerSubtype^)]);
+          Result.Event := Format(sTriggerNetworkEndpointOther, [GuidToString(ATrigger.pTriggerSubtype^)]);
         //NOTE: From the docs, there are also TCP_PORT_EVENT_GUID and UDP_EVENT_PORT_GUID,
         //   but their values are not documented.
 

@@ -369,6 +369,7 @@ var Sel: TArray<PNdTriggerData>;
   EditForm: TTriggerEditorForm;
   TriggerData: PSERVICE_TRIGGER;
 begin
+  Sel := Self.SelectedTriggers;
   if Length(Sel) <> 1 then exit;
 
   TriggerData := nil;
@@ -376,7 +377,7 @@ begin
   EditForm := TTriggerEditorForm.Create(Self);
   try
    //Make our own copy so as not to edit Node copy directly
-    TriggerData := CopyTrigger(Sel[0].TriggerCopy^ );
+    TriggerData := CopyTrigger(Sel[0].TriggerCopy^);
     if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
       then exit;
 

@@ -191,6 +191,8 @@ procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTr
 
 function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
 function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
+function CopyTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM);
 
 procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
 procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
@@ -620,7 +622,8 @@ end;
 
 //Makes a copy of a given trigger. The copy has to be freed by the caller.
 function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
-var totalMem, i: integer;
+var i: integer;
+  totalMem: NativeUInt;
   freePtr: PByte;
   pFromItem, pToItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
 begin
@@ -629,7 +632,7 @@ begin
     totalMem := totalMem + SizeOf(TGUID);
   if tr.pDataItems <> nil then
     for i := 0 to tr.cDataItems-1 do
-      totalMem := totalMem + sizeof(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM) + tr.pDataItems[i].cbData;
+      totalMem := totalMem + sizeof(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM) + NativeUInt(tr.pDataItems[i].cbData);
 
   GetMem(Result, totalMem);
   freePtr := PByte(Result);
@@ -646,7 +649,7 @@ begin
   end;
 
   if tr.pDataItems <> nil then begin
-    //Allocate memory for the DATA_ITEM headers
+    //Allocate memory for the DATA_ITEM headers (need to go sequentially)
     Result.pDataItems := PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM(freePtr);
     Inc(freePtr, tr.cDataItems * SizeOf(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM));
 
@@ -659,8 +662,32 @@ begin
       pToItem.pData := freePtr;
       CopyMemory(pToItem.pData, pFromItem.pData, pToItem.cbData);
       Inc(freePtr, pToItem.cbData);
+      Inc(pToItem);
+      Inc(pFromItem);
     end;
   end;
+end;
+
+//Makes a copy of a given SERVICE_TRIGGER_SPECIFIC_DATA_ITEM. The copy has to be freed by the caller.
+//The entries in a SERVICE_TRIGGER are usually stored in the same memory allocation,
+//so need not to be neither copied nor released individually (if you CopyTrigger the whole trigger).
+function CopyTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+begin
+  Result.dwDataType := Tr.dwDataType;
+  Result.cbData := Tr.cbData;
+  if Tr.pData = nil then
+    Result.pData := nil
+  else begin
+    GetMem(Result.pData, Result.cbData);
+    CopyMemory(Result.pData, Tr.pData, Result.cbData);
+  end;
+end;
+
+//Frees a SERVICE_TRIGGER_SPECIFIC_DATA_ITEM allocated through CopyTriggerDataItem
+procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM);
+begin
+  if Tr.pData <> nil then
+    FreeMem(Tr.pData);
 end;
 
 

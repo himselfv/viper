@@ -23,10 +23,10 @@ object TriggerEditorForm: TTriggerEditorForm
   object lblActionToType: TLabel
     Left = 100
     Top = 11
-    Width = 86
+    Width = 72
     Height = 13
     Alignment = taCenter
-    Caption = 'the service when:'
+    Caption = 'the service on:'
   end
   object cbAction: TComboBox
     Left = 8
@@ -177,9 +177,26 @@ object TriggerEditorForm: TTriggerEditorForm
       Header.Font.Height = -11
       Header.Font.Name = 'Tahoma'
       Header.Font.Style = []
-      Header.MainColumn = -1
+      Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
       TabOrder = 0
-      Columns = <>
+      TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
+      TreeOptions.PaintOptions = [toThemeAware, toUseBlendedImages]
+      TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect]
+      OnFreeNode = vtDataEntriesFreeNode
+      OnGetText = vtDataEntriesGetText
+      OnGetNodeDataSize = vtDataEntriesGetNodeDataSize
+      OnInitNode = vtDataEntriesInitNode
+      Columns = <
+        item
+          Position = 0
+          Width = 295
+          WideText = 'Value'
+        end
+        item
+          Position = 1
+          Width = 140
+          WideText = 'Data type'
+        end>
     end
     object btnDataEntryAdd: TButton
       Left = 454

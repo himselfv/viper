@@ -192,34 +192,8 @@ end;
 //Returns the entire contents of the buffer treated as a STRING or multistring (MULTISZ) value.
 //Handles various edge and malformed cases.
 function TTriggerParamHelper.MultistringValue: TArray<string>;
-var ptr: PWideChar;
-  sz, len: cardinal;
-  str: string;
 begin
-  SetLength(Result, 0);
-  ptr := PWideChar(Self.pData);
-  sz := Self.cbData div SizeOf(WideChar);
-
-  while sz > 0 do begin
-    len := StrLen(ptr);
-    if len > sz then
-      len := sz; //do not go over end
-    if len <= 0 then
-      break; //double-termination (#00#00) ends MULTISZ
-
-    SetLength(str, len);
-    UniqueString(str); //if length was the same and SetLength left it non-unique
-    Move(ptr^, str[1], len*SizeOf(WideChar));
-
-    SetLength(Result, Length(Result)+1);
-    Result[Length(Result)-1] := str;
-
-    if len<sz then begin
-      Inc(ptr, len+1);
-      Dec(sz, len+1);
-    end else
-      sz := 0;
-  end;
+  Result := MultiszDecode(PWideChar(Self.pData), Self.cbData div SizeOf(WideChar));
 end;
 
 function TTriggerParamHelper.ByteValue: byte;

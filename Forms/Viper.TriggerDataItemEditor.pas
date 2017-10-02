@@ -98,8 +98,8 @@ begin
   case FData.dwDataType of
     SERVICE_TRIGGER_DATA_TYPE_STRING: edtValue.Text := FData.StringValue;
     SERVICE_TRIGGER_DATA_TYPE_LEVEL: edtValue.Text := IntToStr(FData.ByteValue);
-    SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY: edtValue.Text := IntToHex(FData.Int64Value, 16);
-    SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL: edtValue.Text := IntToHex(FData.Int64Value, 16);
+    SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY: edtValue.Text := IntToHex(FData.Int64Value, 2);
+    SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL: edtValue.Text := IntToHex(FData.Int64Value, 2);
   else
    //SERVICE_TRIGGER_DATA_TYPE_BINARY as well as any unknown types
     edtValue.Text := FData.HexValue;

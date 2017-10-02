@@ -74,8 +74,8 @@ type
     procedure Resize(const cbNewSize: cardinal);
     //The following functions reallocate memory and store data!
     procedure SetHexValue(const Value: string); inline;
-    procedure SetStringValue(const Value: string);// inline; //TODO: uncomment
-    procedure SetRawStringValue(const Value: string); //inline;
+    procedure SetStringValue(const Value: string); inline;
+    procedure SetRawStringValue(const Value: string); inline;
     procedure SetMultistringValue(const Value: TArray<string>);
     procedure SetByteValue(const Value: byte); inline;
     procedure SetInt64Value(const Value: int64); inline;
@@ -267,7 +267,7 @@ end;
 
 procedure TTriggerParamHelper.SetInt64Value(const Value: int64);
 begin
-  Resize(4);
+  Resize(8);
   PInt64(Self.pData)^ := Value;
 end;
 

@@ -622,8 +622,11 @@ begin
 end;
 
 procedure TTriggerEditorForm.btnDataItemDeleteClick(Sender: TObject);
+var node: PVirtualNode;
 begin
-//
+  node := vtDataItems.FocusedNode;
+  if node = nil then exit;
+  vtDataItems.DeleteNode(node);
 end;
 
 

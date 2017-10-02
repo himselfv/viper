@@ -146,7 +146,7 @@ object TriggerEditorForm: TTriggerEditorForm
       end
     end
   end
-  object pnlData: TPanel
+  object pnlDataItems: TPanel
     Left = 8
     Top = 103
     Width = 536
@@ -157,14 +157,14 @@ object TriggerEditorForm: TTriggerEditorForm
     DesignSize = (
       536
       138)
-    object lblDataCaption: TLabel
+    object lblDataItemsCaption: TLabel
       Left = 7
       Top = 0
       Width = 27
       Height = 13
       Caption = 'Data:'
     end
-    object vtDataEntries: TVirtualStringTree
+    object vtDataItems: TVirtualStringTree
       Left = 7
       Top = 19
       Width = 441
@@ -182,10 +182,11 @@ object TriggerEditorForm: TTriggerEditorForm
       TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
       TreeOptions.PaintOptions = [toThemeAware, toUseBlendedImages]
       TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect]
-      OnFreeNode = vtDataEntriesFreeNode
-      OnGetText = vtDataEntriesGetText
-      OnGetNodeDataSize = vtDataEntriesGetNodeDataSize
-      OnInitNode = vtDataEntriesInitNode
+      OnFocusChanged = vtDataItemsFocusChanged
+      OnFreeNode = vtDataItemsFreeNode
+      OnGetText = vtDataItemsGetText
+      OnGetNodeDataSize = vtDataItemsGetNodeDataSize
+      OnInitNode = vtDataItemsInitNode
       Columns = <
         item
           Position = 0
@@ -198,7 +199,7 @@ object TriggerEditorForm: TTriggerEditorForm
           WideText = 'Data type'
         end>
     end
-    object btnDataEntryAdd: TButton
+    object btnDataItemAdd: TButton
       Left = 454
       Top = 19
       Width = 75
@@ -206,24 +207,29 @@ object TriggerEditorForm: TTriggerEditorForm
       Anchors = [akTop, akRight]
       Caption = 'Add...'
       TabOrder = 1
+      OnClick = btnDataItemAddClick
     end
-    object btnDataEntryEdit: TButton
+    object btnDataItemEdit: TButton
       Left = 454
       Top = 50
       Width = 75
       Height = 25
       Anchors = [akTop, akRight]
       Caption = 'Edit...'
+      Enabled = False
       TabOrder = 2
+      OnClick = btnDataItemEditClick
     end
-    object btnDataEntryDelete: TButton
+    object btnDataItemDelete: TButton
       Left = 454
       Top = 81
       Width = 75
       Height = 25
       Anchors = [akTop, akRight]
       Caption = 'Delete'
+      Enabled = False
       TabOrder = 3
+      OnClick = btnDataItemDeleteClick
     end
   end
   object btnOk: TButton

@@ -24,7 +24,8 @@ uses
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',
   SvcCat in 'SvcCat.pas',
-  Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm};
+  Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
+  Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor};
 
 {$R *.res}
 
@@ -38,5 +39,6 @@ begin
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
   Application.CreateForm(TTriggerBrowserForm, TriggerBrowserForm);
   Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
+  Application.CreateForm(TTriggerDataItemEditor, TriggerDataItemEditor);
   Application.Run;
 end.

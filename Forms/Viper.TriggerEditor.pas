@@ -8,12 +8,13 @@ uses
   Vcl.Samples.Spin, ExtCtrls, VirtualTrees;
 
 type
-  TDataEntryNodeData = record
-    Item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  TDataItemNodeData = record
+    Item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM; //owned by node
     ValueText: string;
     TypeText: string;
+    procedure UpdateData;
   end;
-  PDataEntryNodeData = ^TDataEntryNodeData;
+  PDataItemNodeData = ^TDataItemNodeData;
 
   TTriggerEditorForm = class(TForm)
     cbAction: TComboBox;
@@ -31,27 +32,32 @@ type
     lblDeviceInterfaceClass: TLabel;
     lblEtwEventSource: TLabel;
     cbEtwEventSource: TComboBox;
-    pnlData: TPanel;
-    lblDataCaption: TLabel;
-    vtDataEntries: TVirtualStringTree;
+    pnlDataItems: TPanel;
+    lblDataItemsCaption: TLabel;
+    vtDataItems: TVirtualStringTree;
     btnOk: TButton;
     btnCancel: TButton;
-    btnDataEntryAdd: TButton;
-    btnDataEntryEdit: TButton;
-    btnDataEntryDelete: TButton;
+    btnDataItemAdd: TButton;
+    btnDataItemEdit: TButton;
+    btnDataItemDelete: TButton;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
     procedure cbTypePresetChange(Sender: TObject);
-    procedure vtDataEntriesGetNodeDataSize(Sender: TBaseVirtualTree;
+    procedure vtDataItemsGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
-    procedure vtDataEntriesInitNode(Sender: TBaseVirtualTree; ParentNode,
+    procedure vtDataItemsInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-    procedure vtDataEntriesFreeNode(Sender: TBaseVirtualTree;
+    procedure vtDataItemsFreeNode(Sender: TBaseVirtualTree;
       Node: PVirtualNode);
-    procedure vtDataEntriesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+    procedure vtDataItemsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure btnDataItemAddClick(Sender: TObject);
+    procedure btnDataItemEditClick(Sender: TObject);
+    procedure btnDataItemDeleteClick(Sender: TObject);
+    procedure vtDataItemsFocusChanged(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Column: TColumnIndex);
   protected
     FTrigger: PSERVICE_TRIGGER;
 
@@ -61,7 +67,8 @@ type
     function SelectTypePreset(const Preset: pointer; NotifyChanged: boolean = true): boolean;
 
   protected
-    procedure ReloadDataEntries;
+    procedure ReloadDataItems;
+    function AddDataItem(const ADataToCopy: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): PVirtualNode;
 
   protected
     FDeviceInterfacesLoaded: boolean;
@@ -171,7 +178,7 @@ const
   );
 
 implementation
-uses UITypes, GuidDict;
+uses UITypes, GuidDict, Viper.TriggerDataItemEditor;
 
 {$R *.dfm}
 
@@ -327,7 +334,7 @@ begin
   end;
   SelectTypePreset(typePreset, true);
 
-  ReloadDataEntries;
+  ReloadDataItems;
 end;
 
 procedure TTriggerEditorForm.cbTypePresetChange(Sender: TObject);
@@ -492,50 +499,59 @@ begin
 end;
 
 
-// Data Entries / Properties
+// Data Items / Properties
 
-procedure TTriggerEditorForm.ReloadDataEntries;
+procedure TTriggerEditorForm.ReloadDataItems;
 var item: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   itemCnt: cardinal;
-  node: PVirtualNode;
-  nodeData: PDataEntryNodeData;
 begin
-  vtDataEntries.Clear;
+  vtDataItems.Clear;
   if FTrigger = nil then exit;
 
   itemCnt := FTrigger.cDataItems;
   item := FTrigger.pDataItems;
   while itemCnt > 0 do begin
-    node := vtDataEntries.AddChild(nil);
-    vtDataEntries.ReinitNode(node, false);
-    nodeData := vtDataEntries.GetNodeData(node);
-    nodeData.Item := CopyTriggerDataItem(item^);
-
-    nodeData.TypeText := item^.DataTypeToString();
-    nodeData.ValueText := item^.ValueToString();
-
+    AddDataItem(item^);
     Inc(item);
     Dec(itemCnt);
   end;
 end;
 
-procedure TTriggerEditorForm.vtDataEntriesGetNodeDataSize(Sender: TBaseVirtualTree;
-  var NodeDataSize: Integer);
+//Adds a new TRIGGER_SPECIFIC_DATA_ITEM node by copying the given entry.
+function TTriggerEditorForm.AddDataItem(const ADataToCopy: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): PVirtualNode;
+var nodeData: PDataItemNodeData;
 begin
-  NodeDataSize := SizeOf(TDataEntryNodeData);
+  Result := vtDataItems.AddChild(nil);
+  vtDataItems.ReinitNode(Result, false);
+  nodeData := vtDataItems.GetNodeData(Result);
+  nodeData.Item := CopyTriggerDataItem(ADataToCopy);
+  nodeData.UpdateData;
 end;
 
-procedure TTriggerEditorForm.vtDataEntriesInitNode(Sender: TBaseVirtualTree;
+//Updates various cached fields after the underlying SERVICE_TRIGGER_SPECIFIC_DATA_ITEM changes
+procedure TDataItemNodeData.UpdateData;
+begin
+  Self.TypeText := Self.Item.DataTypeToString();
+  Self.ValueText := Self.Item.ValueToString();
+end;
+
+procedure TTriggerEditorForm.vtDataItemsGetNodeDataSize(Sender: TBaseVirtualTree;
+  var NodeDataSize: Integer);
+begin
+  NodeDataSize := SizeOf(TDataItemNodeData);
+end;
+
+procedure TTriggerEditorForm.vtDataItemsInitNode(Sender: TBaseVirtualTree;
   ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-  var Data: PDataEntryNodeData;
+  var Data: PDataItemNodeData;
 begin
   Data := Sender.GetNodeData(Node);
   Initialize(Data^);
   Data^.Item.pData := nil;
 end;
 
-procedure TTriggerEditorForm.vtDataEntriesFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-var Data: PDataEntryNodeData;
+procedure TTriggerEditorForm.vtDataItemsFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+var Data: PDataItemNodeData;
 begin
   Data := Sender.GetNodeData(Node);
   if Data.Item.pData <> nil then begin
@@ -545,10 +561,10 @@ begin
   Finalize(Data^);
 end;
 
-procedure TTriggerEditorForm.vtDataEntriesGetText(Sender: TBaseVirtualTree;
+procedure TTriggerEditorForm.vtDataItemsGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
-var Data: PDataEntryNodeData;
+var Data: PDataItemNodeData;
 begin
   if not (TextType in [ttNormal, ttStatic]) then exit;
   Data := Sender.GetNodeData(Node);
@@ -556,6 +572,58 @@ begin
    0, NoColumn: CellText := Data.ValueText;
    1: CellText := Data.TypeText;
   end;
+end;
+
+procedure TTriggerEditorForm.vtDataItemsFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+begin
+  btnDataItemEdit.Enabled := Node <> nil;
+  btnDataItemDelete.Enabled := Node <> nil;
+end;
+
+
+procedure TTriggerEditorForm.btnDataItemAddClick(Sender: TObject);
+var editor: TTriggerDataItemEditor;
+begin
+  editor := TTriggerDataItemEditor.Create(Self);
+  try
+    if not IsPositiveResult(editor.ShowModal) then
+      exit;
+    //Copy editor.GetData as a new trigger data item
+    AddDataItem(editor.GetData);
+  finally
+    FreeAndNil(editor);
+  end;
+end;
+
+procedure TTriggerEditorForm.btnDataItemEditClick(Sender: TObject);
+var editor: TTriggerDataItemEditor;
+  node: PVirtualNode;
+  data: PDataItemNodeData;
+begin
+  node := vtDataItems.FocusedNode;
+  if node = nil then exit;
+  data := vtDataItems.GetNodeData(node);
+
+  editor := TTriggerDataItemEditor.Create(Self);
+  try
+    editor.CopyData(@data.Item);
+    if not IsPositiveResult(editor.ShowModal) then
+      exit;
+    //Copy editor.GetData as a replacement trigger data item
+    FreeStandaloneTriggerDataItem(data.Item);
+    data.Item := CopyTriggerDataItem(editor.GetData);
+    data.UpdateData;
+    //Repaint node
+    vtDataItems.InvalidateNode(node);
+  finally
+    FreeAndNil(editor);
+  end;
+end;
+
+procedure TTriggerEditorForm.btnDataItemDeleteClick(Sender: TObject);
+begin
+//
 end;
 
 

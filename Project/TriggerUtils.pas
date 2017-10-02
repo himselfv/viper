@@ -46,6 +46,15 @@ resourcestring
 
   sUnknownDeviceInterfaceClass = 'Class %s';
 
+resourcestring
+  sTriggerDataTypeBinary = 'Binary';
+  sTriggerDataTypeString = 'String';
+  sTriggerDataTypeLevel = 'Level';
+  sTriggerDataTypeKeywordAny = 'Keyword (any)';
+  sTriggerDataTypeKeywordAll = 'Keyword (all)';
+  sTriggerDataTypeUnknown = 'Unknown (%d)';
+  sTriggerDataTypeUnknownConst = 'Unknown';
+
 type
   TTriggerParam = SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   PTriggerParam = PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
@@ -54,12 +63,23 @@ type
     function ToString: string; inline;
     function DataTypeToString: string; inline;
     function ValueToString: string;
+    //The following functions only read the data but do not ensure the buffer size is enough
     function HexValue: string; inline;
     function StringValue: string; inline;
     function RawStringValue: string; inline;
     function MultistringValue: TArray<string>;
     function ByteValue: byte; inline;
     function Int64Value: int64; inline;
+    //Changes the size and reallocates the associated memory. Only use for the standalone structures!
+    procedure Resize(const cbNewSize: cardinal);
+    //The following functions reallocate memory and store data!
+    procedure SetHexValue(const Value: string); inline;
+    procedure SetStringValue(const Value: string);// inline; //TODO: uncomment
+    procedure SetRawStringValue(const Value: string); //inline;
+    procedure SetMultistringValue(const Value: TArray<string>);
+    procedure SetByteValue(const Value: byte); inline;
+    procedure SetInt64Value(const Value: int64); inline;
+
   end;
 
 function TriggerDataTypeToStr(const dwDataType: cardinal): string;
@@ -109,14 +129,6 @@ function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 implementation
 uses SysUtils, Classes, Windows, UniStrUtils, ServiceHelper, SetupApiHelper,
   EtwUtils, {$IFDEF QUERYLOCALRPC}JwaRpc, JwaRpcDce,{$ENDIF} Viper.Log;
-
-resourcestring
-  sTriggerDataTypeBinary = 'Binary';
-  sTriggerDataTypeString = 'String';
-  sTriggerDataTypeLevel = 'Level';
-  sTriggerDataTypeKeywordAny = 'Keyword (any)';
-  sTriggerDataTypeKeywordAll = 'Keyword (all)';
-  sTriggerDataTypeUnknown = 'Unknown (%d)';
 
 function TriggerDataTypeToStr(const dwDataType: cardinal): string;
 begin
@@ -186,7 +198,7 @@ function TTriggerParamHelper.RawStringValue: string;
 begin
   SetLength(Result, Self.cbData div SizeOf(WideChar));
   if Length(Result) > 0 then
-    Move(Result[1], Self.pData, Length(Result));
+    Move(Self.pData, Result[1], Length(Result)*SizeOf(WideChar));
 end;
 
 //Returns the entire contents of the buffer treated as a STRING or multistring (MULTISZ) value.
@@ -204,6 +216,59 @@ end;
 function TTriggerParamHelper.Int64Value: int64;
 begin
   Result := PInt64(Self.pData)^;
+end;
+
+//Adjusts cbSize and reallocates memory if needed.
+//WARNING: Only use if this instance was allocated by us AND is not part of any bigger structure!
+procedure TTriggerParamHelper.Resize(const cbNewSize: cardinal);
+begin
+  if Self.cbData = cbNewSize then exit;
+  Self.cbData := cbNewSize;
+  ReallocMem(Self.pData, Self.cbData);
+end;
+
+procedure TTriggerParamHelper.SetHexValue(const Value: string);
+begin
+  Resize(Length(Value) div 2);
+  HexToBin(AnsiString(Value), Self.pData, Self.cbData);
+end;
+
+procedure TTriggerParamHelper.SetStringValue(const Value: string);
+var list: TArray<string>;
+begin
+ //Tries to automatically detect a converted multistring, but will misinterpret
+ //your normal ;s. Use SetRawStringValue if you handle multistrings properly.
+  list := SepSplit(Value, ';');
+  if Length(list) > 1 then
+    Self.SetMultistringValue(list)
+  else
+    SetRawStringValue(list[0]);
+end;
+
+//Copies the raw contents (incl. any #00s) from the given string + the final #00 (implied).
+//The final #00 is auto-copied because all supported string data types require #00.
+procedure TTriggerParamHelper.SetRawStringValue(const Value: string);
+begin
+  Resize((Length(Value)+1)*SizeOf(WideChar));
+  if Length(Value) > 0 then
+    Move(Value[1], Self.pData^, (Length(Value)+1)*SizeOf(WideChar));
+end;
+
+procedure TTriggerParamHelper.SetMultistringValue(const Value: TArray<string>);
+begin
+  Self.SetRawStringValue(MultiszEncode(Value));
+end;
+
+procedure TTriggerParamHelper.SetByteValue(const Value: byte);
+begin
+  Resize(1);
+  PByte(Self.pData)^ := Value;
+end;
+
+procedure TTriggerParamHelper.SetInt64Value(const Value: int64);
+begin
+  Resize(4);
+  PInt64(Self.pData)^ := Value;
 end;
 
 function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;

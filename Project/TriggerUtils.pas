@@ -79,10 +79,17 @@ type
     procedure SetMultistringValue(const Value: TArray<string>);
     procedure SetByteValue(const Value: byte); inline;
     procedure SetInt64Value(const Value: int64); inline;
-
+    //Exports the param contents to a .reg style entries
+    function ToRegFileDefinition(const Index: integer): AnsiString;
   end;
 
 function TriggerDataTypeToStr(const dwDataType: cardinal): string;
+
+type
+  TTriggerHelper = record helper for SERVICE_TRIGGER
+    function ToRegFileDefinition: AnsiString;
+  end;
+
 
 type
  //Trigger source is stuff like ETW queue name, Device class, RPC interface GUID
@@ -286,6 +293,62 @@ begin
   if Result <> '' then
     SetLength(Result, Length(Result)-1);
 end;
+
+{
+Triggers are stored in the registry, in the service key's TriggerInfo subkey.
+When exported to a .reg file format, they assume a certain form which we here
+reproduce.
+  "Type"=dword:00000004
+  "Action"=dword:00000001
+  "GUID"=hex:07,9e,56,b7,21,...
+  "Data0"=hex:31,00,33,00,39,00,...
+  "DataType0"=dword:00000002
+  "Data1"=hex:31,00,33,00,37,00,...
+  "DataType1"=dword:00000002
+}
+
+//Converts binary data to "A1,00,3F,25" hex representation
+function BinToRegHex(pb: PByte; cb: cardinal): AnsiString;
+var i: integer;
+  pc: PAnsiChar;
+begin
+  SetLength(Result, cb*3);
+  if cb > 0 then begin
+    pc := @Result[1];
+    for i := 1 to cb do begin
+      ByteToHex(pb^, (pc+0)^, (pc+1)^);
+      (pc+2)^ := ',';
+      Inc(pb);
+      Inc(pc, 3);
+    end;
+    SetLength(Result, Length(Result)-1);
+  end;
+end;
+
+//Returns a .reg-file formatted chunk of several strings defining the keys
+//which fully describe this trigger data item.
+function TTriggerParamHelper.ToRegFileDefinition(const Index: Integer): AnsiString;
+begin
+  Result := '"Data'+AnsiString(IntToStr(Index))+'"=hex:'+BinToRegHex(Self.pData, Self.cbData)+#13
+    +'"DataType'+AnsiString(IntToStr(Index))+'"=dword:'+AnsiString(IntToHex(Self.dwDataType, 8));
+end;
+
+function TTriggerHelper.ToRegFileDefinition: AnsiString;
+var i: integer;
+  pDataItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+begin
+  Result := '"Type"=dword:'+AnsiString(IntToHex(Self.dwTriggerType, 8))+#13
+    +'"Action"=dword:'+AnsiString(IntToHex(Self.dwAction, 8))+#13
+    +'"GUID"=hex:'+BinToRegHex(PByte(Self.pTriggerSubtype), SizeOf(TGUID));
+  pDataItem := Self.pDataItems;
+  for i := 1 to Self.cDataItems do begin
+    Result := Result + #13 + pDataItem.ToRegFileDefinition(i-1);
+    Inc(pDataItem);
+  end;
+end;
+
+
+
 
 
 //

@@ -45,6 +45,8 @@ type
     aEditTrigger: TAction;
     miEditTrigger: TMenuItem;
     N1: TMenuItem;
+    aCopyTriggerRegDefinition: TAction;
+    Registrydefinition1: TMenuItem;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -63,6 +65,7 @@ type
     procedure aDeleteTriggerExecute(Sender: TObject);
     procedure aAddTriggerExecute(Sender: TObject);
     procedure aEditTriggerExecute(Sender: TObject);
+    procedure aCopyTriggerRegDefinitionExecute(Sender: TObject);
   const
     colAction = 0;
     colTrigger = 1;
@@ -342,6 +345,26 @@ begin
 
   for Data in SelectedTriggers do
     Result := Result + Data.Params + #13#10;
+
+  if Length(Result) >= 2 then
+    SetLength(Result, Length(Result)-2);
+  Clipboard.AsText := Result;
+end;
+
+
+procedure TTriggerList.aCopyTriggerRegDefinitionExecute(Sender: TObject);
+var Data: PNdTriggerData;
+  Result: string;
+  i: integer;
+begin
+  Result := '';
+
+  i := 0;
+  for Data in SelectedTriggers do begin
+    Result := Result + '['+IntToStr(i)+']'#13#10
+      + string(Data.TriggerCopy.ToRegFileDefinition()) + #13#10;
+    Inc(i);
+  end;
 
   if Length(Result) >= 2 then
     SetLength(Result, Length(Result)-2);

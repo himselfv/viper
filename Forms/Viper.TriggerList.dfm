@@ -74,6 +74,9 @@ object TriggerList: TTriggerList
       object miCopyParams: TMenuItem
         Action = aCopyParams
       end
+      object Registrydefinition1: TMenuItem
+        Action = aCopyTriggerRegDefinition
+      end
     end
     object miEditTrigger: TMenuItem
       Action = aEditTrigger
@@ -137,6 +140,11 @@ object TriggerList: TTriggerList
       Category = 'Modify'
       Caption = 'Edit'
       OnExecute = aEditTriggerExecute
+    end
+    object aCopyTriggerRegDefinition: TAction
+      Category = 'Copy'
+      Caption = 'Registry definition'
+      OnExecute = aCopyTriggerRegDefinitionExecute
     end
   end
 end

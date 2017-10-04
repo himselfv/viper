@@ -15,6 +15,8 @@ type
     Source: TTriggerSource;
     Params: string;
     Action: DWORD;
+    //Our own trigger copy, stored in the main form.
+    //List entries which spawn from the same trigger will have the same pointer.
     TriggerCopy: PSERVICE_TRIGGER;
   end;
   PNdTriggerData = ^TNdTriggerData;
@@ -36,10 +38,12 @@ type
     aDisableTrigger: TAction;
     aImportTrigger: TAction;
     aExportTrigger: TAction;
+    aExportAllTriggers: TAction;
     aDeleteTrigger: TAction;
     miAddTrigger: TMenuItem;
     miImportTrigger: TMenuItem;
     miExportTrigger: TMenuItem;
+    miExportAllTriggers: TMenuItem;
     miDisableTrigger: TMenuItem;
     miDeleteTrigger: TMenuItem;
     aEditTrigger: TAction;
@@ -47,6 +51,8 @@ type
     N1: TMenuItem;
     aCopyTriggerRegDefinition: TAction;
     Registrydefinition1: TMenuItem;
+    OpenTriggersDialog: TOpenDialog;
+    SaveTriggersDialog: TSaveDialog;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -66,6 +72,9 @@ type
     procedure aAddTriggerExecute(Sender: TObject);
     procedure aEditTriggerExecute(Sender: TObject);
     procedure aCopyTriggerRegDefinitionExecute(Sender: TObject);
+    procedure aImportTriggerExecute(Sender: TObject);
+    procedure aExportTriggerExecute(Sender: TObject);
+    procedure aExportAllTriggersExecute(Sender: TObject);
   const
     colAction = 0;
     colTrigger = 1;
@@ -76,12 +85,17 @@ type
     FServiceHandle: SC_HANDLE;
     FScmHandle: SC_HANDLE;
     FOwnsServiceHandle: boolean;
+    FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
     procedure Add(const ATrigger: PSERVICE_TRIGGER);
+    function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
+    procedure TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
   public
     procedure SetService(ServiceName: string; ServiceHandle: SC_HANDLE = 0);
     procedure Clear;
     procedure Reload;
     function SelectedTriggers: TArray<PNdTriggerData>;
+    function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+    function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
 
   end;
 
@@ -107,8 +121,6 @@ procedure TTriggerList.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode
 var Data: PNdTriggerData;
 begin
   Data := Sender.GetNodeData(Node);
-  if Data.TriggerCopy <> nil then
-    FreeMem(Data.TriggerCopy);
   Finalize(Data^);
 end;
 
@@ -187,6 +199,7 @@ begin
   aEditTrigger.Visible := Tree.SelectedCount = 1;
   aDisableTrigger.Visible := Tree.SelectedCount > 0;
   aExportTrigger.Visible := Tree.SelectedCount > 0;
+  aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
   aDeleteTrigger.Visible := Tree.SelectedCount > 0;
 end;
 
@@ -225,8 +238,15 @@ begin
 end;
 
 procedure TTriggerList.Clear;
+var i: integer;
 begin
   Tree.Clear;
+  for i := 0 to Length(FOwnTriggerCopies)-1 do
+    FreeMem(FOwnTriggerCopies[i]);
+  SetLength(FOwnTriggerCopies, 0);
+  //Reset the popup menu
+  //We'd like to put this into FormCreate, but there's no FormCreates for TFrames.
+  TreeChange(Tree, nil);
 end;
 
 //Adds a trigger to the list. Trigger data is not ours and should be copied if needed.
@@ -236,6 +256,7 @@ var Node: PVirtualNode;
   TriggerData: TTriggerData;
   Sources: TArray<TTriggerSource>;
   Source: TTriggerSource;
+  TriggerCopy: PSERVICE_TRIGGER;
 begin
   TriggerData := ParseTrigger(ATrigger);
   Sources := TriggerData.Sources;
@@ -244,6 +265,10 @@ begin
     Sources[0].DisplayText := '';
     Sources[0].Data := '';
   end;
+
+  TriggerCopy := CopyTrigger(ATrigger^);
+  SetLength(FOwnTriggerCopies, Length(FOwnTriggerCopies)+1);
+  FOwnTriggerCopies[Length(FOwnTriggerCopies)-1] := TriggerCopy;
 
   for Source in Sources do begin
     Node := Tree.AddChild(nil);
@@ -258,7 +283,7 @@ begin
     else
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
-    NodeData.TriggerCopy := CopyTrigger(ATrigger^);
+    NodeData.TriggerCopy := TriggerCopy;
   end;
 end;
 
@@ -273,10 +298,13 @@ begin
       Inc(triggers.pTriggers);
       Dec(triggers.cTriggers);
     end;
-
   finally
     FreeMem(triggers);
   end;
+
+  //Reset the popup menu
+  //We'd like to put this into FormCreate, but there's no FormCreates for TFrames.
+  TreeChange(Tree, nil);
 end;
 
 function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
@@ -288,6 +316,41 @@ begin
     Result[Length(Result)-1] := Tree.GetNodeData(ANode);
   end;
 end;
+
+function TTriggerList.NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
+var ANode: PVirtualNode;
+  AData: PNdTriggerData;
+  i: integer;
+  found: boolean;
+begin
+  SetLength(Result, 0);
+  for ANode in ANodes do begin
+    AData := Tree.GetNodeData(ANode);
+
+    found := false;
+    for i := 0 to Length(Result)-1 do
+      if Result[i]=AData.TriggerCopy then begin
+        found := true;
+        break;
+      end;
+    if found then
+      continue;
+
+    SetLength(Result, Length(Result)+1);
+    Result[Length(Result)-1] := AData.TriggerCopy;
+  end;
+end;
+
+function TTriggerList.SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+begin
+  Result := Self.NodesToUniqueTriggers(Tree.SelectedNodes());
+end;
+
+function TTriggerList.AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+begin
+  Result := Self.NodesToUniqueTriggers(Tree.ChildNodes(Tree.RootNode));
+end;
+
 
 const
   sTriggerSummary = '%s on %s';
@@ -423,6 +486,55 @@ begin
   with OpenService(Self.FServiceName) do
     DeleteServiceTriggers(SvcHandle, SelData);
   Reload;
+end;
+
+
+procedure TTriggerList.TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
+var Text: AnsiString;
+  sl: TStringList;
+begin
+  if Length(Sel) <= 0 then exit;
+
+  with SaveTriggersDialog do
+    if not Execute then
+      exit;
+
+  Text := ExportTriggers(Sel);
+
+  sl := TStringList.Create;
+  try
+    sl.SetText(PChar(string(Text)));
+    sl.SaveToFile(SaveTriggersDialog.FileName);
+  finally
+    FreeAndNil(sl);
+  end;
+end;
+
+procedure TTriggerList.aExportTriggerExecute(Sender: TObject);
+begin
+  TryExportTriggers(Self.SelectedUniqueTriggers);
+end;
+
+procedure TTriggerList.aExportAllTriggersExecute(Sender: TObject);
+begin
+  TryExportTriggers(Self.AllUniqueTriggers);
+end;
+
+procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
+var Triggers: TArray<PSERVICE_TRIGGER>;
+  Status: TTriggerImportStatus;
+  i: integer;
+begin
+  with OpenTriggersDialog do
+    if not Execute then
+      exit;
+  SetLength(Triggers, 0);
+  try
+    ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
+  finally
+    for i := 0 to Length(Triggers)-1 do
+      FreeMem(Triggers[i]);
+  end;
 end;
 
 end.

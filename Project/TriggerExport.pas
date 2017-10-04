@@ -19,7 +19,9 @@ uses WinSvc, RegFile;
 
 function ExportTriggers(const tri: SERVICE_TRIGGER_INFO; const KeyPrefix: AnsiString = ''): AnsiString; overload;
 
-function ExportTrigger(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: AnsiString = ''): AnsiString; overload;
+function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: AnsiString = ''): AnsiString; overload;
+
+function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>; const KeyPrefix: AnsiString = ''): AnsiString; overload;
 
 function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: AnsiString = ''): AnsiString; overload;
 
@@ -70,7 +72,7 @@ begin
 end;
 
 //Same, but the list of triggers is explicitly passed as an array.
-function ExportTrigger(const tri: TArray<SERVICE_TRIGGER>;
+function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>;
   const KeyPrefix: AnsiString = ''): AnsiString; overload;
 var i: integer;
 begin
@@ -78,6 +80,19 @@ begin
     Result := Result
       + '['+KeyPrefix+AnsiString(IntToStr(i))+']'#13
       + ExportTrigger(tri[i]) + #13;
+  end;
+  if Length(Result) > 0 then
+    SetLength(Result, Length(Result)-1);
+end;
+
+function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>;
+  const KeyPrefix: AnsiString = ''): AnsiString; overload;
+var i: integer;
+begin
+  for i := 0 to Length(tri)-1 do begin
+    Result := Result
+      + '['+KeyPrefix+AnsiString(IntToStr(i))+']'#13
+      + ExportTrigger(tri[i]^) + #13;
   end;
   if Length(Result) > 0 then
     SetLength(Result, Length(Result)-1);
@@ -146,7 +161,7 @@ begin
     try
       for i := 0 to reg.Count-1 do begin
         rk := reg[i];
-        if rk.Name <> '['+IntToStr(i)+']' then
+        if rk.Name <> IntToStr(i) then
           Status := Status + [sfMalformedFile];
 
         if rk.Delete then begin
@@ -193,7 +208,7 @@ type
     procedure Free;
   end;
   PDataItemEntry = ^TDataItemEntry;
-  TDataItemListConstructor = class
+  TDataItemListBuilder = class
   protected
     FItems: TArray<TDataItemEntry>;
     procedure Grow(ACount: integer);
@@ -201,7 +216,7 @@ type
     destructor Destroy; override;
     function Get(AIndex: integer): PDataItemEntry;
     procedure Pack;
-    function GetPointerArray: TArray<PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
+    function AsList: TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
   end;
 
 procedure TDataItemEntry.Reset;
@@ -219,7 +234,7 @@ begin
     FreeMem(Self.item.pData);
 end;
 
-destructor TDataItemListConstructor.Destroy;
+destructor TDataItemListBuilder.Destroy;
 var i: integer;
 begin
   for i := 0 to Length(FItems)-1 do
@@ -227,26 +242,27 @@ begin
   inherited;
 end;
 
-function TDataItemListConstructor.Get(AIndex: integer): PDataItemEntry;
+function TDataItemListBuilder.Get(AIndex: integer): PDataItemEntry;
 begin
   if Length(FItems) <= AIndex then
-    Grow(Length(FItems)-AIndex+1);
+    Grow(AIndex-Length(FItems)+1);
   Result := @FItems[AIndex];
 end;
 
 //Adds ACount zero-initialized elements at the end.
-procedure TDataItemListConstructor.Grow(ACount: integer);
+procedure TDataItemListBuilder.Grow(ACount: integer);
 var pe: PDataItemEntry;
 begin
   SetLength(FItems, Length(FItems)+ACount);
   while ACount > 0 do begin
     pe := @FItems[Length(FItems)-ACount];
     pe.Reset;
+    Dec(ACount);
   end;
 end;
 
 //Remove any data items which have not been filled.
-procedure TDataItemListConstructor.Pack;
+procedure TDataItemListBuilder.Pack;
 var i, shift: integer;
 begin
   i := 0;
@@ -265,12 +281,14 @@ begin
     SetLength(FItems, Length(FItems)-shift);
 end;
 
-function TDataItemListConstructor.GetPointerArray: TArray<PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
+//Constructs an array of STS_DATA_ITEM suitable for using in a SERVICE_TRIGGER record.
+//The data itself is still owned by the builder and will be freed on destruction.
+function TDataItemListBuilder.AsList: TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
 var i: integer;
 begin
   SetLength(Result, Length(FItems));
   for i := 0 to Length(FItems)-1 do
-    Result[i] := @FItems[i].item;
+    Result[i] := FItems[i].item;
 end;
 
 
@@ -284,8 +302,8 @@ var st: SERVICE_TRIGGER;
   haveAction: boolean;
   //haveGuid is determined by st.pTriggerSubtype being set
   //We will collect data items in this structure:
-  data: TDataItemListConstructor;
-  dataPtrs: TArray<PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
+  data: TDataItemListBuilder;
+  dataPtrs: TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
   //Temporary variables
   i, idx, tmp: integer;
   re: TRegFileEntry;
@@ -300,7 +318,7 @@ begin
   haveType := false;
   haveAction := false;
 
-  data := TDataItemListConstructor.Create;
+  data := TDataItemListBuilder.Create;
   try
 
     for i := 0 to Length(rk.Entries)-1 do begin
@@ -326,7 +344,7 @@ begin
         continue;
       end;
 
-      if re.Name.StartsWith('DataType') and TryStrToInt(re.Name.Substring(9), idx)
+      if re.Name.StartsWith('DataType') and TryStrToInt(re.Name.Substring(8), idx)
       and (idx < MAX_DATAITEMS)
       and (re.DataType = REG_DWORD) and TryStrToInt('$'+re.Data, tmp) then begin
         pde := data.Get(idx);
@@ -335,7 +353,7 @@ begin
         continue;
       end;
 
-      if re.Name.StartsWith('Data') and TryStrToInt(re.Name.Substring(5), idx)
+      if re.Name.StartsWith('Data') and TryStrToInt(re.Name.Substring(4), idx)
       and (idx < MAX_DATAITEMS) then begin
         pde := data.Get(idx);
         pde.item.pData := RegHexToBin(AnsiString(re.Data), @pde.item.cbData);
@@ -360,7 +378,7 @@ begin
     data.Pack;
 
     //Fill all SERVICE_TRIGGER fields
-    dataPtrs := data.GetPointerArray;
+    dataPtrs := data.AsList;
     st.pDataItems := @dataPtrs[0];
     st.cDataItems := Length(dataPtrs);
 

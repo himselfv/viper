@@ -84,6 +84,9 @@ object TriggerList: TTriggerList
     object miExportTrigger: TMenuItem
       Action = aExportTrigger
     end
+    object miExportAllTriggers: TMenuItem
+      Action = aExportAllTriggers
+    end
     object miDisableTrigger: TMenuItem
       Action = aDisableTrigger
     end
@@ -126,10 +129,17 @@ object TriggerList: TTriggerList
     object aImportTrigger: TAction
       Category = 'Modify'
       Caption = 'Import...'
+      OnExecute = aImportTriggerExecute
     end
     object aExportTrigger: TAction
       Category = 'Modify'
       Caption = 'Export'
+      OnExecute = aExportTriggerExecute
+    end
+    object aExportAllTriggers: TAction
+      Category = 'Modify'
+      Caption = 'Export all'
+      OnExecute = aExportAllTriggersExecute
     end
     object aDeleteTrigger: TAction
       Category = 'Modify'
@@ -146,5 +156,19 @@ object TriggerList: TTriggerList
       Caption = 'Registry definition'
       OnExecute = aCopyTriggerRegDefinitionExecute
     end
+  end
+  object OpenTriggersDialog: TOpenDialog
+    DefaultExt = '*.reg'
+    Filter = 'Triggers export files (*.reg)|*.reg|All files (*.*)|*.*'
+    Title = 'Open Triggers Export...'
+    Left = 184
+    Top = 8
+  end
+  object SaveTriggersDialog: TSaveDialog
+    DefaultExt = '*.reg'
+    Filter = 'Triggers export files (*.reg)|*.reg|All files (*.*)|*.*'
+    Title = 'Save Triggers...'
+    Left = 184
+    Top = 64
   end
 end

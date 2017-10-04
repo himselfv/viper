@@ -242,6 +242,8 @@ begin
     haveRk := false;
     haveFormat := false;
 
+    sl.LoadFromFile(AFilename);
+
     for i := 0 to sl.Count-1 do begin
       line := Trim(sl[i]);
       if (line='') or (line[1]=';') then
@@ -257,7 +259,7 @@ begin
         else
           haveRk := true;
         //Anyway, reset the rk
-        rk.Name := '';
+        rk.Name := line.Substring(1, Length(line)-2);
         rk.Delete := false;
         SetLength(rk.Entries, 0);
         continue;
@@ -327,18 +329,21 @@ begin
   end;
 
   //Special case: Entry deletion marker (must be the only thing in the value)
-  if Trim(pc^) = '-' then begin
+  if Trim(re.Data) = '-' then begin
     re.DataType := REG_DELETE;
+    re.Data := '';
     exit;
   end;
 
   //Non-escaped value must be in the form "datatype:value"
   datatypeStr := '';
-  pc := ReadUpToNext(pc, ':', datatypeStr);
+  pc := ReadUpToNext(@re.Data[1], ':', datatypeStr);
   datatypeStr := Trim(datatypeStr).ToLower();
   //There must be a ':' after datatype, even with empty data
   if pc^ <> ':' then
      raise ERegFileFormatError.CreateFmt(eRegInvalidEntryLineFormat, [line]);
+  Inc(pc);
+  re.Data := pc; //trim the datatype
   if SameStr(datatypeStr, 'hex') then begin
     re.DataType := REG_BINARY;
   end else

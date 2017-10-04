@@ -25,7 +25,8 @@ uses
   EtwUtils in 'EtwUtils.pas',
   SvcCat in 'SvcCat.pas',
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
-  Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor};
+  Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
+  TriggerExport in 'TriggerExport.pas';
 
 {$R *.res}
 

@@ -86,7 +86,7 @@ type
   end;
 
 implementation
-uses UITypes, Clipbrd, CommonResources, Viper.TriggerEditor;
+uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
 
 {$R *.dfm}
 
@@ -351,7 +351,6 @@ begin
   Clipboard.AsText := Result;
 end;
 
-
 procedure TTriggerList.aCopyTriggerRegDefinitionExecute(Sender: TObject);
 var Data: PNdTriggerData;
   Result: string;
@@ -361,8 +360,8 @@ begin
 
   i := 0;
   for Data in SelectedTriggers do begin
-    Result := Result + '['+IntToStr(i)+']'#13#10
-      + string(Data.TriggerCopy.ToRegFileDefinition()) + #13#10;
+    Result := Result
+      + string(ExportTrigger(Data.TriggerCopy^, AnsiString(IntToStr(i)))) + #13#10;
     Inc(i);
   end;
 

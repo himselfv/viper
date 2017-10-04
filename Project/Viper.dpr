@@ -26,7 +26,8 @@ uses
   SvcCat in 'SvcCat.pas',
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
-  TriggerExport in 'TriggerExport.pas';
+  TriggerExport in 'TriggerExport.pas',
+  RegFile in 'RegFile.pas';
 
 {$R *.res}
 

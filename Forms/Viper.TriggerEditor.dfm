@@ -28,29 +28,6 @@ object TriggerEditorForm: TTriggerEditorForm
     Alignment = taCenter
     Caption = 'the service on:'
   end
-  object cbAction: TComboBox
-    Left = 8
-    Top = 8
-    Width = 81
-    Height = 21
-    Style = csDropDownList
-    ItemIndex = 0
-    TabOrder = 0
-    Text = 'Start'
-    Items.Strings = (
-      'Start'
-      'Stop')
-  end
-  object cbTypePreset: TComboBox
-    Left = 200
-    Top = 8
-    Width = 344
-    Height = 21
-    Style = csDropDownList
-    Anchors = [akLeft, akTop, akRight]
-    TabOrder = 1
-    OnChange = cbTypePresetChange
-  end
   object pcPresetDetails: TPageControl
     Left = 8
     Top = 35
@@ -253,5 +230,37 @@ object TriggerEditorForm: TTriggerEditorForm
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 5
+  end
+  object cbAction: TComboBoxEx
+    Left = 8
+    Top = 8
+    Width = 81
+    Height = 22
+    ItemsEx = <
+      item
+        Caption = 'Start'
+        ImageIndex = 0
+        SelectedImageIndex = 0
+      end
+      item
+        Caption = 'Stop'
+        ImageIndex = 1
+        SelectedImageIndex = 1
+      end>
+    Style = csExDropDownList
+    TabOrder = 0
+    Images = CommonRes.ilImages
+  end
+  object cbTypePreset: TComboBoxEx
+    Left = 200
+    Top = 8
+    Width = 344
+    Height = 22
+    ItemsEx = <>
+    Style = csExDropDownList
+    Anchors = [akLeft, akTop, akRight]
+    TabOrder = 1
+    OnChange = cbTypePresetChange
+    Images = CommonRes.ilImages
   end
 end

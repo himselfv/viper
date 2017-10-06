@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, WinSvc, ServiceHelper, TriggerUtils, ComCtrls,
-  Vcl.Samples.Spin, ExtCtrls, VirtualTrees;
+  Vcl.Samples.Spin, ExtCtrls, VirtualTrees, CommonResources;
 
 type
   TDataItemNodeData = record
@@ -17,9 +17,7 @@ type
   PDataItemNodeData = ^TDataItemNodeData;
 
   TTriggerEditorForm = class(TForm)
-    cbAction: TComboBox;
     lblActionToType: TLabel;
-    cbTypePreset: TComboBox;
     pcPresetDetails: TPageControl;
     tsPresetGeneric: TTabSheet;
     tsPresetDevice: TTabSheet;
@@ -40,6 +38,8 @@ type
     btnDataItemAdd: TButton;
     btnDataItemEdit: TButton;
     btnDataItemDelete: TButton;
+    cbAction: TComboBoxEx;
+    cbTypePreset: TComboBoxEx;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -221,6 +221,8 @@ const
 procedure TTriggerEditorForm.ReloadTypePresets;
 var i: integer;
   oldPreset: pointer;
+  item: TComboExItem;
+  guid: TGuid;
 begin
   //Associated object field stores the pointer to the TTypePreset.
 
@@ -230,8 +232,16 @@ begin
     oldPreset := nil;
 
   cbTypePreset.Clear;
-  for i := Low(TYPE_PRESETS) to High(TYPE_PRESETS) do
-    cbTypePreset.AddItem(TYPE_PRESETS[i].d, TObject(@TYPE_PRESETS[i]));
+  for i := Low(TYPE_PRESETS) to High(TYPE_PRESETS) do begin
+    item := cbTypePreset.ItemsEx.Add();
+    item.Caption := TYPE_PRESETS[i].d;
+    item.Data := TObject(@TYPE_PRESETS[i]);
+    if TYPE_PRESETS[i].st <> nil then
+      guid := TYPE_PRESETS[i].st^
+    else
+      FillChar(guid, sizeof(guid), 0);
+    item.ImageIndex := CommonRes.GetTriggerImageIndex(TYPE_PRESETS[i].t, guid);
+  end;
   cbTypePreset.AddItem(sCustomTypePreset, TObject(@CustomTypePreset));
   FTypePresetsLoaded := true;
 

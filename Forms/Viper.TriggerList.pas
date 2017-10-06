@@ -479,10 +479,8 @@ begin
   try
    //Make our own copy so as not to edit Node copy directly
     TriggerData := CopyTrigger(Sel[0].TriggerCopy^);
-    if not IsPositiveResult(EditForm.EditTrigger(TriggerData)) then begin
-      FreeMem(TriggerData);
-      exit;
-    end;
+    if not IsPositiveResult(EditForm.EditTrigger(TriggerData)) then
+      exit; //TriggerData is freed in Finally
 
    //Store the edited trigger in the service config
     with OpenService2(Self.FServiceName,

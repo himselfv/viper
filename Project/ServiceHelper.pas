@@ -90,7 +90,8 @@ type
   end;
 
 function OpenScm(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoScm;
-function OpenService(const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoService; overload;
+function OpenService2(const AServiceName: string; dwScmAccess: cardinal = SC_MANAGER_ALL_ACCESS;
+  dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
 
 
 
@@ -186,15 +187,18 @@ function QueryServiceTriggers(hSC: SC_HANDLE; const AServiceName: string): PSERV
 procedure ChangeServiceTriggers(hSvc: SC_HANDLE; lpTriggers: PSERVICE_TRIGGER_INFO); overload;
 procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTriggers: PSERVICE_TRIGGER_INFO); overload;
 
-//The following functions read, modify and store the trigger list.
-//There's no way to uniquely identify a trigger entry except by its full contents.
+//Lets the clients keep standalone copies of trigger data.
 
-function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
 function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
 function CopyTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
 procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM);
 
-procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
+//There's no way to uniquely identify a trigger entry except by its full contents.
+function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
+
+//The following functions read, modify and store the trigger list.
+procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER;
+  UniqueOnly: boolean = false);
 procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
 procedure ChangeServiceTrigger(hSvc: SC_HANDLE; const OldTrigger: SERVICE_TRIGGER; const NewTrigger: SERVICE_TRIGGER); overload;
 
@@ -329,10 +333,11 @@ begin
   Result := TAutoScm.Create(OpenScManager(dwAccess));
 end;
 
-function OpenService(const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoService;
+function OpenService2(const AServiceName: string; dwScmAccess: cardinal;
+  dwServiceAccess: cardinal): IAutoService;
 var hSC, hSvc: SC_HANDLE;
 begin
-  OpenScmAndService(hSC, hSvc, AServiceName, dwAccess, dwAccess);
+  OpenScmAndService(hSC, hSvc, AServiceName, dwScmAccess, dwServiceAccess);
   Result := TAutoService.Create(hSC, hSvc);
 end;
 
@@ -595,30 +600,6 @@ begin
     RaiseLastOsError();
 end;
 
-function IsSameServiceTriggerDataItem(Di1, Di2: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM): boolean; inline;
-begin
-  Result := (Di1.dwDataType = Di2.dwDataType)
-        and (Di1.cbData = Di2.cbData)
-        and CompareMem(Di1.pData, Di2.pData, Di1.cbData);
-end;
-
-//Returns true if two services triggers are the same.
-//Service manager implements no IDs for triggers, so the only way to locate
-//a particular one is to compare its data.
-function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
-var i: integer;
-begin
-  Result := (Tr1.dwTriggerType = Tr2.dwTriggerType)
-        and (Tr1.dwAction = Tr2.dwAction)
-        and IsEqualGuid(Tr1.pTriggerSubtype^, Tr2.pTriggerSubtype^)
-        and (Tr1.cDataItems  = Tr2.cDataItems);
-  if not Result then exit;
-
-  for i := 0 to Tr1.cDataItems-1 do begin
-    Result := IsSameServiceTriggerDataItem(@Tr1.pDataItems[i], @Tr2.pDataItems[i]);
-    if not Result then exit;
-  end;
-end;
 
 //Makes a copy of a given trigger. The copy has to be freed by the caller.
 function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
@@ -691,11 +672,40 @@ begin
 end;
 
 
+function IsSameServiceTriggerDataItem(Di1, Di2: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM): boolean; inline;
+begin
+  Result := (Di1.dwDataType = Di2.dwDataType)
+        and (Di1.cbData = Di2.cbData)
+        and CompareMem(Di1.pData, Di2.pData, Di1.cbData);
+end;
+
+//Returns true if two services triggers are the same.
+//Service manager implements no IDs for triggers, so the only way to locate
+//a particular one is to compare its data.
+function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
+var i: integer;
+begin
+  Result := (Tr1.dwTriggerType = Tr2.dwTriggerType)
+        and (Tr1.dwAction = Tr2.dwAction)
+        and IsEqualGuid(Tr1.pTriggerSubtype^, Tr2.pTriggerSubtype^)
+        and (Tr1.cDataItems  = Tr2.cDataItems);
+  if not Result then exit;
+
+  for i := 0 to Tr1.cDataItems-1 do begin
+    Result := IsSameServiceTriggerDataItem(@Tr1.pDataItems[i], @Tr2.pDataItems[i]);
+    if not Result then exit;
+  end;
+end;
+
+
 //Inserts one or more triggers into a set of all triggers for the service
-procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER);
+//UniqueOnly: add only triggers which have no exact equivalents already.
+procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER;
+  UniqueOnly: boolean = false);
 var trigHead: PSERVICE_TRIGGER_INFO;
   trigData: array of SERVICE_TRIGGER;
-  i: integer;
+  i, j: integer;
+  found: boolean;
 begin
   if Length(Triggers) <= 0 then exit;
 
@@ -718,8 +728,28 @@ begin
       trigData[i] := trigHead.pTriggers[i]; //old triggers
 
     //Copy new triggers
-    for i := 0 to Length(Triggers)-1 do
+    for i := 0 to Length(Triggers)-1 do begin
+      if UniqueOnly then begin
+        found := false;
+        for j := 0 to Length(trigData) - Length(Triggers) - 1 do
+          if IsSameServiceTrigger(trigData[j], Triggers[i]) then begin
+            found := true;
+            break;
+          end;
+        if found then
+          continue;
+      end;
+
       trigData[Length(trigData) - Length(Triggers) + i] := Triggers[i];
+    end;
+
+    //Rewrite old data pointer
+    //We don't free the old pointer because it points inside of trigHead memory block
+    //which we'll free at the end of this function
+    if trigHead.cTriggers > 0 then
+      trigHead.pTriggers := @trigData[0]
+    else
+      trigHead.pTriggers := nil;
 
     //Set
     ChangeServiceTriggers(hSvc, trigHead);
@@ -766,6 +796,9 @@ begin
       Inc(ptrFrom);
       Inc(ptrTo);
     end;
+
+    if trigHead.cTriggers = 0 then
+      trigHead.pTriggers := nil; //or SCM complains
 
     //Set
     ChangeServiceTriggers(hSvc, trigHead);

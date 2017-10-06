@@ -290,6 +290,8 @@ end;
 procedure TTriggerList.Reload;
 var triggers: PSERVICE_TRIGGER_INFO;
 begin
+  Clear;
+
   triggers := QueryServiceTriggers(FServiceHandle);
   if triggers = nil then exit;
   try
@@ -441,12 +443,26 @@ begin
   try
     TriggerData := nil;
     if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
+    or (TriggerData = nil) //safety
       then exit;
   finally
     FreeAndNil(EditForm);
   end;
 
-//TODO: Create a new trigger based on TriggerData
+  //Add the given trigger
+  try
+    //We only have a handle with read access, so reopen
+    with OpenService2(Self.FServiceName,
+      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+      AddServiceTriggers(SvcHandle, [TriggerData^]);
+  finally
+    FreeMem(TriggerData);
+  end;
+
+  //Reload the triggers
+  //We could just parse the newly created trigger, but lets KISS for now
+  Self.Reload;
 end;
 
 procedure TTriggerList.aEditTriggerExecute(Sender: TObject);
@@ -463,15 +479,34 @@ begin
   try
    //Make our own copy so as not to edit Node copy directly
     TriggerData := CopyTrigger(Sel[0].TriggerCopy^);
-    if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
-      then exit;
+    if not IsPositiveResult(EditForm.EditTrigger(TriggerData)) then begin
+      FreeMem(TriggerData);
+      exit;
+    end;
 
-    //TODO: Handle the edited trigger data in TriggerData
+   //Store the edited trigger in the service config
+    with OpenService2(Self.FServiceName,
+      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+      ChangeServiceTrigger(SvcHandle, Sel[0].TriggerCopy^, TriggerData^);
+
   finally
     FreeAndNil(EditForm);
     if TriggerData <> nil then
       FreeMem(TriggerData);
   end;
+
+ //Reload the list of triggers
+  {
+  This is needed since our single trigger could have had resulted in several
+  entries in the list, and our edited trigger can result in a different set of those.
+
+  We could delete all related nodes (with the same TriggerCopy) and re-create
+  all appropriate ones from new data, but for now lets keep it simple.
+  (+ we would need to insert new nodes at the position of the old ones,
+  and we don't yet have proper ordering)
+  }
+  Self.Reload;
 end;
 
 procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
@@ -483,7 +518,9 @@ begin
   SetLength(SelData, Length(Sel));
   for i := 0 to Length(Sel)-1 do
     SelData[i] := Sel[i].TriggerCopy^;
-  with OpenService(Self.FServiceName) do
+  with OpenService2(Self.FServiceName,
+    STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+    SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
     DeleteServiceTriggers(SvcHandle, SelData);
   Reload;
 end;
@@ -522,19 +559,38 @@ end;
 
 procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
 var Triggers: TArray<PSERVICE_TRIGGER>;
+  Triggers2: TArray<SERVICE_TRIGGER>;
   Status: TTriggerImportStatus;
   i: integer;
 begin
   with OpenTriggersDialog do
     if not Execute then
       exit;
+
   SetLength(Triggers, 0);
   try
     ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
+
+    //TODO: Show the dialog to inform the user of the malformed file (potential missed triggers)
+    // + let them choose the triggers to import.
+
+    SetLength(Triggers2, Length(Triggers));
+    for i := 0 to Length(Triggers)-1 do
+      Triggers2[i] := Triggers[i]^;
+
+    //Add these triggers
+    //We only have a handle with read access, so reopen
+    with OpenService2(Self.FServiceName,
+      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+      AddServiceTriggers(SvcHandle, Triggers2, {UniqueOnly=}true);
+
   finally
     for i := 0 to Length(Triggers)-1 do
       FreeMem(Triggers[i]);
   end;
+
+  Self.Reload;
 end;
 
 end.

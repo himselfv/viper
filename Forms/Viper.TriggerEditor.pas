@@ -64,6 +64,7 @@ type
   protected
     FTypePresetsLoaded: boolean;
     procedure ReloadTypePresets;
+    function SelectedTypePreset: pointer;
     function SelectTypePreset(const Preset: pointer; NotifyChanged: boolean = true): boolean;
 
   protected
@@ -76,8 +77,11 @@ type
     FEtwSourcesLoaded: boolean;
     FEtwSources: TArray<TGUID>;
     procedure ReloadData;
+    procedure SaveData;
     procedure UpdatePresetDevicePage;
     procedure UpdatePresetEtwPage;
+    function GetSelectedDeviceInterfaceClass: TGUID;
+    function GetSelectedEtwSource: TGUID;
   public
     function EditTrigger(var Data: PSERVICE_TRIGGER): TModalResult;
     function TriggerData: PSERVICE_TRIGGER;
@@ -235,6 +239,16 @@ begin
   SelectTypePreset(oldPreset, false);
 end;
 
+//Returns a pointer to the currently selected type preset (PTypePreset) or nil,
+//if none is selected.
+function TTriggerEditorForm.SelectedTypePreset: pointer;
+begin
+  if cbTypePreset.ItemIndex < 0 then
+    Result := nil
+  else
+    Result := cbTypePreset.Items.Objects[cbTypePreset.ItemIndex];
+end;
+
 //Selects the type preset in the drop down list by the given PTypePreset pointer (nil = select nothing).
 //If NotifyChanged is true, notifies the control's OnChanged handler.
 //Returns false if no entry with this Preset has been found (should not happen).
@@ -296,7 +310,8 @@ end;
 
 procedure TTriggerEditorForm.btnOkClick(Sender: TObject);
 begin
- //TODO: Save all changes into FTrigger structure.
+ //Save all changes into FTrigger structure.
+  SaveData;
   ModalResult := mrOk;
 end;
 
@@ -335,6 +350,80 @@ begin
   SelectTypePreset(typePreset, true);
 
   ReloadDataItems;
+end;
+
+//Regenerates the stored trigger data from the contents of the form
+procedure TTriggerEditorForm.SaveData;
+var DraftTrigger: SERVICE_TRIGGER;
+  TypePreset: PTypePreset;
+  DraftGuid: TGUID;
+  DraftDataItems: TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
+  ANode: PVirtualNode;
+begin
+  if FTrigger <> nil then begin
+    FreeMem(FTrigger);
+    FTrigger := nil;
+  end;
+
+  case cbAction.ItemIndex of
+    0: DraftTrigger.dwAction := SERVICE_TRIGGER_ACTION_SERVICE_START;
+    1: DraftTrigger.dwAction := SERVICE_TRIGGER_ACTION_SERVICE_STOP;
+  else raise Exception.Create('Please select a trigger action');
+  end;
+
+  TypePreset := SelectedTypePreset;
+  if TypePreset = nil then
+    raise Exception.Create('Please select a trigger type');
+
+  //Main type
+  if TypePreset.t <> 0 then
+    DraftTrigger.dwTriggerType := TypePreset.t
+  else
+   //Trigger type undefined => use custom
+    DraftTrigger.dwTriggerType := edtCustomType.Value;
+
+  //Subtype
+  if TypePreset.st <> nil then
+    DraftTrigger.pTriggerSubtype := TypePreset.st
+  else
+    //Some types do not need pGuid at all, so check
+    case TypePreset.p of
+      PP_GENERIC,
+      PP_GENERICSUBTYPE: begin
+        DraftGuid := StringToGuid(edtCustomSubtype.Text);
+        DraftTrigger.pTriggerSubtype := @DraftGuid;
+      end;
+      PP_DEVICETYPE: begin
+        DraftGuid := Self.GetSelectedDeviceInterfaceClass;
+        DraftTrigger.pTriggerSubtype := @DraftGuid;
+      end;
+      PP_ETWEVENT: begin
+        DraftGuid := Self.GetSelectedEtwSource;
+        DraftTrigger.pTriggerSubtype := @DraftGuid;
+      end;
+    else
+      DraftTrigger.pTriggerSubtype := nil;
+    end;
+
+  //Data Items
+  //Nodes keep their own copy of DATA_ITEM's data, we're going to borrow that for a minute
+  SetLength(DraftDataItems, 0);
+  for ANode in vtDataItems.ChildNodes(vtDataItems.RootNode) do begin
+    SetLength(DraftDataItems, Length(DraftDataItems)+1);
+    DraftDataItems[Length(DraftDataItems)-1] := PDataItemNodeData(vtDataItems.GetNodeData(ANode))^.Item;
+  end;
+
+  DraftTrigger.cDataItems := Length(DraftDataItems);
+  if DraftTrigger.cDataItems > 0 then
+    DraftTrigger.pDataItems := @DraftDataItems[0]
+  else
+    DraftTrigger.pDataItems := nil;
+
+  //Now copy EVERYTHING into a permanent, flat, contiguous copy
+  FTrigger := CopyTrigger(DraftTrigger);
+
+  //The originals are not needed anymore and will be freed on exit (for local variables)
+  //or managed by their owners (such as nodes)
 end;
 
 procedure TTriggerEditorForm.cbTypePresetChange(Sender: TObject);
@@ -451,6 +540,19 @@ begin
   end;
 end;
 
+//Returns a Device Interface Class GUID currently selected or explicitly entered,
+//throws an error if nothing or incompatible text is entered
+function TTriggerEditorForm.GetSelectedDeviceInterfaceClass: TGUID;
+begin
+  if cbDeviceInterfaceClass.ItemIndex >= 0 then begin
+   //Easy case: predefined values store a pointer to their GUID
+    Result := PGUID(cbDeviceInterfaceClass.Items.Objects[cbDeviceInterfaceClass.ItemIndex])^;
+    exit;
+  end;
+
+  //Otherwise decode
+  Result := StringToGuid(cbDeviceInterfaceClass.Text);
+end;
 
 procedure TTriggerEditorForm.UpdatePresetEtwPage;
 var providers: TGUIDDictionary;
@@ -496,6 +598,20 @@ begin
     cbEtwEventSource.ItemIndex := -1;
     cbEtwEventSource.Text := GuidToString(FTrigger.pTriggerSubtype^);
   end;
+end;
+
+//Returns a ETW Source GUID currently selected or explicitly entered,
+//throws an error if nothing or incompatible text is entered
+function TTriggerEditorForm.GetSelectedEtwSource: TGUID;
+begin
+  if cbEtwEventSource.ItemIndex >= 0 then begin
+   //Easy case: predefined values store a pointer to their GUID
+    Result := PGUID(cbEtwEventSource.Items.Objects[cbEtwEventSource.ItemIndex])^;
+    exit;
+  end;
+
+  //Otherwise decode
+  Result := StringToGuid(cbEtwEventSource.Text);
 end;
 
 

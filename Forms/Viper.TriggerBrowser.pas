@@ -1,4 +1,8 @@
 unit Viper.TriggerBrowser;
+{
+Deprecated version of a trigger browser. Currently unused, slowly being scavenged
+for useful ideas.
+}
 
 interface
 

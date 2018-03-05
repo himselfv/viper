@@ -26,6 +26,7 @@ object TriggerList: TTriggerList
     TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toMultiSelect, toRightClickSelect, toSimpleDrawSelection]
     OnChange = TreeChange
     OnCompareNodes = TreeCompareNodes
+    OnFocusChanged = TreeFocusChanged
     OnFreeNode = TreeFreeNode
     OnGetText = TreeGetText
     OnGetImageIndexEx = TreeGetImageIndexEx

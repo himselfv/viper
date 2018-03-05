@@ -23,6 +23,8 @@ type
   end;
   PNdTriggerData = ^TNdTriggerData;
 
+  TTriggerEvent = procedure(Sender: TObject; const TriggerData: PNdTriggerData) of object;
+
   TTriggerList = class(TFrame)
     Tree: TVirtualStringTree;
     PopupMenu: TPopupMenu;
@@ -73,6 +75,8 @@ type
     procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
       Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
     procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+    procedure TreeFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex);
   const
     colTrigger = 0;
     colAction = 1;
@@ -80,6 +84,7 @@ type
     colParams = 3;
   protected
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
+    FOnFocusChanged: TTriggerEvent;
     procedure Add(const AServiceName: string; const ATrigger: PSERVICE_TRIGGER);
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
@@ -92,6 +97,7 @@ type
     function SelectedTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+    property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
 
   end;
 
@@ -120,6 +126,7 @@ const
   sTriggerSummary = '%s %s on %s';
   sTriggerSummaryParams = '%s %s on %s (%s)';
 
+//Contains all important parts of the trigger, used to compactly refer to it like in confirmation dialogs
 function TNdTriggerData.Summary: string;
 begin
   if Self.Params = '' then
@@ -210,6 +217,18 @@ begin
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
   aDeleteTrigger.Visible := Tree.SelectedCount > 0;
+end;
+
+procedure TTriggerList.TreeFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var Data: PNdTriggerData;
+begin
+  if Node = nil then
+    Data := nil
+  else
+    Data := Sender.GetNodeData(Node);
+  if Assigned(Self.FOnFocusChanged) then
+    Self.FOnFocusChanged(Self, Data);
 end;
 
 procedure TTriggerList.TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

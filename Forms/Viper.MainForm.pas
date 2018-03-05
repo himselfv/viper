@@ -240,6 +240,8 @@ type
   protected //Inplace trigger browser
     FTriggerBrowser: TTriggerList;
     procedure InitTriggerBrowser;
+    procedure FreeTriggerBrowser;
+    procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
 
   protected
     procedure RefreshServiceList;
@@ -295,6 +297,7 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
+  FreeTriggerBrowser;
   FreeAndNil(FServices);
   FreeAndNil(FServiceCat);
 end;
@@ -1280,12 +1283,30 @@ begin
 end;
 
 
+{ Inplace trigger browser }
+
+//Initializes the trigger browser. Call before first showing the browser (or before all times -- no harm)
 procedure TMainForm.InitTriggerBrowser;
 begin
   if FTriggerBrowser <> nil then exit;
   FTriggerBrowser := TTriggerList.Create(nil);
+  FTriggerBrowser.OnFocusChanged := @Self.TriggerBrowserFocusChanged;
   FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
   FTriggerBrowser.Align := alClient;
+end;
+
+//Frees the browser windows. Call once, at termination.
+procedure TMainForm.FreeTriggerBrowser;
+begin
+  if FTriggerBrowser = nil then exit;
+  FreeAndNil(FTriggerBrowser);
+  FTriggerBrowser := nil;
+end;
+
+procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
+begin
+ //TODO: Show details for this service in details pane.
+ //  This is currently problematic as the details pane just goes for MainServiceList.FocusedService() directly.
 end;
 
 procedure TMainForm.miServiceBrowserClick(Sender: TObject);
@@ -1303,6 +1324,7 @@ begin
   MainServiceList.Visible := false;
   FTriggerBrowser.Reload;
 end;
+
 
 procedure TMainForm.aShowDriversExecute(Sender: TObject);
 begin

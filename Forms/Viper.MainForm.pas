@@ -1039,6 +1039,19 @@ begin
   FilterServices();
 end;
 
+procedure TMainForm.aShowDriversExecute(Sender: TObject);
+begin
+  FilterFolders;
+  FilterServices;
+  FilterTriggers;
+end;
+
+procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
+begin
+  FilterServices;
+  FilterTriggers;
+end;
+
 procedure TMainForm.MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
   NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
 begin
@@ -1070,8 +1083,94 @@ begin
 end;
 
 
+{
+Inplace trigger browser
+The main window can switch between service list mode and trigger list mode.
+Some controls such as details pane and quicksearch, as well as reload action,
+should apply to both modes, so we have to:
+1. Check which mode in their handlers.
+2. Re-apply their effects every time we switch to a different mode.
+}
 
-// Details pane
+//Initializes the trigger browser. Call before first showing the browser (or before all times -- no harm)
+procedure TMainForm.InitTriggerBrowser;
+begin
+  if FTriggerBrowser <> nil then exit;
+  FTriggerBrowser := TTriggerList.Create(nil);
+  FTriggerBrowser.OnFocusChanged := Self.TriggerBrowserFocusChanged;
+  FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
+  FTriggerBrowser.Align := alClient;
+  FTriggerBrowser.TabOrder := MainServiceList.TabOrder;
+end;
+
+//Frees the browser windows. Call once, at termination.
+procedure TMainForm.FreeTriggerBrowser;
+begin
+  if FTriggerBrowser = nil then exit;
+  FreeAndNil(FTriggerBrowser);
+  FTriggerBrowser := nil;
+end;
+
+//This returns our INTERNAL TServiceEntry matching the trigger entry currently
+//focused in the TriggerBrowser
+//Returns Nil if a matching service cannot be found which is a valid corner
+//case so handle gracefully.
+function TMainForm.TriggerBrowserGetFocusedService: TExtServiceEntry;
+var TriggerData: PNdTriggerData;
+begin
+  if FTriggerBrowser = nil then begin
+    Result := nil;
+    exit;
+  end;
+  TriggerData := FTriggerBrowser.FocusedTrigger;
+  if TriggerData = nil then
+    Result := nil
+  else
+    //There can be some corner cases where the trigger has already been detected
+    //by the TriggerBrowser but the matching new services is not yet in our local list.
+    //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
+    Result := TExtServiceEntry(FServices.Find(TriggerData.ServiceName))
+end;
+
+procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
+begin
+  if not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
+  //Show details for this service in details pane.
+  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
+end;
+
+procedure TMainForm.miServiceBrowserClick(Sender: TObject);
+var WasFocused: boolean;
+begin
+  if FTriggerBrowser = nil then exit;
+  WasFocused := FTriggerBrowser.Focused;
+  MainServiceList.Visible := true;
+  FTriggerBrowser.Visible := false;
+  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
+  if WasFocused then
+    MainServiceList.SetFocus;
+end;
+
+procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
+var WasFocused: boolean;
+begin
+  if FTriggerBrowser = nil then
+    InitTriggerBrowser;
+  WasFocused := MainServiceList.Focused;
+  FTriggerBrowser.Show;
+  MainServiceList.Visible := false;
+  FTriggerBrowser.Reload;
+  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
+  if WasFocused then
+    FTriggerBrowser.SetFocus;
+end;
+
+
+
+{
+Details pane
+Shows details for whatever is in FDetailsPaneFocusedService.
+}
 
 procedure TMainForm.SetDetailsPaneFocusedService(AService: TExtServiceEntry);
 begin
@@ -1291,102 +1390,6 @@ begin
   end;
 end;
 
-
-{
-Inplace trigger browser
-The main window can switch between service list mode and trigger list mode.
-Some controls such as details pane and quicksearch, as well as reload action,
-should apply to both modes, so we have to:
-1. Check which mode in their handlers.
-2. Re-apply their effects every time we switch to a different mode.
-}
-
-//Initializes the trigger browser. Call before first showing the browser (or before all times -- no harm)
-procedure TMainForm.InitTriggerBrowser;
-begin
-  if FTriggerBrowser <> nil then exit;
-  FTriggerBrowser := TTriggerList.Create(nil);
-  FTriggerBrowser.OnFocusChanged := Self.TriggerBrowserFocusChanged;
-  FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
-  FTriggerBrowser.Align := alClient;
-  FTriggerBrowser.TabOrder := MainServiceList.TabOrder;
-end;
-
-//Frees the browser windows. Call once, at termination.
-procedure TMainForm.FreeTriggerBrowser;
-begin
-  if FTriggerBrowser = nil then exit;
-  FreeAndNil(FTriggerBrowser);
-  FTriggerBrowser := nil;
-end;
-
-//This returns our INTERNAL TServiceEntry matching the trigger entry currently
-//focused in the TriggerBrowser
-//Returns Nil if a matching service cannot be found which is a valid corner
-//case so handle gracefully.
-function TMainForm.TriggerBrowserGetFocusedService: TExtServiceEntry;
-var TriggerData: PNdTriggerData;
-begin
-  if FTriggerBrowser = nil then begin
-    Result := nil;
-    exit;
-  end;
-  TriggerData := FTriggerBrowser.FocusedTrigger;
-  if TriggerData = nil then
-    Result := nil
-  else
-    //There can be some corner cases where the trigger has already been detected
-    //by the TriggerBrowser but the matching new services is not yet in our local list.
-    //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
-    Result := TExtServiceEntry(FServices.Find(TriggerData.ServiceName))
-end;
-
-procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
-begin
-  if not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
-  //Show details for this service in details pane.
-  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
-end;
-
-procedure TMainForm.miServiceBrowserClick(Sender: TObject);
-var WasFocused: boolean;
-begin
-  if FTriggerBrowser = nil then exit;
-  WasFocused := FTriggerBrowser.Focused;
-  MainServiceList.Visible := true;
-  FTriggerBrowser.Visible := false;
-  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
-  if WasFocused then
-    MainServiceList.SetFocus;
-end;
-
-procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
-var WasFocused: boolean;
-begin
-  if FTriggerBrowser = nil then
-    InitTriggerBrowser;
-  WasFocused := MainServiceList.Focused;
-  FTriggerBrowser.Show;
-  MainServiceList.Visible := false;
-  FTriggerBrowser.Reload;
-  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
-  if WasFocused then
-    FTriggerBrowser.SetFocus;
-end;
-
-
-procedure TMainForm.aShowDriversExecute(Sender: TObject);
-begin
-  FilterFolders;
-  FilterServices;
-  FilterTriggers;
-end;
-
-procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
-begin
-  FilterServices;
-  FilterTriggers;
-end;
 
 
 // Edit mode

@@ -222,7 +222,7 @@ object MainForm: TMainForm
             Columns = <
               item
                 Position = 0
-                Width = 299
+                Width = 293
                 WideText = 'Trigger'
               end
               item
@@ -247,10 +247,6 @@ object MainForm: TMainForm
         Caption = 'Operations'
         ImageIndex = -1
         TabVisible = False
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList
@@ -619,42 +615,65 @@ object MainForm: TMainForm
     end
     object miView: TMenuItem
       Caption = 'View'
+      object miServiceBrowser: TMenuItem
+        AutoCheck = True
+        Caption = 'Service browser'
+        Checked = True
+        GroupIndex = 10
+        RadioItem = True
+        OnClick = miServiceBrowserClick
+      end
+      object miTriggerBrowser: TMenuItem
+        AutoCheck = True
+        Caption = 'Trigger browser'
+        GroupIndex = 10
+        RadioItem = True
+        OnClick = miTriggerBrowserClick
+      end
+      object N10: TMenuItem
+        Caption = '-'
+        GroupIndex = 10
+      end
       object miShowDrivers: TMenuItem
         Action = aShowDrivers
         AutoCheck = True
+        GroupIndex = 10
       end
       object miShowPrototypes: TMenuItem
         Action = aShowUserPrototypes
         AutoCheck = True
+        GroupIndex = 10
       end
       object miUseColors: TMenuItem
         Action = MainServiceList.aUseColors
         AutoCheck = True
+        GroupIndex = 10
       end
       object N7: TMenuItem
         Caption = '-'
+        GroupIndex = 10
       end
       object miConfigureColors: TMenuItem
         Action = aConfigureColors
+        GroupIndex = 10
       end
       object N8: TMenuItem
         Caption = '-'
+        GroupIndex = 10
       end
       object cbHideEmptyFolders: TMenuItem
         Action = aHideEmptyFolders
         AutoCheck = True
+        GroupIndex = 10
       end
       object Includesubfolderscontents1: TMenuItem
         Action = aIncludeSubfolders
         AutoCheck = True
+        GroupIndex = 10
       end
     end
     object miTools: TMenuItem
       Caption = 'Tools'
-      object Alltriggers1: TMenuItem
-        Caption = 'Trigger browser'
-        OnClick = Alltriggers1Click
-      end
       object N9: TMenuItem
         Caption = '-'
       end

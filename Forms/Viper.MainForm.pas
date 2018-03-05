@@ -81,7 +81,7 @@ type
     aRestartAsAdmin: TAction;
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
-    Alltriggers1: TMenuItem;
+    miTriggerBrowser: TMenuItem;
     aAddFolder: TAction;
     aRenameFolder: TAction;
     aDeleteFolder: TAction;
@@ -116,6 +116,8 @@ type
     miRunServicesMsc: TMenuItem;
     aRunServicesMsc: TAction;
     N7: TMenuItem;
+    N10: TMenuItem;
+    miServiceBrowser: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -167,7 +169,8 @@ type
     procedure miShowLogClick(Sender: TObject);
     procedure edtQuickFilterChange(Sender: TObject);
     procedure aRestartAsAdminExecute(Sender: TObject);
-    procedure Alltriggers1Click(Sender: TObject);
+    procedure miTriggerBrowserClick(Sender: TObject);
+    procedure miServiceBrowserClick(Sender: TObject);
     procedure aRemoveServiceFromFolderExecute(Sender: TObject);
     procedure mmNotesExit(Sender: TObject);
     procedure aSaveNotesExecute(Sender: TObject);
@@ -215,6 +218,8 @@ type
     function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
     procedure FilterServices();
     procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure FilterTriggers();
+    procedure FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
     procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 
@@ -232,6 +237,12 @@ type
     function CanEditServiceInfo: boolean;
     procedure SaveNotes;
 
+  protected //Inplace trigger browser
+    FTriggerBrowser: TTriggerList;
+    procedure InitTriggerBrowser;
+
+  protected
+    procedure RefreshServiceList;
   public
     procedure Refresh;
     procedure FullReload;
@@ -249,7 +260,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils, Viper.TriggerBrowser,
+  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
   Viper.StyleSettings, Viper.Settings;
 
 {$R *.dfm}
@@ -332,7 +343,7 @@ end;
 Updates the list of services and their status.
 To do a full reload, clear everything then refresh. Otherwise tries to keep changes to a minimum.
 }
-procedure TMainForm.Refresh;
+procedure TMainForm.RefreshServiceList;
 var hSC: SC_HANDLE;
   ServiceTypes: dword;
   Services, S: PEnumServiceStatusProcess;
@@ -421,10 +432,22 @@ begin
       FServices.Delete(i);
 end;
 
+procedure TMainForm.Refresh;
+begin
+  RefreshServiceList;
+  //TriggerBrowser is dumber and currently always reloads fully
+  if (FTriggerBrowser <> nil) and (FTriggerBrowser.Visible) then begin
+    FTriggerBrowser.Reload;
+    Self.FilterTriggers;
+  end;
+end;
+
 procedure TMainForm.FullReload;
 begin
   MainServiceList.Clear;
   FServices.Clear;
+  if FTriggerBrowser <> nil then
+    FTriggerBrowser.Clear;
   Refresh;
 end;
 
@@ -505,6 +528,49 @@ begin
   Sender.IsVisible[Node] := isVisible;
 end;
 
+procedure TMainForm.FilterTriggers();
+begin
+  //If it's invisible it's going to be filtered when it's reloaded
+  if FTriggerBrowser.Visible then
+    FTriggerBrowser.ApplyFilter(FilterTriggers_Callback, nil);
+end;
+
+procedure TMainForm.FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var triggerData: PNdTriggerData;
+  svc: TExtServiceEntry;
+  isService: boolean;
+  isVisible: boolean;
+  filterText: string;
+begin
+  triggerData := Sender.GetNodeData(Node);
+
+  svc := TExtServiceEntry(Self.FServices.Find(triggerData.ServiceName));
+  if svc = nil then begin
+    //Maybe someone created a service while we weren't reloading? Show for now.
+    Sender.IsVisible[Node] := true;
+    exit;
+  end;
+
+  isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
+  isVisible := true;
+
+  //Filter out drivers if disabled
+  if not aShowDrivers.Checked and not isService then
+    isVisible := false;
+
+  //Quickfilter
+  filterText := AnsiLowerCase(string(edtQuickfilter.Text).Trim());
+  if filterText <> '' then
+    if not AnsiLowerCase(svc.ServiceName).Contains(filterText)
+    and not AnsiLowerCase(svc.DisplayName).Contains(filterText)
+    and not AnsiLowerCase(triggerData.Description).Contains(filterText)
+    and not AnsiLowerCase(triggerData.Params).Contains(filterText)
+    and not AnsiLowerCase(TriggerActionToString(triggerData.Action)).Contains(filterText) then
+      isVisible := false;
+
+  Sender.IsVisible[Node] := isVisible;
+end;
+
 //True if the folder contains service.
 //Handled outside of TNdFolderData inself because we need to support recursion and only the tree knows children.
 function TMainForm.IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
@@ -527,6 +593,7 @@ end;
 procedure TMainForm.edtQuickFilterChange(Sender: TObject);
 begin
   FilterServices();
+  FilterTriggers();
 end;
 
 procedure TMainForm.edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -1212,31 +1279,42 @@ begin
   end;
 end;
 
-procedure TMainForm.Alltriggers1Click(Sender: TObject);
-var f: TTriggerList;
-begin
-  MainServiceList.Visible := false;
-  f := TTriggerList.Create(nil);
-  f.Dock(pnlMain, MainServiceList.ClientRect);
-  f.Align := alClient;
-//  f.ManualDock(pnlMain, pnlMain, alClient);
-  f.Show;
-  f.Reload;
 
-//  TriggerBrowserForm.Services := Self.FServices;
-//  TriggerBrowserForm.Dock(pnlMain, MainServiceList.ClientRect);
-//  TriggerBrowserForm.Show;
+procedure TMainForm.InitTriggerBrowser;
+begin
+  if FTriggerBrowser <> nil then exit;
+  FTriggerBrowser := TTriggerList.Create(nil);
+  FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
+  FTriggerBrowser.Align := alClient;
+end;
+
+procedure TMainForm.miServiceBrowserClick(Sender: TObject);
+begin
+  if FTriggerBrowser = nil then exit;
+  MainServiceList.Visible := true;
+  FTriggerBrowser.Visible := false;
+end;
+
+procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
+begin
+  if FTriggerBrowser = nil then
+    InitTriggerBrowser;
+  FTriggerBrowser.Show;
+  MainServiceList.Visible := false;
+  FTriggerBrowser.Reload;
 end;
 
 procedure TMainForm.aShowDriversExecute(Sender: TObject);
 begin
   FilterFolders;
   FilterServices;
+  FilterTriggers;
 end;
 
 procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
 begin
   FilterServices;
+  FilterTriggers;
 end;
 
 

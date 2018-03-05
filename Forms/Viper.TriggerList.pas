@@ -88,21 +88,24 @@ type
   public
     procedure Clear;
     procedure Reload; virtual;
+    procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     function SelectedTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
 
   end;
 
-implementation
-uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
-
-{$R *.dfm}
-
 resourcestring
   sActionStart = 'Start';
   sActionStop = 'Stop';
   sActionOther = 'Action (%d)';
+
+function TriggerActionToString(const Action: cardinal): string; inline;
+
+implementation
+uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
+
+{$R *.dfm}
 
 function TriggerActionToString(const Action: cardinal): string; inline;
 begin
@@ -365,6 +368,16 @@ begin
   with OpenService2(AScmHandle, AServiceName, SERVICE_QUERY_CONFIG) do
     if SvcHandle <> 0 then
       LoadTriggersForService(AServiceName, SvcHandle);
+end;
+
+procedure TTriggerList.ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
+begin
+  Tree.BeginUpdate;
+  try
+    Tree.IterateSubtree(nil, Callback, Data, [], {DoInit=}true);
+  finally
+    Tree.EndUpdate;
+  end;
 end;
 
 

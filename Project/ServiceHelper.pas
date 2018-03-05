@@ -82,8 +82,9 @@ type
   protected
     FScmHandle: SC_HANDLE;
     FSvcHandle: SC_HANDLE;
+    FOwnsScmHandle: boolean;
   public
-    constructor Create(AScmHandle, ASvcHandle: SC_HANDLE);
+    constructor Create(AScmHandle, ASvcHandle: SC_HANDLE; AOwnsScmHandle: boolean);
     destructor Destroy; override;
     function ScmHandle: SC_HANDLE;
     function SvcHandle: SC_HANDLE;
@@ -91,6 +92,8 @@ type
 
 function OpenScm(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): IAutoScm;
 function OpenService2(const AServiceName: string; dwScmAccess: cardinal = SC_MANAGER_ALL_ACCESS;
+  dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
+function OpenService2(hSC: SC_HANDLE; const AServiceName: string;
   dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
 
 
@@ -106,6 +109,8 @@ type
 function EnumServicesStatus(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
   out Services: PEnumServiceStatus; out ServicesReturned: cardinal): boolean;
 function EnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
+  out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
+function ShEnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
   out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
 
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS; overload;
@@ -304,17 +309,19 @@ begin
   Result := Self.FScmHandle;
 end;
 
-constructor TAutoService.Create(AScmHandle, ASvcHandle: SC_HANDLE);
+constructor TAutoService.Create(AScmHandle, ASvcHandle: SC_HANDLE; AOwnsScmHandle: boolean);
 begin
   inherited Create;
   FScmHandle := AScmHandle;
   FSvcHandle := ASvcHandle;
+  FOwnsScmHandle := AOwnsScmHandle;
 end;
 
 destructor TAutoService.Destroy;
 begin
   CloseServiceHandle(FSvcHandle);
-  CloseServiceHandle(FScmHandle);
+  if FOwnsScmHandle then
+    CloseServiceHandle(FScmHandle);
   inherited;
 end;
 
@@ -338,7 +345,17 @@ function OpenService2(const AServiceName: string; dwScmAccess: cardinal;
 var hSC, hSvc: SC_HANDLE;
 begin
   OpenScmAndService(hSC, hSvc, AServiceName, dwScmAccess, dwServiceAccess);
-  Result := TAutoService.Create(hSC, hSvc);
+  Result := TAutoService.Create(hSC, hSvc, true);
+end;
+
+//A version that uses external SCM handle. The handle must stay valid all time
+//while you use IAutoService.
+function OpenService2(hSC: SC_HANDLE; const AServiceName: string;
+  dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, dwServiceAccess);
+  Result := TAutoService.Create(hSC, hSvc, false);
 end;
 
 
@@ -394,6 +411,26 @@ begin
     exit;
   end;
   Result := true;
+end;
+
+//Helper wrapper which transparently handles some corner cases
+//Functionally identical to normal version if your goal is just to query the service list
+function ShEnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
+  out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
+const W10_SERVICE_TYPES = SERVICE_USER_SERVICE or SERVICE_USERSERVICE_INSTANCE or SERVICE_PKG_SERVICE;
+var err: integer;
+begin
+  Result := EnumServicesStatusEx(hSC, ServiceTypes, ServiceState, GroupName, Services, ServicesReturned);
+  if not Result then begin
+    err := GetLastError;
+
+    if (err = ERROR_INVALID_PARAMETER)
+    and (ServiceTypes and W10_SERVICE_TYPES <> 0) then begin
+     //Windows <= W7 will return error when asked for W10 service types, so try again without these
+      ServiceTypes := ServiceTypes and not W10_SERVICE_TYPES;
+      Result := EnumServicesStatusEx(hSC, ServiceTypes, ServiceState, GroupName, Services, ServicesReturned);
+    end;
+  end;
 end;
 
 

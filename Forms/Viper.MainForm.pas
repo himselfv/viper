@@ -6,7 +6,7 @@ uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
   Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList, Viper.TriggerList,
-  Viper.RichEditEx;
+  Viper.ServiceTriggerList, Viper.RichEditEx;
 
 type
   TFolderNodeType = (
@@ -60,7 +60,7 @@ type
     DependencyList: TServiceList;
     DependentsList: TServiceList;
     tsTriggers: TTabSheet;
-    TriggerList: TTriggerList;
+    TriggerList: TServiceTriggerList;
     aIncludeSubfolders: TAction;
     Includesubfolderscontents1: TMenuItem;
     aSaveAllServicesConfig: TAction;
@@ -279,6 +279,7 @@ begin
   FServices := TServiceEntryList.Create;
   DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
   RpcInterfacesFile := AppFolder()+'\RpcInterfaces.txt';
+  TriggerList.Initialize;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -336,7 +337,7 @@ var hSC: SC_HANDLE;
   ServiceTypes: dword;
   Services, S: PEnumServiceStatusProcess;
   ServicesReturned: cardinal;
-  i, j, err: integer;
+  i, j: integer;
   svc: TExtServiceEntry;
   ServiceFound: array of boolean;
   Node: PVirtualNode;
@@ -344,7 +345,7 @@ var hSC: SC_HANDLE;
 begin
   //Let's load all services since we need all for dependencies, just make sure to handle
   //permission denials well.
-  ServiceTypes := SERVICE_TYPE_ALL_W10;
+  ServiceTypes := SERVICE_TYPE_ALL;
 
   //Mark already known services for sweeping
   SetLength(ServiceFound, FServices.Count);
@@ -355,16 +356,8 @@ begin
   Services := nil;
   hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
   try
-    if not EnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then begin
-      err := GetLastError;
-      if err <> ERROR_INVALID_PARAMETER then
-        RaiseLastOsError(err);
-
-     //Windows <= W7 will return error when asked for W10 service types, so try again
-      ServiceTypes := SERVICE_TYPE_ALL_W7;
-      if not EnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then
-        RaiseLastOsError();
-    end;
+    if not ShEnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then
+      RaiseLastOsError();
 
     S := Services;
     for i := 0 to ServicesReturned - 1 do begin
@@ -1220,9 +1213,19 @@ begin
 end;
 
 procedure TMainForm.Alltriggers1Click(Sender: TObject);
+var f: TTriggerList;
 begin
-  TriggerBrowserForm.Services := Self.FServices;
-  TriggerBrowserForm.Show;
+  MainServiceList.Visible := false;
+  f := TTriggerList.Create(nil);
+  f.Dock(pnlMain, MainServiceList.ClientRect);
+  f.Align := alClient;
+//  f.ManualDock(pnlMain, pnlMain, alClient);
+  f.Show;
+  f.Reload;
+
+//  TriggerBrowserForm.Services := Self.FServices;
+//  TriggerBrowserForm.Dock(pnlMain, MainServiceList.ClientRect);
+//  TriggerBrowserForm.Show;
 end;
 
 procedure TMainForm.aShowDriversExecute(Sender: TObject);

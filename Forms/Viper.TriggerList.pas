@@ -15,9 +15,11 @@ type
     Source: TTriggerSource;
     Params: string;
     Action: DWORD;
+    ServiceName: string;
     //Our own trigger copy, stored in the main form.
     //List entries which spawn from the same trigger will have the same pointer.
     TriggerCopy: PSERVICE_TRIGGER;
+    function Summary: string;
   end;
   PNdTriggerData = ^TNdTriggerData;
 
@@ -34,21 +36,16 @@ type
     miCopyTriggerText: TMenuItem;
     miCopySourceData: TMenuItem;
     miCopyParams: TMenuItem;
-    aAddTrigger: TAction;
     aDisableTrigger: TAction;
-    aImportTrigger: TAction;
     aExportTrigger: TAction;
     aExportAllTriggers: TAction;
     aDeleteTrigger: TAction;
-    miAddTrigger: TMenuItem;
-    miImportTrigger: TMenuItem;
     miExportTrigger: TMenuItem;
     miExportAllTriggers: TMenuItem;
     miDisableTrigger: TMenuItem;
     miDeleteTrigger: TMenuItem;
     aEditTrigger: TAction;
     miEditTrigger: TMenuItem;
-    N1: TMenuItem;
     aCopyTriggerRegDefinition: TAction;
     Registrydefinition1: TMenuItem;
     OpenTriggersDialog: TOpenDialog;
@@ -69,30 +66,28 @@ type
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
     procedure aDeleteTriggerExecute(Sender: TObject);
-    procedure aAddTriggerExecute(Sender: TObject);
     procedure aEditTriggerExecute(Sender: TObject);
     procedure aCopyTriggerRegDefinitionExecute(Sender: TObject);
-    procedure aImportTriggerExecute(Sender: TObject);
     procedure aExportTriggerExecute(Sender: TObject);
     procedure aExportAllTriggersExecute(Sender: TObject);
+    procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
+      Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+    procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
   const
-    colAction = 0;
-    colTrigger = 1;
-    colParams = 2;
+    colTrigger = 0;
+    colAction = 1;
+    colService = 2;
+    colParams = 3;
   protected
-    //We need to be able to reload and edit
-    FServiceName: string;
-    FServiceHandle: SC_HANDLE;
-    FScmHandle: SC_HANDLE;
-    FOwnsServiceHandle: boolean;
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
-    procedure Add(const ATrigger: PSERVICE_TRIGGER);
+    procedure Add(const AServiceName: string; const ATrigger: PSERVICE_TRIGGER);
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
+    procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
+    procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
   public
-    procedure SetService(ServiceName: string; ServiceHandle: SC_HANDLE = 0);
     procedure Clear;
-    procedure Reload;
+    procedure Reload; virtual;
     function SelectedTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
@@ -103,6 +98,32 @@ implementation
 uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
 
 {$R *.dfm}
+
+resourcestring
+  sActionStart = 'Start';
+  sActionStop = 'Stop';
+  sActionOther = 'Action (%d)';
+
+function TriggerActionToString(const Action: cardinal): string; inline;
+begin
+  case Action of
+    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := sActionStart;
+    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := sActionStop;
+  else Result := Format(sActionOther, [Action]);
+  end;
+end;
+
+const
+  sTriggerSummary = '%s %s on %s';
+  sTriggerSummaryParams = '%s %s on %s (%s)';
+
+function TNdTriggerData.Summary: string;
+begin
+  if Self.Params = '' then
+    Result := Result + Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
+  else
+    Result := Result + Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
+end;
 
 procedure TTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
 begin
@@ -124,20 +145,6 @@ begin
   Finalize(Data^);
 end;
 
-resourcestring
-  sActionStart = 'Start';
-  sActionStop = 'Stop';
-  sActionOther = 'Action (%d)';
-
-function TriggerActionToString(const Action: cardinal): string; inline;
-begin
-  case Action of
-    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := sActionStart;
-    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := sActionStop;
-  else Result := Format(sActionOther, [Action]);
-  end;
-end;
-
 procedure TTriggerList.TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var Data: PNdTriggerData;
@@ -152,6 +159,8 @@ begin
       CellText := Data.Description;
     colAction:
       CellText := TriggerActionToString(Data.Action);
+    colService:
+      CellText := Data.ServiceName;
     colParams:
       CellText := Data.Params;
   end;
@@ -179,14 +188,13 @@ begin
       if Data.Action = SERVICE_TRIGGER_ACTION_SERVICE_STOP then
         ImageIndex := 1;
     end;
+    colService:
+      ImageIndex := CommonRes.iService;
   end;
 end;
 
 procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-var HaveService: boolean;
 begin
-  HaveService := Self.FServiceName <> '';
-
  //Selection changed
   aCopySummary.Visible := Tree.SelectedCount > 0;
   aCopyTriggerText.Visible := Tree.SelectedCount > 0;
@@ -194,8 +202,6 @@ begin
   aCopyParams.Visible := Tree.SelectedCount > 0;
   miCopy.Visible := aCopySummary.Visible or aCopyTriggerText.Visible
     or aCopySourceData.Visible or aCopyParams.Visible;
-  aAddTrigger.Visible := HaveService;
-  aImportTrigger.Visible := HaveService;
   aEditTrigger.Visible := Tree.SelectedCount = 1;
   aDisableTrigger.Visible := Tree.SelectedCount > 0;
   aExportTrigger.Visible := Tree.SelectedCount > 0;
@@ -209,33 +215,54 @@ begin
     aCopySummary.Execute;
 end;
 
-procedure TTriggerList.SetService(ServiceName: string; ServiceHandle: SC_HANDLE = 0);
+procedure TTriggerList.TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
+  Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+var Data1, Data2: PNdTriggerData;
 begin
-  if Self.FServiceHandle <> 0 then begin
-    if Self.FOwnsServiceHandle then begin
-      CloseServiceHandle(Self.FServiceHandle);
-      CloseServiceHandle(Self.FScmHandle);
-    end;
-    Self.FServiceHandle := 0;
-    Self.FScmHandle := 0;
-  end;
+  Data1 := Sender.GetNodeData(Node1);
+  Data2 := Sender.GetNodeData(Node2);
 
-  Clear;
-
-  Self.FServiceName := ServiceName;
-  if FServiceName = '' then
+  if (Data1 = nil) or (Data2 = nil) then begin
+    if Data1 = nil then
+      if Data2 = nil then
+        Result := 0
+      else
+        Result := -1
+    else
+      Result := +1;
     exit;
-
-  if ServiceHandle <> 0 then begin
-    Self.FServiceHandle := ServiceHandle;
-    Self.FOwnsServiceHandle := false;
-  end else begin
-    OpenScmAndService(Self.FScmHandle, Self.FServiceHandle, ServiceName);
-    Self.FOwnsServiceHandle := true;
   end;
 
-  Reload;
+  case Column of
+    NoColumn, colTrigger: begin
+      Result := Data1.TriggerType - Data2.TriggerType;
+      if Result = 0 then
+        Result := CompareText(Data1.Description, Data2.Description);
+    end;
+    colAction:
+      Result := Data1.Action - Data2.Action;
+    colService:
+      Result := CompareText(Data1.ServiceName, Data2.ServiceName);
+    colParams:
+      Result := CompareText(Data1.Params, Data2.Params);
+  end;
 end;
+
+procedure TTriggerList.TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+begin
+  if HitInfo.Button = mbLeft then begin
+    if HitInfo.Column <> Sender.SortColumn then begin
+      Sender.SortColumn := HitInfo.Column;
+      Sender.SortDirection := sdAscending;
+    end else
+      case Sender.SortDirection of
+        sdAscending: Sender.SortDirection := sdDescending;
+        sdDescending: Sender.SortColumn := NoColumn;
+      end;
+    Sender.Treeview.Sort(nil, Sender.SortColumn, Sender.SortDirection);
+  end;
+end;
+
 
 procedure TTriggerList.Clear;
 var i: integer;
@@ -250,7 +277,7 @@ begin
 end;
 
 //Adds a trigger to the list. Trigger data is not ours and should be copied if needed.
-procedure TTriggerList.Add(const ATrigger: PSERVICE_TRIGGER);
+procedure TTriggerList.Add(const AServiceName: string; const ATrigger: PSERVICE_TRIGGER);
 var Node: PVirtualNode;
   NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
@@ -274,6 +301,7 @@ begin
     Node := Tree.AddChild(nil);
     Tree.ReinitNode(Node, false);
     NodeData := Tree.GetNodeData(Node);
+    NodeData.ServiceName := AServiceName;
     NodeData.TriggerType := ATrigger^.dwTriggerType;
     NodeData.Action := ATrigger^.dwAction;
     NodeData.TriggerSubtype := ATrigger.pTriggerSubtype^;
@@ -288,26 +316,57 @@ begin
 end;
 
 procedure TTriggerList.Reload;
-var triggers: PSERVICE_TRIGGER_INFO;
+var Services, S: PEnumServiceStatusProcess;
+  ServicesReturned: cardinal;
+  i: integer;
 begin
   Clear;
 
-  triggers := QueryServiceTriggers(FServiceHandle);
-  if triggers = nil then exit;
-  try
-    while triggers.cTriggers > 0 do begin
-      Self.Add(triggers.pTriggers);
-      Inc(triggers.pTriggers);
-      Dec(triggers.cTriggers);
+  with OpenScm(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE) do try
+    if not ShEnumServicesStatusEx(ScmHandle, SERVICE_TYPE_ALL, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then
+      RaiseLastOsError();
+
+    S := Services;
+    for i := 0 to ServicesReturned - 1 do begin
+      LoadTriggersForService(ScmHandle, S.lpServiceName);
+      Inc(S);
     end;
   finally
-    FreeMem(triggers);
+    if Services <> nil then
+      FreeMem(Services);
   end;
 
   //Reset the popup menu
   //We'd like to put this into FormCreate, but there's no FormCreates for TFrames.
   TreeChange(Tree, nil);
 end;
+
+//Adds all triggers for a given service to the current list.
+//Does not refresh the presentation: intended to be used in batch operations.
+procedure TTriggerList.LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE);
+var triggers: PSERVICE_TRIGGER_INFO;
+begin
+  triggers := QueryServiceTriggers(AServiceHandle);
+  if triggers = nil then exit;
+  try
+    while triggers.cTriggers > 0 do begin
+      Self.Add(AServiceName, triggers.pTriggers);
+      Inc(triggers.pTriggers);
+      Dec(triggers.cTriggers);
+    end;
+  finally
+    FreeMem(triggers);
+  end;
+end;
+
+//Same but automatically opens and closes the service handle
+procedure TTriggerList.LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string);
+begin
+  with OpenService2(AScmHandle, AServiceName, SERVICE_QUERY_CONFIG) do
+    if SvcHandle <> 0 then
+      LoadTriggersForService(AServiceName, SvcHandle);
+end;
+
 
 function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
 var ANode: PVirtualNode;
@@ -353,21 +412,13 @@ begin
   Result := Self.NodesToUniqueTriggers(Tree.ChildNodes(Tree.RootNode));
 end;
 
-
-const
-  sTriggerSummary = '%s on %s';
-  sTriggerSummaryParams = '%s on %s (%s)';
-
 procedure TTriggerList.aCopySummaryExecute(Sender: TObject);
 var Data: PNdTriggerData;
   Result: string;
 begin
   Result := '';
   for Data in SelectedTriggers do
-    if Data.Params = '' then
-      Result := Result + Format(sTriggerSummary, [TriggerActionToString(Data.Action), Data.Description]) + #13#10
-    else
-      Result := Result + Format(sTriggerSummaryParams, [TriggerActionToString(Data.Action), Data.Description, Data.Params]) + #13#10;
+    Result := Result + Data.Summary + #13#10;
 
   if Length(Result) >= 2 then
     SetLength(Result, Length(Result)-2);
@@ -435,36 +486,6 @@ begin
   Clipboard.AsText := Result;
 end;
 
-procedure TTriggerList.aAddTriggerExecute(Sender: TObject);
-var EditForm: TTriggerEditorForm;
-  TriggerData: PSERVICE_TRIGGER;
-begin
-  EditForm := TTriggerEditorForm.Create(Self);
-  try
-    TriggerData := nil;
-    if not IsPositiveResult(EditForm.EditTrigger(TriggerData))
-    or (TriggerData = nil) //safety
-      then exit;
-  finally
-    FreeAndNil(EditForm);
-  end;
-
-  //Add the given trigger
-  try
-    //We only have a handle with read access, so reopen
-    with OpenService2(Self.FServiceName,
-      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
-      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
-      AddServiceTriggers(SvcHandle, [TriggerData^]);
-  finally
-    FreeMem(TriggerData);
-  end;
-
-  //Reload the triggers
-  //We could just parse the newly created trigger, but lets KISS for now
-  Self.Reload;
-end;
-
 procedure TTriggerList.aEditTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerData>;
   EditForm: TTriggerEditorForm;
@@ -483,7 +504,7 @@ begin
       exit; //TriggerData is freed in Finally
 
    //Store the edited trigger in the service config
-    with OpenService2(Self.FServiceName,
+    with OpenService2(Sel[0].ServiceName,
       STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
       SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
       ChangeServiceTrigger(SvcHandle, Sel[0].TriggerCopy^, TriggerData^);
@@ -507,16 +528,32 @@ begin
   Self.Reload;
 end;
 
+resourcestring
+  sConfirmTriggerDeletionCaption = 'Confirm deletion';
+  sConfirmTriggerDeletion = 'Do you really want to delete these triggers?';
+
+
 procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerData>;
   SelData: array of SERVICE_TRIGGER;
   i: integer;
+  ConfirmationText: string;
 begin
   Sel := SelectedTriggers;
+  if Length(Sel) <= 0 then exit;
+
+  ConfirmationText := sConfirmTriggerDeletion;
+  for i := 0 to Length(Sel)-1 do
+    ConfirmationText := ConfirmationText + #13 + '* ' + Sel[i].Summary;
+  if MessageBox(Self.Handle, PChar(ConfirmationText),
+    PChar(sConfirmTriggerDeletionCaption),
+    MB_ICONQUESTION or MB_YESNO) <> ID_YES then
+    exit;
+
   SetLength(SelData, Length(Sel));
   for i := 0 to Length(Sel)-1 do
     SelData[i] := Sel[i].TriggerCopy^;
-  with OpenService2(Self.FServiceName,
+  with OpenService2(Sel[0].ServiceName,
     STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
     SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
     DeleteServiceTriggers(SvcHandle, SelData);
@@ -555,40 +592,5 @@ begin
   TryExportTriggers(Self.AllUniqueTriggers);
 end;
 
-procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
-var Triggers: TArray<PSERVICE_TRIGGER>;
-  Triggers2: TArray<SERVICE_TRIGGER>;
-  Status: TTriggerImportStatus;
-  i: integer;
-begin
-  with OpenTriggersDialog do
-    if not Execute then
-      exit;
-
-  SetLength(Triggers, 0);
-  try
-    ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
-
-    //TODO: Show the dialog to inform the user of the malformed file (potential missed triggers)
-    // + let them choose the triggers to import.
-
-    SetLength(Triggers2, Length(Triggers));
-    for i := 0 to Length(Triggers)-1 do
-      Triggers2[i] := Triggers[i]^;
-
-    //Add these triggers
-    //We only have a handle with read access, so reopen
-    with OpenService2(Self.FServiceName,
-      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
-      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
-      AddServiceTriggers(SvcHandle, Triggers2, {UniqueOnly=}true);
-
-  finally
-    for i := 0 to Length(Triggers)-1 do
-      FreeMem(Triggers[i]);
-  end;
-
-  Self.Reload;
-end;
 
 end.

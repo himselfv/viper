@@ -205,7 +205,7 @@ object MainForm: TMainForm
         Caption = 'Triggers'
         ImageIndex = 2
         OnShow = tsTriggersShow
-        inline TriggerList: TTriggerList
+        inline TriggerList: TServiceTriggerList
           Left = 0
           Top = 0
           Width = 849
@@ -222,16 +222,21 @@ object MainForm: TMainForm
             Columns = <
               item
                 Position = 0
-                Width = 137
-                WideText = 'Action'
-              end
-              item
-                Position = 1
-                Width = 412
+                Width = 299
                 WideText = 'Trigger'
               end
               item
+                Position = 1
+                Width = 100
+                WideText = 'Action'
+              end
+              item
                 Position = 2
+                Width = 150
+                WideText = 'Service'
+              end
+              item
+                Position = 3
                 Width = 300
                 WideText = 'Params'
               end>
@@ -432,7 +437,7 @@ object MainForm: TMainForm
     Left = 24
     Top = 72
     Bitmap = {
-      494C0101020008009C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010102000800AC0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

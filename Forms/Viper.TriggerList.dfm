@@ -11,7 +11,7 @@ object TriggerList: TTriggerList
     Height = 238
     Align = alClient
     BorderWidth = 1
-    Header.AutoSizeIndex = 1
+    Header.AutoSizeIndex = 0
     Header.Font.Charset = DEFAULT_CHARSET
     Header.Font.Color = clWindowText
     Header.Font.Height = -11
@@ -25,25 +25,32 @@ object TriggerList: TTriggerList
     TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
     TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toMultiSelect, toRightClickSelect, toSimpleDrawSelection]
     OnChange = TreeChange
+    OnCompareNodes = TreeCompareNodes
     OnFreeNode = TreeFreeNode
     OnGetText = TreeGetText
     OnGetImageIndexEx = TreeGetImageIndexEx
     OnGetNodeDataSize = TreeGetNodeDataSize
+    OnHeaderClick = TreeHeaderClick
     OnInitNode = TreeInitNode
     OnKeyDown = TreeKeyDown
     Columns = <
       item
         Position = 0
-        Width = 80
-        WideText = 'Action'
-      end
-      item
-        Position = 1
-        Width = 406
+        Width = 236
         WideText = 'Trigger'
       end
       item
+        Position = 1
+        Width = 100
+        WideText = 'Action'
+      end
+      item
         Position = 2
+        Width = 150
+        WideText = 'Service'
+      end
+      item
+        Position = 3
         Width = 300
         WideText = 'Params'
       end>
@@ -51,15 +58,6 @@ object TriggerList: TTriggerList
   object PopupMenu: TPopupMenu
     Left = 16
     Top = 64
-    object miAddTrigger: TMenuItem
-      Action = aAddTrigger
-    end
-    object miImportTrigger: TMenuItem
-      Action = aImportTrigger
-    end
-    object N1: TMenuItem
-      Caption = '-'
-    end
     object miCopy: TMenuItem
       Caption = 'Copy'
       object miCopySummary: TMenuItem
@@ -117,19 +115,9 @@ object TriggerList: TTriggerList
       Caption = 'Additional params'
       OnExecute = aCopyParamsExecute
     end
-    object aAddTrigger: TAction
-      Category = 'Modify'
-      Caption = 'Add...'
-      OnExecute = aAddTriggerExecute
-    end
     object aDisableTrigger: TAction
       Category = 'Modify'
       Caption = 'Disable'
-    end
-    object aImportTrigger: TAction
-      Category = 'Modify'
-      Caption = 'Import...'
-      OnExecute = aImportTriggerExecute
     end
     object aExportTrigger: TAction
       Category = 'Modify'

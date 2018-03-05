@@ -102,6 +102,10 @@
             <Form>TriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.ServiceTriggerList.pas">
+            <Form>ServiceTriggerList</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="..\Forms\Viper.TriggerBrowser.pas">
             <Form>TriggerBrowserForm</Form>
         </DCCReference>
@@ -122,11 +126,9 @@
         <DCCReference Include="SvcCat.pas"/>
         <DCCReference Include="..\Forms\Viper.TriggerEditor.pas">
             <Form>TriggerEditorForm</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.TriggerDataItemEditor.pas">
             <Form>TriggerDataItemEditor</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="TriggerExport.pas"/>
         <DCCReference Include="RegFile.pas"/>

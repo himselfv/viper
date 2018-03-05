@@ -11,6 +11,7 @@ uses
   Viper.ServiceList in '..\Forms\Viper.ServiceList.pas' {ServiceList: TFrame},
   Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
   Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
+  Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
   Viper.TriggerBrowser in '..\Forms\Viper.TriggerBrowser.pas' {TriggerBrowserForm},
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   ServiceHelper in 'ServiceHelper.pas',

@@ -224,6 +224,8 @@ type
     procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 
   protected //Details pane
+    FDetailsPaneFocusedService: TExtServiceEntry;
+    procedure SetDetailsPaneFocusedService(AService: TExtServiceEntry);
     procedure ReloadDetails;
     procedure ReloadServiceInfo;
     procedure ReloadServiceDependencies;
@@ -241,6 +243,7 @@ type
     FTriggerBrowser: TTriggerList;
     procedure InitTriggerBrowser;
     procedure FreeTriggerBrowser;
+    function TriggerBrowserGetFocusedService: TExtServiceEntry;
     procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
 
   protected
@@ -1050,7 +1053,8 @@ procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTr
   Node: PVirtualNode; Column: TColumnIndex);
 begin
   MainServiceList.vtServicesFocusChanged(Sender, Node, Column); //inherited
-  ReloadDetails;
+  if MainServiceList.Visible then
+    SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
   //Action availability checking is done in OnChanged, depends on Selection
 end;
 
@@ -1068,7 +1072,13 @@ end;
 
 
 // Details pane
-// At the moment, always shows the details for MainServiceList.FocusedService
+
+procedure TMainForm.SetDetailsPaneFocusedService(AService: TExtServiceEntry);
+begin
+  if AService = FDetailsPaneFocusedService then exit;
+  FDetailsPaneFocusedService := AService;
+  ReloadDetails;
+end;
 
 //Reloads all data in the details pane
 procedure TMainForm.ReloadDetails;
@@ -1103,7 +1113,7 @@ end;
 procedure TMainForm.ReloadServiceInfo;
 var service: TExtServiceEntry;
 begin
-  service := TExtServiceEntry(MainServiceList.GetFocusedService);
+  service := FDetailsPaneFocusedService;
 
   if service <> nil then
     mmDetails.Text := service.Description
@@ -1130,7 +1140,7 @@ end;
 procedure TMainForm.ReloadServiceDependencies;
 var service: TServiceEntry;
 begin
-  service := MainServiceList.GetFocusedService;
+  service := FDetailsPaneFocusedService;
   DependencyList.BeginUpdate;
   try
     DependencyList.Clear;
@@ -1179,7 +1189,7 @@ procedure TMainForm.ReloadServiceDependents;
 var service: TServiceEntry;
   hSC: SC_HANDLE;
 begin
-  service := MainServiceList.GetFocusedService;
+  service := FDetailsPaneFocusedService;
   if service = nil then begin
     DependentsList.Clear;
     exit;
@@ -1228,7 +1238,6 @@ begin
   end;
 end;
 
-
 //Triggers are Windows 7-introduced instructions to start/stop service on a certain system events.
 
 procedure TMainForm.tsTriggersShow(Sender: TObject);
@@ -1239,7 +1248,7 @@ end;
 procedure TMainForm.ReloadTriggers;
 var service: TServiceEntry;
 begin
-  service := MainServiceList.GetFocusedService;
+  service := FDetailsPaneFocusedService;
   if service = nil then
     TriggerList.SetService('')
   else
@@ -1283,16 +1292,24 @@ begin
 end;
 
 
-{ Inplace trigger browser }
+{
+Inplace trigger browser
+The main window can switch between service list mode and trigger list mode.
+Some controls such as details pane and quicksearch, as well as reload action,
+should apply to both modes, so we have to:
+1. Check which mode in their handlers.
+2. Re-apply their effects every time we switch to a different mode.
+}
 
 //Initializes the trigger browser. Call before first showing the browser (or before all times -- no harm)
 procedure TMainForm.InitTriggerBrowser;
 begin
   if FTriggerBrowser <> nil then exit;
   FTriggerBrowser := TTriggerList.Create(nil);
-  FTriggerBrowser.OnFocusChanged := @Self.TriggerBrowserFocusChanged;
+  FTriggerBrowser.OnFocusChanged := Self.TriggerBrowserFocusChanged;
   FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
   FTriggerBrowser.Align := alClient;
+  FTriggerBrowser.TabOrder := MainServiceList.TabOrder;
 end;
 
 //Frees the browser windows. Call once, at termination.
@@ -1303,26 +1320,58 @@ begin
   FTriggerBrowser := nil;
 end;
 
+//This returns our INTERNAL TServiceEntry matching the trigger entry currently
+//focused in the TriggerBrowser
+//Returns Nil if a matching service cannot be found which is a valid corner
+//case so handle gracefully.
+function TMainForm.TriggerBrowserGetFocusedService: TExtServiceEntry;
+var TriggerData: PNdTriggerData;
+begin
+  if FTriggerBrowser = nil then begin
+    Result := nil;
+    exit;
+  end;
+  TriggerData := FTriggerBrowser.FocusedTrigger;
+  if TriggerData = nil then
+    Result := nil
+  else
+    //There can be some corner cases where the trigger has already been detected
+    //by the TriggerBrowser but the matching new services is not yet in our local list.
+    //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
+    Result := TExtServiceEntry(FServices.Find(TriggerData.ServiceName))
+end;
+
 procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
 begin
- //TODO: Show details for this service in details pane.
- //  This is currently problematic as the details pane just goes for MainServiceList.FocusedService() directly.
+  if not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
+  //Show details for this service in details pane.
+  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
 end;
 
 procedure TMainForm.miServiceBrowserClick(Sender: TObject);
+var WasFocused: boolean;
 begin
   if FTriggerBrowser = nil then exit;
+  WasFocused := FTriggerBrowser.Focused;
   MainServiceList.Visible := true;
   FTriggerBrowser.Visible := false;
+  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
+  if WasFocused then
+    MainServiceList.SetFocus;
 end;
 
 procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
+var WasFocused: boolean;
 begin
   if FTriggerBrowser = nil then
     InitTriggerBrowser;
+  WasFocused := MainServiceList.Focused;
   FTriggerBrowser.Show;
   MainServiceList.Visible := false;
   FTriggerBrowser.Reload;
+  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
+  if WasFocused then
+    FTriggerBrowser.SetFocus;
 end;
 
 
@@ -1462,7 +1511,7 @@ end;
 procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
 begin
   //If no service is focused, abort
-  if aEditServiceNotes.Checked and (MainServiceList.GetFocusedService = nil) then begin
+  if aEditServiceNotes.Checked and (FDetailsPaneFocusedService = nil) then begin
     aEditServiceNotes.Checked := false;
     exit;
   end;
@@ -1503,7 +1552,7 @@ var service: TExtServiceEntry;
 begin
   if mmNotes.ReadOnly then exit; // couldn't have been changed
 
-  service := TExtServiceEntry(MainServiceList.GetFocusedService);
+  service := FDetailsPaneFocusedService;
   if service = nil then exit;
 
   if (service.Info = nil) and (mmNotes.Text = '') then exit; //do not create a file unless there's a point

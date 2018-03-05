@@ -97,6 +97,7 @@ type
     function SelectedTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+    function FocusedTrigger: PNdTriggerData;
     property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
 
   end;
@@ -399,6 +400,14 @@ begin
   end;
 end;
 
+
+function TTriggerList.FocusedTrigger: PNdTriggerData;
+begin
+  if Tree.FocusedNode = nil then
+    Result := nil
+  else
+    Result := Tree.GetNodeData(Tree.FocusedNode);
+end;
 
 function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
 var ANode: PVirtualNode;

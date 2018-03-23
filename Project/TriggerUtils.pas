@@ -5,7 +5,7 @@ unit TriggerUtils;
 // Lets you decode some IDs but might make the app start a bit slower.
 
 interface
-uses WinSvc, GuidDict;
+uses WinSvc, GuidDict, UniStrUtils;
 
 function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;
 
@@ -67,7 +67,7 @@ type
     function HexValue: string; inline;
     function StringValue: string; inline;
     function RawStringValue: string; inline;
-    function MultistringValue: TArray<string>;
+    function MultistringValue: TStringArray;
     function ByteValue: byte; inline;
     function Int64Value: int64; inline;
     //Changes the size and reallocates the associated memory. Only use for the standalone structures!
@@ -76,7 +76,7 @@ type
     procedure SetHexValue(const Value: string); inline;
     procedure SetStringValue(const Value: string); inline;
     procedure SetRawStringValue(const Value: string); inline;
-    procedure SetMultistringValue(const Value: TArray<string>);
+    procedure SetMultistringValue(const Value: TStringArray);
     procedure SetByteValue(const Value: byte); inline;
     procedure SetInt64Value(const Value: int64); inline;
   end;
@@ -131,7 +131,7 @@ function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): bool
 function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 
 implementation
-uses SysUtils, Classes, Windows, UniStrUtils, ServiceHelper, SetupApiHelper,
+uses SysUtils, Classes, Windows, ServiceHelper, SetupApiHelper,
   EtwUtils, {$IFDEF QUERYLOCALRPC}JwaRpc, JwaRpcDce,{$ENDIF} Viper.Log;
 
 function TriggerDataTypeToStr(const dwDataType: cardinal): string;
@@ -177,14 +177,14 @@ end;
 //Returns the entire contents of the buffer formatted as hex data. Reversible.
 function TTriggerParamHelper.HexValue: string;
 begin
-  Result := string(BinToHex(Self.pData, Self.cbData));
+  Result := string(UniStrUtils.BinToHex(Self.pData, Self.cbData));
 end;
 
 //Returns the contents of the buffer treated and formatted as a string value.
 //Note that many STRING type entries are in reality MULTISZ and will be reformatted,
 //so the result will not be reversible.
 function TTriggerParamHelper.StringValue: string;
-var list: TArray<string>;
+var list: TStringArray;
   i: integer;
 begin
   //Most STRING values are really MULTISZ and we better be prepared
@@ -207,7 +207,7 @@ end;
 
 //Returns the entire contents of the buffer treated as a STRING or multistring (MULTISZ) value.
 //Handles various edge and malformed cases.
-function TTriggerParamHelper.MultistringValue: TArray<string>;
+function TTriggerParamHelper.MultistringValue: TStringArray;
 begin
   Result := MultiszDecode(PWideChar(Self.pData), Self.cbData div SizeOf(WideChar));
 end;
@@ -234,11 +234,11 @@ end;
 procedure TTriggerParamHelper.SetHexValue(const Value: string);
 begin
   Resize(Length(Value) div 2);
-  HexToBin(AnsiString(Value), Self.pData, Self.cbData);
+  UniStrUtils.HexToBin(AnsiString(Value), Self.pData, Self.cbData);
 end;
 
 procedure TTriggerParamHelper.SetStringValue(const Value: string);
-var list: TArray<string>;
+var list: TStringArray;
 begin
  //Tries to automatically detect a converted multistring, but will misinterpret
  //your normal ;s. Use SetRawStringValue if you handle multistrings properly.
@@ -258,7 +258,7 @@ begin
     Move(Value[1], Self.pData^, (Length(Value)+1)*SizeOf(WideChar));
 end;
 
-procedure TTriggerParamHelper.SetMultistringValue(const Value: TArray<string>);
+procedure TTriggerParamHelper.SetMultistringValue(const Value: TStringArray);
 begin
   Self.SetRawStringValue(MultiszEncode(Value));
 end;
@@ -509,7 +509,7 @@ begin
     SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE:
       if ATrigger.pTriggerSubtype^ = CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID then begin
         if Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_BINARY, param) then
-          Result.Event := Format(sTriggerSystemStateChangeParam, [BinToHex(param.pData, param.cbData)]) //this is in fact SERVICE_TRIGGER_CUSTOM_STATE_ID
+          Result.Event := Format(sTriggerSystemStateChangeParam, [UniStrUtils.BinToHex(param.pData, param.cbData)]) //this is in fact SERVICE_TRIGGER_CUSTOM_STATE_ID
         else
           Result.Event := Format(sTriggerSystemStateChange, []);
       end else

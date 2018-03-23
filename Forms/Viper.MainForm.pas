@@ -537,7 +537,7 @@ end;
 procedure TMainForm.FilterTriggers();
 begin
   //If it's invisible it's going to be filtered when it's reloaded
-  if FTriggerBrowser.Visible then
+  if (FTriggerBrowser <> nil) and FTriggerBrowser.Visible then
     FTriggerBrowser.ApplyFilter(FilterTriggers_Callback, nil);
 end;
 
@@ -1134,7 +1134,7 @@ end;
 
 procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
 begin
-  if not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
+  if (FTriggerBrowser = nil) or not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
   //Show details for this service in details pane.
   SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
 end;

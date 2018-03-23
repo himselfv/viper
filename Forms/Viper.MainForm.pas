@@ -1535,7 +1535,8 @@ begin
   aSaveNotes.Enabled := aEditServiceNotes.Checked;
 
   //Return to the list if the editor was focused (but not if something else)
-  if mmNotes.Focused and not aEditServiceNotes.Checked then
+  if mmNotes.Focused and not aEditServiceNotes.Checked
+  and MainServiceList.Visible then
     MainServiceList.vtServices.SetFocus;
 end;
 

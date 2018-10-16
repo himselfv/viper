@@ -131,9 +131,9 @@ const
 function TNdTriggerData.Summary: string;
 begin
   if Self.Params = '' then
-    Result := Result + Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
+    Result := Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
   else
-    Result := Result + Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
+    Result := Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
 end;
 
 procedure TTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);

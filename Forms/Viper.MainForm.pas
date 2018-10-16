@@ -118,6 +118,8 @@ type
     N7: TMenuItem;
     N10: TMenuItem;
     miServiceBrowser: TMenuItem;
+    aSettings: TAction;
+    miSettings: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -190,6 +192,7 @@ type
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
     procedure aShowUserPrototypesExecute(Sender: TObject);
     procedure aRunServicesMscExecute(Sender: TObject);
+    procedure aSettingsExecute(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -309,7 +312,6 @@ procedure TMainForm.FormShow(Sender: TObject);
 begin
   //Load settings
   SettingsForm.LoadSettings;
-  StyleSettingsForm.LoadStyles;
 
   aRestartAsAdmin.Visible := not IsUserAdmin();
   pcBottom.ActivePage := tsDescription;
@@ -337,6 +339,12 @@ begin
   end;
   if err <> ERROR_CANCELLED then
     RaiseLastOsError(err);
+end;
+
+procedure TMainForm.aSettingsExecute(Sender: TObject);
+begin
+  SettingsForm.ShowModal;
+  MainServiceList.Invalidate;
 end;
 
 procedure TMainForm.aConfigureColorsExecute(Sender: TObject);

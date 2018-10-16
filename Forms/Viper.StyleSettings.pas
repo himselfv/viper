@@ -3,8 +3,9 @@ unit Viper.StyleSettings;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, SvcEntry;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls,
+  IniFiles, SvcEntry;
 
 type
   TPaintStyle = record
@@ -50,6 +51,11 @@ type
     procedure btnResetClick(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+  protected
+    procedure DoLoadStyles(Sender: TObject; Ini: TCustomIniFile);
+    procedure DoSaveStyles(Sender: TObject; Ini: TCustomIniFile);
   public
     procedure ResetStyles;
     procedure SaveStyles;
@@ -64,9 +70,25 @@ var
   StyleSettingsForm: TStyleSettingsForm;
 
 implementation
-uses UITypes, WinSvc, IniFiles, ServiceHelper, Viper.StyleEdit, Viper.Settings;
+uses UITypes, WinSvc, ServiceHelper, Viper.StyleEdit, Viper.Settings;
 
 {$R *.dfm}
+
+
+procedure TStyleSettingsForm.FormCreate(Sender: TObject);
+begin
+  SettingsForm.OnLoadSettings.Add(Self.DoLoadStyles);
+  SettingsForm.OnSaveSettings.Add(Self.DoSaveStyles);
+end;
+
+procedure TStyleSettingsForm.FormDestroy(Sender: TObject);
+begin
+  if SettingsForm <> nil then begin
+    SettingsForm.OnLoadSettings.Remove(Self.DoLoadStyles);
+    SettingsForm.OnSaveSettings.Remove(Self.DoSaveStyles);
+  end;
+end;
+
 
 procedure SetColors(Panel: TPanel; BgColor: TColor; Font: TFont);
 begin
@@ -159,30 +181,57 @@ begin
     StyleControl.Font.Style := TFontStyles(byte(val));
 end;
 
+procedure TStyleSettingsForm.DoLoadStyles(Sender: TObject; Ini: TCustomIniFile);
+begin
+  LoadStyle(ini, pnlTypeService);
+  LoadStyle(ini, pnlTypeUser);
+  LoadStyle(ini, pnlTypeDriver);
+  LoadStyle(ini, pnlTypeProtected);
+  LoadStyle(ini, pnlTypeInteractive);
+  LoadStyle(ini, pnlStartAuto);
+  LoadStyle(ini, pnlStartAutoBoot);
+  LoadStyle(ini, pnlStartManual);
+  LoadStyle(ini, pnlStartDisabled);
+  LoadStyle(ini, pnlHasTriggers);
+  LoadStyle(ini, pnlStateStopped);
+  LoadStyle(ini, pnlStateStarting);
+  LoadStyle(ini, pnlStateStopping);
+  LoadStyle(ini, pnlStateRunning);
+  LoadStyle(ini, pnlStateResuming);
+  LoadStyle(ini, pnlStatePausing);
+  LoadStyle(ini, pnlStatePaused);
+  LoadStyle(ini, pnlStateOther);
+end;
+
+procedure TStyleSettingsForm.DoSaveStyles(Sender: TObject; Ini: TCustomIniFile);
+begin
+  SaveStyle(ini, pnlTypeService);
+  SaveStyle(ini, pnlTypeUser);
+  SaveStyle(ini, pnlTypeDriver);
+  SaveStyle(ini, pnlTypeProtected);
+  SaveStyle(ini, pnlTypeInteractive);
+  SaveStyle(ini, pnlStartAuto);
+  SaveStyle(ini, pnlStartAutoBoot);
+  SaveStyle(ini, pnlStartManual);
+  SaveStyle(ini, pnlStartDisabled);
+  SaveStyle(ini, pnlHasTriggers);
+  SaveStyle(ini, pnlStateStopped);
+  SaveStyle(ini, pnlStateStarting);
+  SaveStyle(ini, pnlStateStopping);
+  SaveStyle(ini, pnlStateRunning);
+  SaveStyle(ini, pnlStateResuming);
+  SaveStyle(ini, pnlStatePausing);
+  SaveStyle(ini, pnlStatePaused);
+  SaveStyle(ini, pnlStateOther);
+end;
+
 procedure TStyleSettingsForm.LoadStyles;
 var ini: TCustomIniFile;
 begin
   ResetStyles;
   ini := Viper.Settings.GetSettings;
   try
-    LoadStyle(ini, pnlTypeService);
-    LoadStyle(ini, pnlTypeUser);
-    LoadStyle(ini, pnlTypeDriver);
-    LoadStyle(ini, pnlTypeProtected);
-    LoadStyle(ini, pnlTypeInteractive);
-    LoadStyle(ini, pnlStartAuto);
-    LoadStyle(ini, pnlStartAutoBoot);
-    LoadStyle(ini, pnlStartManual);
-    LoadStyle(ini, pnlStartDisabled);
-    LoadStyle(ini, pnlHasTriggers);
-    LoadStyle(ini, pnlStateStopped);
-    LoadStyle(ini, pnlStateStarting);
-    LoadStyle(ini, pnlStateStopping);
-    LoadStyle(ini, pnlStateRunning);
-    LoadStyle(ini, pnlStateResuming);
-    LoadStyle(ini, pnlStatePausing);
-    LoadStyle(ini, pnlStatePaused);
-    LoadStyle(ini, pnlStateOther);
+    DoLoadStyles(Self, ini);
   finally
     FreeAndNil(ini);
   end;
@@ -193,24 +242,7 @@ var ini: TCustomIniFile;
 begin
   ini := Viper.Settings.GetSettings;
   try
-    SaveStyle(ini, pnlTypeService);
-    SaveStyle(ini, pnlTypeUser);
-    SaveStyle(ini, pnlTypeDriver);
-    SaveStyle(ini, pnlTypeProtected);
-    SaveStyle(ini, pnlTypeInteractive);
-    SaveStyle(ini, pnlStartAuto);
-    SaveStyle(ini, pnlStartAutoBoot);
-    SaveStyle(ini, pnlStartManual);
-    SaveStyle(ini, pnlStartDisabled);
-    SaveStyle(ini, pnlHasTriggers);
-    SaveStyle(ini, pnlStateStopped);
-    SaveStyle(ini, pnlStateStarting);
-    SaveStyle(ini, pnlStateStopping);
-    SaveStyle(ini, pnlStateRunning);
-    SaveStyle(ini, pnlStateResuming);
-    SaveStyle(ini, pnlStatePausing);
-    SaveStyle(ini, pnlStatePaused);
-    SaveStyle(ini, pnlStateOther);
+    DoSaveStyles(Self, ini);
   finally
     FreeAndNil(ini);
   end;

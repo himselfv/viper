@@ -13,6 +13,8 @@ object StyleSettingsForm: TStyleSettingsForm
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   DesignSize = (
     529
     419)

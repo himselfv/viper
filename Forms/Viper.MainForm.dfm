@@ -426,6 +426,10 @@ object MainForm: TMainForm
       Caption = 'services.msc'
       OnExecute = aRunServicesMscExecute
     end
+    object aSettings: TAction
+      Caption = 'Settings'
+      OnExecute = aSettingsExecute
+    end
   end
   object ilImages: TImageList
     ColorDepth = cd32Bit
@@ -674,6 +678,9 @@ object MainForm: TMainForm
     end
     object miTools: TMenuItem
       Caption = 'Tools'
+      object miSettings: TMenuItem
+        Action = aSettings
+      end
       object N9: TMenuItem
         Caption = '-'
       end

@@ -17,6 +17,7 @@ type
     N1: TMenuItem;
     aAddTrigger: TAction;
     aImportTrigger: TAction;
+    miExportAllTriggers: TMenuItem;
     procedure aAddTriggerExecute(Sender: TObject);
     procedure aImportTriggerExecute(Sender: TObject);
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);

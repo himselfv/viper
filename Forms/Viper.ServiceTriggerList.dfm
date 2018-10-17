@@ -32,6 +32,9 @@ inherited ServiceTriggerList: TServiceTriggerList
     object N1: TMenuItem [2]
       Caption = '-'
     end
+    object miExportAllTriggers: TMenuItem [6]
+      Action = aExportAllTriggers
+    end
   end
   inherited ActionList: TActionList
     object aAddTrigger: TAction

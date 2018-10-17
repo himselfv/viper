@@ -43,7 +43,6 @@ type
     aExportAllTriggers: TAction;
     aDeleteTrigger: TAction;
     miExportTrigger: TMenuItem;
-    miExportAllTriggers: TMenuItem;
     miDisableTrigger: TMenuItem;
     miDeleteTrigger: TMenuItem;
     aEditTrigger: TAction;
@@ -628,6 +627,8 @@ begin
   TryExportTriggers(Self.SelectedUniqueTriggers);
 end;
 
+//"Export All" is available but not included in the menus by default, because it
+//makes little sense for multi-service trigger lists. Descendants can include it.
 procedure TTriggerList.aExportAllTriggersExecute(Sender: TObject);
 begin
   TryExportTriggers(Self.AllUniqueTriggers);

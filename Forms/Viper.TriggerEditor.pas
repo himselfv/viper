@@ -459,9 +459,6 @@ var preset: PTypePreset;
   end;
 
 begin
-  //TODO: Shouldn't we save current page details? E.g. we've changed the device type
-  //on one page, we should see the guid on the generic page!
-
   if cbTypePreset.ItemIndex < 0 then begin
     //No preset selected, this is the default state for new triggers - show nothing
     pcPresetDetails.ActivePage := nil;
@@ -480,9 +477,8 @@ begin
   //Otherwise work by data stored in a TYPE_PRESET
 
   //Configure the generic page in case we switch to it later
-  //TODO: This only configures it for the base values of the preset. If the preset
-  //  had any configurable values, our changes to those will be lost.
-  //  We would better save and restore any settings on switching between pages.
+  //Note: This only configures it for the base values of the preset. If the preset
+  //  had any configurable values, our changes to those are ignored.
    edtCustomType.Value := preset.t;
    if preset.st <> nil then
      edtCustomSubtype.Text := GuidToString(preset.st^)
@@ -495,7 +491,7 @@ begin
    PP_GENERICSUBTYPE: begin
      pcPresetDetails.ActivePage := tsPresetGeneric;
      SetGenericCustomTypeEnabled(false);
-    UpdatePresetGenericPage;
+     UpdatePresetGenericPage();
    end;
    PP_DEVICETYPE: begin
      pcPresetDetails.ActivePage := tsPresetDevice;

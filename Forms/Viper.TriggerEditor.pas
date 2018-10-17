@@ -400,7 +400,12 @@ begin
     case TypePreset.p of
       PP_GENERIC,
       PP_GENERICSUBTYPE: begin
-        DraftGuid := StringToGuid(edtCustomSubtype.Text);
+        //Allow empty value as a shortcut for zero guid.
+        //There are no known cases where these work, but maybe the user is experimenting.
+        if edtCustomSubtype.Text = '' then
+          FillChar(DraftGuid, SizeOf(DraftGuid), 0)
+        else
+          DraftGuid := StringToGuid(edtCustomSubtype.Text);
         DraftTrigger.pTriggerSubtype := @DraftGuid;
       end;
       PP_DEVICETYPE: begin

@@ -664,7 +664,8 @@ begin
     Result.pTriggerSubtype := PGuid(freePtr);
     Inc(freePtr, SizeOf(TGUID));
     Result.pTriggerSubtype^ := tr.pTriggerSubtype^;
-  end;
+  end else
+    Result.pTriggerSubtype := nil;
 
   if tr.pDataItems <> nil then begin
     //Allocate memory for the DATA_ITEM headers (need to go sequentially)

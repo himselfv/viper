@@ -78,6 +78,7 @@ type
     FEtwSources: TArray<TGUID>;
     procedure ReloadData;
     procedure SaveData;
+    procedure UpdatePresetGenericPage;
     procedure UpdatePresetDevicePage;
     procedure UpdatePresetEtwPage;
     function GetSelectedDeviceInterfaceClass: TGUID;
@@ -358,6 +359,7 @@ begin
       typePreset := @CustomTypePreset;
   end;
   SelectTypePreset(typePreset, true);
+  //Data loading for a particular page happens in the page switch handler
 
   ReloadDataItems;
 end;
@@ -400,13 +402,15 @@ begin
     case TypePreset.p of
       PP_GENERIC,
       PP_GENERICSUBTYPE: begin
-        //Allow empty value as a shortcut for zero guid.
-        //There are no known cases where these work, but maybe the user is experimenting.
-        if edtCustomSubtype.Text = '' then
-          FillChar(DraftGuid, SizeOf(DraftGuid), 0)
-        else
+        //People leave GUID empty when testing. Let's equate this to zero guid.
+        //I don't think any trigger supports it, but at least it's saved. Nil guid will give "invalid param".
+        if edtCustomSubtype.Text = '' then begin
+          FillChar(DraftGuid, SizeOf(DraftGuid), 0);
+          DraftTrigger.pTriggerSubtype := @DraftGuid;
+        end else begin
           DraftGuid := StringToGuid(edtCustomSubtype.Text);
-        DraftTrigger.pTriggerSubtype := @DraftGuid;
+          DraftTrigger.pTriggerSubtype := @DraftGuid;
+        end;
       end;
       PP_DEVICETYPE: begin
         DraftGuid := Self.GetSelectedDeviceInterfaceClass;
@@ -469,12 +473,16 @@ begin
    //Custom handling for "No preset" - enable the type editing
     pcPresetDetails.ActivePage := tsPresetGeneric;
     SetGenericCustomTypeEnabled(true);
+    UpdatePresetGenericPage;
     exit;
   end;
 
   //Otherwise work by data stored in a TYPE_PRESET
 
   //Configure the generic page in case we switch to it later
+  //TODO: This only configures it for the base values of the preset. If the preset
+  //  had any configurable values, our changes to those will be lost.
+  //  We would better save and restore any settings on switching between pages.
    edtCustomType.Value := preset.t;
    if preset.st <> nil then
      edtCustomSubtype.Text := GuidToString(preset.st^)
@@ -487,6 +495,7 @@ begin
    PP_GENERICSUBTYPE: begin
      pcPresetDetails.ActivePage := tsPresetGeneric;
      SetGenericCustomTypeEnabled(false);
+    UpdatePresetGenericPage;
    end;
    PP_DEVICETYPE: begin
      pcPresetDetails.ActivePage := tsPresetDevice;
@@ -505,7 +514,21 @@ begin
    else //PP_GENERIC and everything undefined
      pcPresetDetails.ActivePage := tsPresetGeneric;
      SetGenericCustomTypeEnabled(true);
+    UpdatePresetGenericPage;
    end;
+end;
+
+//Actualizes the information on the Generic page
+procedure TTriggerEditorForm.UpdatePresetGenericPage;
+begin
+  if FTrigger <> nil then begin
+   //Load explicit type/subtype values. Most presets limit at least some of these.
+    edtCustomType.Value := FTrigger.dwTriggerType;
+    if FTrigger.pTriggerSubtype <> nil then
+      edtCustomSubtype.Text := GuidToString(FTrigger.pTriggerSubtype^)
+    else
+      edtCustomSubtype.Text := '';
+  end;
 end;
 
 //Actualizes the information on the PresetDevice page

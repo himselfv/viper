@@ -33,7 +33,7 @@ object TriggerEditorForm: TTriggerEditorForm
     Top = 35
     Width = 536
     Height = 62
-    ActivePage = tsPresetDevice
+    ActivePage = tsPresetGeneric
     Anchors = [akLeft, akTop, akRight]
     Style = tsFlatButtons
     TabOrder = 2

@@ -14,6 +14,8 @@ type
     function LoadIconResource(const ALibName: string; const AResName: string; AW, AH: integer): HICON;
     function LoadIconResource16_OldWay(const ALibName: string; AResId: integer): HICON;
   public const
+    iStart: integer = 0;
+    iStop: integer = 1;
     iTrigger: integer = 2;
     iTriggerFirewall: integer = 3;
     iTriggerDevice: integer = 4; //5

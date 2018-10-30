@@ -9,21 +9,22 @@ uses
   Viper.ServiceTriggerList, Viper.RichEditEx;
 
 type
-  TFolderNodeType = (
-    //The order is important, folders are sorted by it
-    ntNone = 0,               //no folder type OR information is assigned
-    ntRunningServices = 1,
-    ntUnknownServices,
-    ntAllServices,
-    ntRunningDrivers,
-    ntAllDrivers,
-    ntMax = 255               //represents all the other values when cast to TFolderNodeType
-  );
-
   //Folder node data contains only a single pointer.
   //If it's < 32 then it's TFolderNodeType, otherwise it's a TServiceFolder.
   TNdFolderData = TServiceFolder;
   PNdFolderData = ^TNdFolderData;
+
+  TFolderNodeType = (
+    //The order is important, folders are sorted by it
+    ntNone = 0,               //no folder type OR information is assigned
+    ntUnknownServices = 1,    //unsorted
+    ntRunningServices,
+    ntAllServices,
+    ntRunningDrivers,
+    ntAllDrivers,
+    ntTriggers = 10,
+    ntMax = 255               //represents all the other values when cast to TFolderNodeType
+  );
 
   TExtServiceEntry = class(TServiceEntry)
     Info: TServiceInfo;
@@ -35,7 +36,6 @@ type
     ActionList: TActionList;
     Splitter1: TSplitter;
     vtFolders: TVirtualStringTree;
-    ilImages: TImageList;
     MainMenu: TMainMenu;
     cbHideEmptyFolders: TMenuItem;
     aHideEmptyFolders: TAction;
@@ -81,7 +81,6 @@ type
     aRestartAsAdmin: TAction;
     Restartasadministrator1: TMenuItem;
     N4: TMenuItem;
-    miTriggerBrowser: TMenuItem;
     aAddFolder: TAction;
     aRenameFolder: TAction;
     aDeleteFolder: TAction;
@@ -116,8 +115,6 @@ type
     miRunServicesMsc: TMenuItem;
     aRunServicesMsc: TAction;
     N7: TMenuItem;
-    N10: TMenuItem;
-    miServiceBrowser: TMenuItem;
     aSettings: TAction;
     miSettings: TMenuItem;
     procedure FormCreate(Sender: TObject);
@@ -248,6 +245,8 @@ type
     procedure FreeTriggerBrowser;
     function TriggerBrowserGetFocusedService: TExtServiceEntry;
     procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
+    procedure ShowServiceBrowser;
+    procedure ShowTriggerBrowser;
 
   protected
     procedure RefreshServiceList;
@@ -450,7 +449,7 @@ procedure TMainForm.Refresh;
 begin
   RefreshServiceList;
   //TriggerBrowser is dumber and currently always reloads fully
-  if (FTriggerBrowser <> nil) and (FTriggerBrowser.Visible) then begin
+  if (FTriggerBrowser <> nil) and FTriggerBrowser.Visible then begin
     FTriggerBrowser.Reload;
     Self.FilterTriggers;
   end;
@@ -628,6 +627,7 @@ resourcestring
   sFolderAllServices = 'All';
   sFolderAllDrivers = 'Drivers';
   sFolderRunningDrivers = 'Running';
+  sFolderTriggers = 'Triggers';
 
 //Reloads services and their folder structure
 procedure TMainForm.ReloadServiceTree;
@@ -644,6 +644,7 @@ begin
     vtFolders_AddSpecial(nil, ntAllServices);
     section := vtFolders_AddSpecial(nil, ntAllDrivers);
     vtFolders_AddSpecial(section, ntRunningDrivers);
+    vtFolders_AddSpecial(nil, ntTriggers);
   finally
     vtFolders.EndUpdate;
   end;
@@ -740,6 +741,7 @@ begin
         ntAllServices: CellText := sFolderAllServices;
         ntRunningDrivers: CellText := sFolderRunningDrivers;
         ntAllDrivers: CellText := sFolderAllDrivers;
+        ntTriggers: CellText := sFolderTriggers;
       else CellText := Data.Name;
       end;
   end;
@@ -748,9 +750,21 @@ end;
 procedure TMainForm.vtFoldersGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
   var Ghosted: Boolean; var ImageIndex: Integer);
+var Data: TNdFolderData;
 begin
   if not (Kind in [ikNormal, ikSelected]) then exit;
-  ImageIndex := CommonRes.iFolder;
+  Data := GetFolderData(Node);
+  if not IsSpecialFolder(Data) then
+    ImageIndex := CommonRes.iFolder
+  else
+  case TFolderNodeType(Data) of
+    ntRunningServices: ImageIndex := CommonRes.iStart;
+//    ntAllServices: ImageIndex := CommonRes.iService;
+    ntRunningDrivers: ImageIndex := CommonRes.iStart;
+    ntAllDrivers: ImageIndex := CommonRes.iDriver;
+    ntTriggers: ImageIndex := CommonRes.iTrigger;
+  else ImageIndex := CommonRes.iFolder;
+  end;
 end;
 
 procedure TMainForm.vtFoldersCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
@@ -955,10 +969,18 @@ begin
 end;
 
 
+//Selection changed
 procedure TMainForm.vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+var Data: TNdFolderData;
 begin
-  //Selection changed
-  FilterServices;
+  Data := GetFolderData(Node);
+  if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntTriggers) then begin
+    ShowTriggerBrowser;
+    FilterTriggers;
+  end else begin
+    ShowServiceBrowser;
+    FilterServices;
+  end;
 end;
 
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -1147,10 +1169,11 @@ begin
   SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
 end;
 
-procedure TMainForm.miServiceBrowserClick(Sender: TObject);
+procedure TMainForm.ShowServiceBrowser;
 var WasFocused: boolean;
 begin
   if FTriggerBrowser = nil then exit;
+  if MainServiceList.Visible then exit; //already visible
   WasFocused := FTriggerBrowser.Focused;
   MainServiceList.Visible := true;
   FTriggerBrowser.Visible := false;
@@ -1159,11 +1182,13 @@ begin
     MainServiceList.SetFocus;
 end;
 
-procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
+procedure TMainForm.ShowTriggerBrowser;
 var WasFocused: boolean;
 begin
   if FTriggerBrowser = nil then
-    InitTriggerBrowser;
+    InitTriggerBrowser
+  else
+    if FTriggerBrowser.Visible then exit; //already visible
   WasFocused := MainServiceList.Focused;
   FTriggerBrowser.Show;
   MainServiceList.Visible := false;
@@ -1171,6 +1196,16 @@ begin
   SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
   if WasFocused then
     FTriggerBrowser.SetFocus;
+end;
+
+procedure TMainForm.miServiceBrowserClick(Sender: TObject);
+begin
+  ShowServiceBrowser;
+end;
+
+procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
+begin
+  ShowTriggerBrowser;
 end;
 
 

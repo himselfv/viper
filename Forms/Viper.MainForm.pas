@@ -10,7 +10,7 @@ uses
 
 type
   //Folder node data contains only a single pointer.
-  //If it's < 32 then it's TFolderNodeType, otherwise it's a TServiceFolder.
+  //If it's < ntMax then it's TFolderNodeType, otherwise it's a TServiceFolder.
   TNdFolderData = TServiceFolder;
   PNdFolderData = ^TNdFolderData;
 
@@ -672,7 +672,7 @@ end;
 
 function TMainForm.IsSpecialFolder(AFolder: TNdFolderData): boolean;
 begin
-  Result := NativeUInt(AFolder) < 32;
+  Result := NativeUInt(AFolder) < integer(ntMax);
 end;
 
 function TMainForm.SpecialFolderType(AFolder: TNdFolderData): TFolderNodeType;

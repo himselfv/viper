@@ -18,12 +18,12 @@ type
     //The order is important, folders are sorted by it
     ntNone = 0,               //no folder type OR information is assigned
     ntAllServices = 1,
-    ntRunningServices,
     ntAllDrivers,
-    ntRunningDrivers,
     ntTriggers = 10,
     ntFolder = 100,           //represents the other values when cast to TFolderNodeType, for sorting purposes
-    ntUnknownServices = 250,  //unsorted
+    ntUnknownServices = 200,  //unsorted
+    ntRunningServices,
+    ntRunningDrivers,
     ntMax = 255               //values higher than this are objects
   );
 

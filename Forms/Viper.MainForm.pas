@@ -19,11 +19,12 @@ type
     ntNone = 0,               //no folder type OR information is assigned
     ntAllServices = 1,
     ntRunningServices,
-    ntUnknownServices,        //unsorted
     ntAllDrivers,
     ntRunningDrivers,
     ntTriggers = 10,
-    ntMax = 255               //represents all the other values when cast to TFolderNodeType
+    ntFolder = 100,           //represents the other values when cast to TFolderNodeType, for sorting purposes
+    ntUnknownServices = 250,  //unsorted
+    ntMax = 255               //values higher than this are objects
   );
 
   TExtServiceEntry = class(TServiceEntry)
@@ -686,9 +687,9 @@ end;
 function TMainForm.SpecialFolderType(AFolder: TNdFolderData): TFolderNodeType;
 begin
   //We can't just typecast to TFolderNodeType as this will only look at the lowest byte
-  //But we also have to have a result for non-TFolderNodeType values, so I'm creating ntMax for that
+  //But we also have to have a result for non-TFolderNodeType values. There's a special value for that
   if (NativeUInt(AFolder) > NativeUInt(ntMax)) then
-    Result := ntMax
+    Result := ntFolder
   else
     Result := TFolderNodeType(NativeUInt(AFolder));
 end;
@@ -782,15 +783,11 @@ begin
   Data1 := GetFolderData(Node1);
   Data2 := GetFolderData(Node2);
 
-  if IsSpecialFolder(Data1) and IsSpecialFolder(Data2) then
-    Result := NativeUInt(Data1) - NativeUInt(Data2)
+  if IsSpecialFolder(Data1) or IsSpecialFolder(Data2) then
+    //This also handles the Special+Normal folder sorting:
+    Result := NativeUInt(SpecialFolderType(Data1)) - NativeUInt(SpecialFolderType(Data2))
   else
-  if IsSpecialFolder(Data1) then
-    Result := -1
-  else
-  if IsSpecialFolder(Data2) then
-    Result := +1
-  else
+    //Text comparison is only for Normal+Normal sorting
     Result := CompareText(Data1.Name, Data2.Name);
 end;
 

@@ -517,6 +517,7 @@ begin
       ntUnknownServices: isVisible := isService and ((svc.Info = nil) or (Length(svc.Info.Folders) <= 0));
       ntRunningDrivers: isVisible := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
       ntAllDrivers: isVisible := not isService;
+      ntTriggers: isVisible := false;
     else //pointer
       isVisible := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
     end;

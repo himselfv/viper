@@ -45,9 +45,10 @@ object MainForm: TMainForm
     TabOrder = 1
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking]
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
+    TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
     TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
     OnChange = vtFoldersChange
+    OnCollapsing = vtFoldersCollapsing
     OnCompareNodes = vtFoldersCompareNodes
     OnDragAllowed = vtFoldersDragAllowed
     OnDragOver = vtFoldersDragOver

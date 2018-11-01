@@ -17,11 +17,11 @@ type
   TFolderNodeType = (
     //The order is important, folders are sorted by it
     ntNone = 0,               //no folder type OR information is assigned
-    ntUnknownServices = 1,    //unsorted
+    ntAllServices = 1,
     ntRunningServices,
-    ntAllServices,
-    ntRunningDrivers,
+    ntUnknownServices,        //unsorted
     ntAllDrivers,
+    ntRunningDrivers,
     ntTriggers = 10,
     ntMax = 255               //represents all the other values when cast to TFolderNodeType
   );
@@ -190,6 +190,8 @@ type
     procedure aShowUserPrototypesExecute(Sender: TObject);
     procedure aRunServicesMscExecute(Sender: TObject);
     procedure aSettingsExecute(Sender: TObject);
+    procedure vtFoldersCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      var Allowed: Boolean);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -623,9 +625,9 @@ end;
 
 
 resourcestring
+  sFolderAllServices = 'Services';
   sFolderUnknownServices = 'Unknown';
   sFolderRunningServices = 'Running';
-  sFolderAllServices = 'All';
   sFolderAllDrivers = 'Drivers';
   sFolderRunningDrivers = 'Running';
   sFolderTriggers = 'Triggers';
@@ -639,12 +641,14 @@ begin
     FServiceCat.Clear;
     FServiceCat.Load(AppFolder+'\SvcData');
     vtFolders.Clear;
-    CreateFolderNodes(nil, nil);
-    vtFolders_AddSpecial(nil, ntUnknownServices);
-    vtFolders_AddSpecial(nil, ntRunningServices);
-    vtFolders_AddSpecial(nil, ntAllServices);
+    section := vtFolders_AddSpecial(nil, ntAllServices);
+    vtFolders_AddSpecial(section, ntRunningServices);
+    CreateFolderNodes(section, nil);
+    vtFolders_AddSpecial(section, ntUnknownServices);
+    vtFolders.Expanded[section] := true;
     section := vtFolders_AddSpecial(nil, ntAllDrivers);
     vtFolders_AddSpecial(section, ntRunningDrivers);
+    vtFolders.Expanded[section] := true;
     vtFolders_AddSpecial(nil, ntTriggers);
   finally
     vtFolders.EndUpdate;
@@ -652,11 +656,14 @@ begin
 end;
 
 procedure TMainForm.CreateFolderNodes(AFolderNode: PVirtualNode; AFolderInfo: TServiceFolder);
-var ASubFolderInfo: TServiceFolder;
+var AFolderData: TServiceFolder;
+  ASubFolderInfo: TServiceFolder;
   ASubNode: PVirtualNode;
 begin
+  AFolderData := GetFolderData(AFolderNode); //maybe nil
   for ASubFolderInfo in FServiceCat.Folders do begin
-    if ASubFolderInfo.Parent <> Self.GetFolderData(AFolderNode) then continue;
+    if (ASubFolderInfo.Parent <> Self.GetFolderData(AFolderNode))
+    and ((ASubFolderInfo.Parent <> nil) or not IsSpecialFolder(AFolderData)) then continue;
     ASubNode := vtFolders_Add(AFolderNode, ASubFolderInfo);
     CreateFolderNodes(ASubNode, ASubFolderInfo);
   end;
@@ -760,7 +767,7 @@ begin
   else
   case TFolderNodeType(Data) of
     ntRunningServices: ImageIndex := CommonRes.iStart;
-//    ntAllServices: ImageIndex := CommonRes.iService;
+    ntAllServices: ImageIndex := CommonRes.iService;
     ntRunningDrivers: ImageIndex := CommonRes.iStart;
     ntAllDrivers: ImageIndex := CommonRes.iDriver;
     ntTriggers: ImageIndex := CommonRes.iTrigger;
@@ -779,12 +786,19 @@ begin
     Result := NativeUInt(Data1) - NativeUInt(Data2)
   else
   if IsSpecialFolder(Data1) then
-    Result := +1
-  else
-  if IsSpecialFolder(Data2) then
     Result := -1
   else
+  if IsSpecialFolder(Data2) then
+    Result := +1
+  else
     Result := CompareText(Data1.Name, Data2.Name);
+end;
+
+procedure TMainForm.vtFoldersCollapsing(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; var Allowed: Boolean);
+begin
+ //Top-level nodes have not [+] signs and should always remain expanded
+  Allowed := (Node.Parent <> nil) and (Node.Parent <> Sender.RootNode);
 end;
 
 

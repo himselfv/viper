@@ -12,7 +12,6 @@ uses
   Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
   Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
   Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
-  Viper.TriggerBrowser in '..\Forms\Viper.TriggerBrowser.pas' {TriggerBrowserForm},
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
@@ -40,7 +39,6 @@ begin
   Application.CreateForm(TLogForm, LogForm);
   Application.CreateForm(TSettingsForm, SettingsForm);
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
-  Application.CreateForm(TTriggerBrowserForm, TriggerBrowserForm);
   Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
   Application.CreateForm(TTriggerDataItemEditor, TriggerDataItemEditor);
   Application.Run;

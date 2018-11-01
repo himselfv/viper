@@ -106,9 +106,6 @@
             <Form>ServiceTriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.TriggerBrowser.pas">
-            <Form>TriggerBrowserForm</Form>
-        </DCCReference>
         <DCCReference Include="..\Forms\Viper.RichEditEx.pas">
             <Form>RichEditFrame</Form>
             <DesignClass>TFrame</DesignClass>

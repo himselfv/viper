@@ -608,7 +608,10 @@ begin
   with OpenService2(Sel[0].ServiceName,
     STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
     SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+  begin
     DeleteServiceTriggers(SvcHandle, SelData);
+    TriggerUtils.TriggerListChanged(Self, Sel[0].ServiceName);
+  end;
   Reload;
 end;
 

@@ -167,7 +167,10 @@ begin
     with OpenService2(Self.FServiceName,
       STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
       SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+    begin
       AddServiceTriggers(SvcHandle, Triggers2, {UniqueOnly=}true);
+      TriggerUtils.TriggerListChanged(Self, Self.FServiceName);
+    end;
 
   finally
     for i := 0 to Length(Triggers)-1 do

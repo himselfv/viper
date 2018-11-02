@@ -37,11 +37,13 @@ object ServiceList: TServiceList
     OnChange = vtServicesChange
     OnCompareNodes = vtServicesCompareNodes
     OnFocusChanged = vtServicesFocusChanged
+    OnFreeNode = vtServicesFreeNode
     OnGetText = vtServicesGetText
     OnPaintText = vtServicesPaintText
     OnGetImageIndexEx = vtServicesGetImageIndexEx
     OnGetNodeDataSize = vtServicesGetNodeDataSize
     OnHeaderClick = vtServicesHeaderClick
+    OnInitNode = vtServicesInitNode
     OnKeyDown = vtServicesKeyDown
     Columns = <
       item

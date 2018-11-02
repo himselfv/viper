@@ -498,13 +498,16 @@ end;
 procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var folderNode: PVirtualNode;
   folderData: TNdFolderData;
+  nodeData: TObject;
   svc: TExtServiceEntry;
   isService: boolean;
   isVisible: boolean;
   filterText: string;
 begin
-  svc := TExtServiceEntry(Sender.GetNodeData(Node)^);
-  Assert(svc <> nil);
+  nodeData := TObject(Sender.GetNodeData(Node)^);
+  Assert(nodeData <> nil);
+  Assert(nodeData is TExtServiceEntry); //ServiceList can host folders and more but we don't use it yet!
+  svc := TExtServiceEntry(nodeData);
 
   isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
   isVisible := true;
@@ -1316,14 +1319,22 @@ var deps: TArray<string>;
   dep: string;
   depService: TServiceEntry;
   depNode: PVirtualNode;
+  folder: TTreeFolder;
 begin
   if (AService = nil) or (AService.Config = nil) then
     exit;
 
   deps := SplitNullSeparatedList(AService.Config.lpDependencies);
   for dep in deps do begin
-    if dep.StartsWith(SC_GROUP_IDENTIFIER) then //this is a dependency group, not service name
+    if dep.StartsWith(SC_GROUP_IDENTIFIER) then begin
+      //this is a dependency group, not service name
+      //for now we'll just create a folder with this name
+      //TODO: Also add the contents, all services from this group
+      folder := TTreeFolder.Create(dep.Substring(2));
+      folder.AutoDestroy := true;
+      DependencyList.AddNode(nil, folder);
       continue;
+    end;
     depService := FServices.Find(dep);
    //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
    //(as we do now), or to ignore failed matches.
@@ -1671,11 +1682,17 @@ begin
 end;
 
 function TServiceEditLink.PrepareEdit(Tree: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex): Boolean;
-var service: TExtServiceEntry;
+var NodeData: TObject;
+  service: TExtServiceEntry;
 begin
   Result := inherited; //initialize the control
   if Result then begin
-    service := TExtServiceEntry(Tree.GetNodeData(Node)^);
+    NodeData := TObject(Tree.GetNodeData(Node)^);
+    if not (NodeData is TExtServiceEntry) then begin //only allow editing for services themselves
+      Result := false;
+      exit;
+    end;
+    service := TExtServiceEntry(NodeData);
     if (service = nil) or (service.Info = nil) or (service.Info.DisplayName = '') then exit; //use the default value
     Self.Edit.Text := service.Info.DisplayName;
   end;
@@ -1688,6 +1705,7 @@ begin
   if (not CanEditServiceInfo) or (Column <> TServiceList.colDisplayName) then
     exit;
   service := TExtServiceEntry(MainServiceList.GetServiceEntry(Node));
+  if service = nil then exit; //fail
 
   if service.Info = nil then
     service.Info := FServiceCat.Get(service.ServiceName);

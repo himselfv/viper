@@ -6,6 +6,18 @@ uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, VirtualTrees, SvcEntry, ImgList, Vcl.Menus, CommonResources;
 
+{
+Clients populate the list manually. Each node is associated with an object
+managed elsewhere.
+
+NodeData is always a TObject. If the tree recognizes the object type it presents
+it well:
+- TServiceEntry is a service entry
+- TTreeFolder and its descendants provide folders
+
+Clients can use TServiceEntry descendants, that's fine.
+}
+
 type
   TServiceList = class(TFrame)
     vtServices: TVirtualStringTree;
@@ -110,9 +122,12 @@ type
     procedure miEditSecurityClick(Sender: TObject);
     procedure aProtectionNoneExecute(Sender: TObject);
     procedure miUnlockSecurityClick(Sender: TObject);
+    procedure vtServicesFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
+      Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 
   protected
-    procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
+    procedure Iterate_AddServiceDataToArray(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Data: Pointer; var Abort: Boolean);
@@ -140,7 +155,8 @@ type
     procedure Clear;
     procedure BeginUpdate;
     procedure EndUpdate;
-    function AddService(Parent: PVirtualNode; Service: TServiceEntry): PVirtualNode;
+    function AddNode(Parent: PVirtualNode; Data: TObject): PVirtualNode;
+    function AddService(Parent: PVirtualNode; Service: TServiceEntry): PVirtualNode; inline;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     function GetServiceEntry(Node: PVirtualNode): TServiceEntry; inline;
     function GetFocusedService: TServiceEntry;
@@ -151,11 +167,30 @@ type
 
   end;
 
+  //Node data for a logical grouping of services
+  //Used by clients to implement dependency groups and inline subfolders
+  TTreeFolder = class(TObject)
+  protected
+    FName: string;
+    FAutoDestroy: boolean; //if true, the list will dispose of the object on clear
+  public
+    constructor Create(const AName: string);
+    property Name: string read FName write FName;
+    property AutoDestroy: boolean read FAutoDestroy write FAutoDestroy;
+  end;
+
+
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl, Viper.StyleSettings,
   Viper.Log;
 
 {$R *.dfm}
+
+constructor TTreeFolder.Create(const AName: string);
+begin
+  inherited Create;
+  FName := AName;
+end;
 
 constructor TServiceList.Create(AOwner: TComponent);
 begin
@@ -186,9 +221,14 @@ begin
   vtServices.EndUpdate;
 end;
 
+function TServiceList.AddNode(Parent: PVirtualNode; Data: TObject): PVirtualNode;
+begin
+  Result := vtServices.AddChild(Parent, pointer(Data));
+end;
+
 function TServiceList.AddService(Parent: PVirtualNode; Service: TServiceEntry): PVirtualNode;
 begin
-  Result := vtServices.AddChild(Parent, pointer(Service));
+  Result := AddNode(Parent, Service);
 end;
 
 procedure TServiceList.ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
@@ -207,6 +247,25 @@ procedure TServiceList.vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
 begin
   NodeDataSize := SizeOf(TObject);
 end;
+
+procedure TServiceList.vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
+  Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+begin
+//
+end;
+
+procedure TServiceList.vtServicesFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var Data: TObject;
+begin
+  Data := TObject(Sender.GetNodeData(Node)^);
+  if Data = nil then exit;
+
+  //We provide some courtesy auto destroy on client request
+  if (Data is TTreeFolder) and TTreeFolder(Data).AutoDestroy then
+    Data.Destroy;
+end;
+
 
 resourcestring
   sStatusStopped = 'Stopped';
@@ -239,64 +298,78 @@ resourcestring
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
-var Data: TServiceEntry;
+var BaseData: TObject;
+  Data: TServiceEntry;
 begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
-  if TextType <> ttNormal then exit;
-  case Column of
-    NoColumn, colServiceName: CellText := Data.ServiceName;
-    colDisplayName: CellText := Data.GetEffectiveDisplayName;
-    colStatus: case Data.Status.dwCurrentState of
-         SERVICE_STOPPED: CellText := '';
-         SERVICE_START_PENDING: CellText := sStatusStartPending;
-         SERVICE_STOP_PENDING: CellText := sStatusStopPending;
-         SERVICE_RUNNING: CellText := sStatusRunning;
-         SERVICE_CONTINUE_PENDING: CellText := sStatusContinuePending;
-         SERVICE_PAUSE_PENDING: CellText := sStatusPausePending;
-         SERVICE_PAUSED: CellText := sStatusPaused;
-       else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
-       end;
-    colStartMode: if Data.Config = nil then
-         CellText := ''
-       else
-       case Data.Config.dwStartType of
-         SERVICE_AUTO_START: CellText := sStartTypeAuto;
-         SERVICE_DEMAND_START: CellText := sStartTypeDemand;
-         SERVICE_DISABLED: CellText := sStartTypeDisabled;
-         SERVICE_BOOT_START: CellText := sStartTypeBoot;
-         SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
-       else CellText := '';
-       end;
-    colDescription: CellText := Data.Description;
-    colFilename: CellText := Data.GetImageFilename;
-    colProtection: case Data.LaunchProtection of
-         SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
-         SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
-         SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sProtectionWindowsLight;
-         SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sProtectionAntimalwareLight;
-       else CellText := '';
-       end;
-    colTriggers: if Data.TriggerCount > 0 then
-         CellText := IntToStr(Data.TriggerCount)
-       else
-         CellText := '';
-    colType:
-      if Data.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE <> 0 then
-        CellText := sTypeUserService
-      else
-      if Data.Status.dwServiceType and SERVICE_USER_SERVICE <> 0 then
-        CellText := sTypeUserProto
-      else
-      if Data.Status.dwServiceType and SERVICE_DRIVER <> 0 then
-        CellText := sTypeDriver
-      else
-        CellText := sTypeService;
-    colPID:
-      if Data.Status.dwCurrentState = SERVICE_STOPPED then
-        CellText := ''
-      else
-        CellText := IntToStr(Data.Status.dwProcessId);
-    colLoadOrderGroup: CellText := Data.LoadOrderGroup;
+  BaseData := TObject(Sender.GetNodeData(Node)^);
+  if BaseData is TServiceEntry then begin
+
+    Data := TServiceEntry(BaseData);
+    if TextType <> ttNormal then exit;
+    case Column of
+      NoColumn, colServiceName: CellText := Data.ServiceName;
+      colDisplayName: CellText := Data.GetEffectiveDisplayName;
+      colStatus: case Data.Status.dwCurrentState of
+           SERVICE_STOPPED: CellText := '';
+           SERVICE_START_PENDING: CellText := sStatusStartPending;
+           SERVICE_STOP_PENDING: CellText := sStatusStopPending;
+           SERVICE_RUNNING: CellText := sStatusRunning;
+           SERVICE_CONTINUE_PENDING: CellText := sStatusContinuePending;
+           SERVICE_PAUSE_PENDING: CellText := sStatusPausePending;
+           SERVICE_PAUSED: CellText := sStatusPaused;
+         else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
+         end;
+      colStartMode: if Data.Config = nil then
+           CellText := ''
+         else
+         case Data.Config.dwStartType of
+           SERVICE_AUTO_START: CellText := sStartTypeAuto;
+           SERVICE_DEMAND_START: CellText := sStartTypeDemand;
+           SERVICE_DISABLED: CellText := sStartTypeDisabled;
+           SERVICE_BOOT_START: CellText := sStartTypeBoot;
+           SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
+         else CellText := '';
+         end;
+      colDescription: CellText := Data.Description;
+      colFilename: CellText := Data.GetImageFilename;
+      colProtection: case Data.LaunchProtection of
+           SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
+           SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
+           SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sProtectionWindowsLight;
+           SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sProtectionAntimalwareLight;
+         else CellText := '';
+         end;
+      colTriggers: if Data.TriggerCount > 0 then
+           CellText := IntToStr(Data.TriggerCount)
+         else
+           CellText := '';
+      colType:
+        if Data.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE <> 0 then
+          CellText := sTypeUserService
+        else
+        if Data.Status.dwServiceType and SERVICE_USER_SERVICE <> 0 then
+          CellText := sTypeUserProto
+        else
+        if Data.Status.dwServiceType and SERVICE_DRIVER <> 0 then
+          CellText := sTypeDriver
+        else
+          CellText := sTypeService;
+      colPID:
+        if Data.Status.dwCurrentState = SERVICE_STOPPED then
+          CellText := ''
+        else
+          CellText := IntToStr(Data.Status.dwProcessId);
+      colLoadOrderGroup: CellText := Data.LoadOrderGroup;
+    end;
+
+  end else
+  if BaseData is TTreeFolder then begin
+
+    if TextType <> ttNormal then exit;
+    case Column of
+      NoColumn, colServiceName: CellText := TTreeFolder(BaseData).Name;
+    end;
+
   end;
 end;
 
@@ -304,72 +377,115 @@ end;
 procedure TServiceList.vtServicesBeforeItemErase(Sender: TBaseVirtualTree;
   TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect;
   var ItemColor: TColor; var EraseAction: TItemEraseAction);
-var Data: TServiceEntry;
+var BaseData: TObject;
+  Data: TServiceEntry;
 begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
+  BaseData := TObject(Sender.GetNodeData(Node)^);
 
-  if aUseColors.Checked then begin
-    ItemColor := StyleSettingsForm.GetCombinedBgColor(Data);
-    if ItemColor <> clWindow then
-      EraseAction := eaColor;
+  if BaseData is TServiceEntry then begin
+    Data := TServiceEntry(BaseData);
+
+    if aUseColors.Checked then begin
+      ItemColor := StyleSettingsForm.GetCombinedBgColor(Data);
+      if ItemColor <> clWindow then
+        EraseAction := eaColor;
+    end;
   end;
-
 end;
 
  //Customize the font
 procedure TServiceList.vtServicesPaintText(Sender: TBaseVirtualTree;
   const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   TextType: TVSTTextType);
-var Data: TServiceEntry;
+var BaseData: TObject;
+  Data: TServiceEntry;
 begin
-  Data := TServiceEntry(Sender.GetNodeData(Node)^);
+  BaseData := TObject(Sender.GetNodeData(Node)^);
 
-  if aUseColors.Checked then begin
-    StyleSettingsForm.GetCombinedFont(Data, TargetCanvas.Font);
+  if BaseData is TServiceEntry then begin
+    Data := TServiceEntry(BaseData);
+
+    if aUseColors.Checked then begin
+      StyleSettingsForm.GetCombinedFont(Data, TargetCanvas.Font);
+    end;
   end;
-
 end;
 
 procedure TServiceList.vtServicesGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
   var ImageList: TCustomImageList);
-var Service: TServiceEntry;
+var BaseData: TObject;
+  Service: TServiceEntry;
 begin
-  Service := TServiceEntry(Sender.GetNodeData(Node)^);
-  case Kind of
-  ikNormal, ikSelected:
-    case Column of
-      NoColumn, colServiceName: Service.GetIcon(ImageList, ImageIndex);
-      colProtection: if Service.IsLaunchProtected then begin
-        ImageList := CommonRes.ilImages;
-        ImageIndex := CommonRes.iShield;
-      end;
-      colTriggers: if Service.TriggerCount > 0 then begin
-        ImageList := CommonRes.ilImages;
-        ImageIndex := CommonRes.iTrigger;
-      end;
+  BaseData := TObject(Sender.GetNodeData(Node)^);
 
-    end;
-  ikOverlay: begin
-    case Column of
-      NoColumn, colServiceName: begin
-        ImageList := CommonRes.ilOverlays;
-        if Service.IsLaunchProtected then
-          ImageIndex := CommonRes.iShieldOverlay;
+  if BaseData is TServiceEntry then begin
+    Service := TServiceEntry(BaseData);
+    case Kind of
+    ikNormal, ikSelected:
+      case Column of
+        NoColumn, colServiceName: Service.GetIcon(ImageList, ImageIndex);
+        colProtection: if Service.IsLaunchProtected then begin
+          ImageList := CommonRes.ilImages;
+          ImageIndex := CommonRes.iShield;
+        end;
+        colTriggers: if Service.TriggerCount > 0 then begin
+          ImageList := CommonRes.ilImages;
+          ImageIndex := CommonRes.iTrigger;
+        end;
+
+      end;
+    ikOverlay: begin
+      case Column of
+        NoColumn, colServiceName: begin
+          ImageList := CommonRes.ilOverlays;
+          if Service.IsLaunchProtected then
+            ImageIndex := CommonRes.iShieldOverlay;
+        end;
       end;
     end;
-  end;
+    end;
+
+  end else
+  if BaseData is TTreeFolder then begin
+    case Kind of
+      ikNormal, ikSelected: begin
+        ImageList := CommonRes.ilImages;
+        ImageIndex := CommonRes.iFolder;
+      end;
+    end;
   end;
 end;
 
 procedure TServiceList.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-var Data1, Data2: TServiceEntry;
+var BaseData1, BaseData2: TObject;
+  Data1, Data2: TServiceEntry;
+  Text1, Text2: string;
 begin
-  Data1 := TServiceEntry(Sender.GetNodeData(Node1)^);
-  Data2 := TServiceEntry(Sender.GetNodeData(Node2)^);
+  //It's unclear how to compare objects of different types in a generalized fashion
+  BaseData1 := TObject(Sender.GetNodeData(Node1)^);
+  BaseData2 := TObject(Sender.GetNodeData(Node2)^);
+
+  //Currently column-by-column comparisons are only possible for TServiceEntry
+  //or for column 0
+  if (Column <> NoColumn) and (Column <> colServiceName)
+  and (not (BaseData1 is TServiceEntry) or not (BaseData2 is TServiceEntry)) then begin
+    Result := Integer(BaseData1.ClassType) - Integer(BaseData2.ClassType);
+    exit; //that's it
+  end;
+
+  Data1 := TServiceEntry(BaseData1);
+  Data2 := TServiceEntry(BaseData2);
   case Column of
-    NoColumn, colServiceName: Result := CompareText(Data1.ServiceName, Data2.ServiceName);
+    NoColumn, colServiceName: begin
+      //Compare by text, this way we handle any supported node types
+      Text1 := vtServices.Text[Node1, Column];
+      Text2 := vtServices.Text[Node2, Column];
+      Result := CompareText(Text1, Text2);
+      //Result := CompareText(Data1.ServiceName, Data2.ServiceName);
+    end;
+
     colDisplayName: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
     colStatus: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
     colStartMode: if Data1.Config = nil then
@@ -544,7 +660,8 @@ end;
 procedure TServiceList.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Data: Pointer; var Abort: Boolean);
 begin
-  if TServiceEntry(Sender.GetNodeData(Node)^) = Data then
+  //We don't need to check whether it's TServiceData or not, all objects are unique pointers
+  if TObject(Sender.GetNodeData(Node)) = Data then
     Sender.InvalidateNode(Node);
   if Sender.Selected[Node] then
     SelectionChanged; //properties of one of the selected nodes changed
@@ -553,35 +670,50 @@ end;
 
 
 
+//Can return nil if this is not a service node
 function TServiceList.GetServiceEntry(Node: PVirtualNode): TServiceEntry;
+var Data: TObject;
 begin
-  Result := TServiceEntry(vtServices.GetNodeData(Node)^);
+  Data := TObject(vtServices.GetNodeData(Node)^);
+  Data := TObject(vtServices.GetNodeData(vtServices.FocusedNode)^);
+  if not (Data is TServiceEntry) then
+    Result := nil
+  else
+    Result := TServiceEntry(Data);
 end;
 
 function TServiceList.GetFocusedService: TServiceEntry;
+var Data: TObject;
 begin
   if vtServices.FocusedNode = nil then begin
     Result := nil;
     exit;
   end;
 
-  Result := TServiceEntry(vtServices.GetNodeData(vtServices.FocusedNode)^);
+  Data := TObject(vtServices.GetNodeData(vtServices.FocusedNode)^);
+  if not (Data is TServiceEntry) then
+    Result := nil
+  else
+    Result := TServiceEntry(Data);
 end;
 
 function TServiceList.GetSelectedServices: TServiceEntries;
 begin
   SetLength(Result, 0);
-  vtServices.IterateSubtree(nil, Iterate_AddNodeDataToArray, @Result, [vsSelected]);
+  vtServices.IterateSubtree(nil, Iterate_AddServiceDataToArray, @Result, [vsSelected]);
 end;
 
-procedure TServiceList.Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
+//Collects TServiceEntry for all compatible nodes
+procedure TServiceList.Iterate_AddServiceDataToArray(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var entries: PServiceEntries absolute Data;
-  nd: TServiceEntry;
+  nd: TObject;
 begin
-  nd := TServiceEntry(Sender.GetNodeData(Node)^);
+  nd := TObject(Sender.GetNodeData(Node)^);
+  if not (nd is TServiceEntry) then
+    exit;
   SetLength(entries^, Length(entries^)+1);
-  entries^[Length(entries^)-1] := nd;
+  entries^[Length(entries^)-1] := TServiceEntry(nd);
 end;
 
 function TServiceList.GetFirstSelectedService: TServiceEntry;
@@ -594,6 +726,7 @@ begin
     Result := services[0];
 end;
 
+//Also works for non-services really
 function TServiceList.FindServiceNode(Service: TServiceEntry): PVirtualNode;
 begin
   Result := vtServices.IterateSubtree(nil, FindServiceNode_Callback, Service);
@@ -602,6 +735,7 @@ end;
 procedure TServiceList.FindServiceNode_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Data: Pointer; var Abort: Boolean);
 begin
+  //No need to check if it's TServiceEntry - objects are unique pointers
   Abort := (TServiceEntry(Sender.GetNodeData(Node)^) = Data);
 end;
 

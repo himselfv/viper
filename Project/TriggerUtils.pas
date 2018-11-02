@@ -5,9 +5,75 @@ unit TriggerUtils;
 // Lets you decode some IDs but might make the app start a bit slower.
 
 interface
-uses WinSvc, GuidDict, UniStrUtils;
+uses WinSvc, Generics.Collections, GuidDict, UniStrUtils;
+
+{
+Trigger related events. Please call when you're making appropriate changes.
+Some are only valid for the changes made throughout the application. Handle them,
+but also expect event-less changes.
+}
+type
+  TTriggerListEvent = procedure(Sender: TObject; const AService: string) of object;
+
+var
+  //The trigger list for a given service has been changed
+  OnTriggerListChanged: TList<TTriggerListEvent>;
+
+procedure TriggerListChanged(Sender: TObject; const AService: string);
+
+
+{
+Trigger printing functions
+}
+resourcestring
+  sTriggerActionStart = 'Start';
+  sTriggerActionStop = 'Stop';
+  sTriggerActionOther = 'Action (%d)';
+
+function TriggerActionToString(const Action: cardinal): string; inline;
+
+resourcestring
+  sTriggerDataTypeBinary = 'Binary';
+  sTriggerDataTypeString = 'String';
+  sTriggerDataTypeLevel = 'Level';
+  sTriggerDataTypeKeywordAny = 'Keyword (any)';
+  sTriggerDataTypeKeywordAll = 'Keyword (all)';
+  sTriggerDataTypeUnknown = 'Unknown (%d)';
+  sTriggerDataTypeUnknownConst = 'Unknown';
+
+function TriggerDataTypeToStr(const dwDataType: cardinal): string;
+
+type
+  TTriggerParam = SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  PTriggerParam = PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+
+  TTriggerParamHelper = record helper for SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
+    function ToString: string; inline;
+    function DataTypeToString: string; inline;
+    function ValueToString: string;
+    //The following functions only read the data but do not ensure the buffer size is enough
+    function HexValue: string; inline;
+    function StringValue: string; inline;
+    function RawStringValue: string; inline;
+    function MultistringValue: TStringArray;
+    function ByteValue: byte; inline;
+    function Int64Value: int64; inline;
+    //Changes the size and reallocates the associated memory. Only use for the standalone structures!
+    procedure Resize(const cbNewSize: cardinal);
+    //The following functions reallocate memory and store data!
+    procedure SetHexValue(const Value: string); inline;
+    procedure SetStringValue(const Value: string); inline;
+    procedure SetRawStringValue(const Value: string); inline;
+    procedure SetMultistringValue(const Value: TStringArray);
+    procedure SetByteValue(const Value: byte); inline;
+    procedure SetInt64Value(const Value: int64); inline;
+  end;
+
+  TTriggerHelper = record helper for SERVICE_TRIGGER
+  end;
 
 function TriggerDataItemsToStr(ATrigger: PSERVICE_TRIGGER): string;
+
 
 
 resourcestring
@@ -46,48 +112,6 @@ resourcestring
 
   sUnknownDeviceInterfaceClass = 'Class %s';
 
-resourcestring
-  sTriggerDataTypeBinary = 'Binary';
-  sTriggerDataTypeString = 'String';
-  sTriggerDataTypeLevel = 'Level';
-  sTriggerDataTypeKeywordAny = 'Keyword (any)';
-  sTriggerDataTypeKeywordAll = 'Keyword (all)';
-  sTriggerDataTypeUnknown = 'Unknown (%d)';
-  sTriggerDataTypeUnknownConst = 'Unknown';
-
-type
-  TTriggerParam = SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
-  PTriggerParam = PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
-
-  TTriggerParamHelper = record helper for SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
-    function ToString: string; inline;
-    function DataTypeToString: string; inline;
-    function ValueToString: string;
-    //The following functions only read the data but do not ensure the buffer size is enough
-    function HexValue: string; inline;
-    function StringValue: string; inline;
-    function RawStringValue: string; inline;
-    function MultistringValue: TStringArray;
-    function ByteValue: byte; inline;
-    function Int64Value: int64; inline;
-    //Changes the size and reallocates the associated memory. Only use for the standalone structures!
-    procedure Resize(const cbNewSize: cardinal);
-    //The following functions reallocate memory and store data!
-    procedure SetHexValue(const Value: string); inline;
-    procedure SetStringValue(const Value: string); inline;
-    procedure SetRawStringValue(const Value: string); inline;
-    procedure SetMultistringValue(const Value: TStringArray);
-    procedure SetByteValue(const Value: byte); inline;
-    procedure SetInt64Value(const Value: int64); inline;
-  end;
-
-function TriggerDataTypeToStr(const dwDataType: cardinal): string;
-
-type
-  TTriggerHelper = record helper for SERVICE_TRIGGER
-  end;
-
-
 type
  //Trigger source is stuff like ETW queue name, Device class, RPC interface GUID
  //Sometimes we can decode it into something user-friendly, then DisplayText is different from OriginalData;
@@ -113,6 +137,10 @@ type
 function ParseTrigger(const ATrigger: PSERVICE_TRIGGER): TTriggerData;
 
 
+{
+Some trigger types have extensible lists of possible GUID values.
+We either extract these from the system or allow loading from the text files.
+}
 var
  //Set by external code on load to point to files to load on first demand
   DeviceInterfaceClassesFile: string = '';
@@ -130,9 +158,26 @@ function GetEtwProviderName(const Guid: TGuid): string; inline;
 function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
 function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 
+
 implementation
 uses SysUtils, Classes, Windows, ServiceHelper, SetupApiHelper,
   EtwUtils, {$IFDEF QUERYLOCALRPC}JwaRpc, JwaRpcDce,{$ENDIF} Viper.Log;
+
+procedure TriggerListChanged(Sender: TObject; const AService: string);
+var event: TTriggerListEvent;
+begin
+  for event in OnTriggerListChanged do
+    event(Sender, AService);
+end;
+
+function TriggerActionToString(const Action: cardinal): string; inline;
+begin
+  case Action of
+    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := sTriggerActionStart;
+    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := sTriggerActionStop;
+  else Result := Format(sTriggerActionOther, [Action]);
+  end;
+end;
 
 function TriggerDataTypeToStr(const dwDataType: cardinal): string;
 begin
@@ -837,9 +882,11 @@ end;
 
 
 initialization
+  OnTriggerListChanged := TList<TTriggerListEvent>.Create;
 
 finalization
  {$IFDEF DEBUG}
+  FreeAndNil(OnTriggerListChanged);
  {$IFDEF QUERYLOCALRPC}
   FreeAndNil(LocalRpcInterfaces);
  {$ENDIF}

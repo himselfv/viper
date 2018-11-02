@@ -89,7 +89,10 @@ type
     procedure TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
+    procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
   public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
     procedure Clear;
     procedure Reload; virtual;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
@@ -101,26 +104,11 @@ type
 
   end;
 
-resourcestring
-  sActionStart = 'Start';
-  sActionStop = 'Stop';
-  sActionOther = 'Action (%d)';
-
-function TriggerActionToString(const Action: cardinal): string; inline;
 
 implementation
 uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
 
 {$R *.dfm}
-
-function TriggerActionToString(const Action: cardinal): string; inline;
-begin
-  case Action of
-    SERVICE_TRIGGER_ACTION_SERVICE_START: Result := sActionStart;
-    SERVICE_TRIGGER_ACTION_SERVICE_STOP: Result := sActionStop;
-  else Result := Format(sActionOther, [Action]);
-  end;
-end;
 
 const
   sTriggerSummary = '%s %s on %s';
@@ -133,6 +121,20 @@ begin
     Result := Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
   else
     Result := Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
+end;
+
+
+constructor TTriggerList.Create(AOwner: TComponent);
+begin
+  inherited;
+  OnTriggerListChanged.Add(Self.HandleTriggerListChanged);
+end;
+
+destructor TTriggerList.Destroy;
+begin
+  if OnTriggerListChanged <> nil then
+    OnTriggerListChanged.Remove(Self.HandleTriggerListChanged);
+  inherited;
 end;
 
 procedure TTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
@@ -399,6 +401,13 @@ begin
   end;
 end;
 
+//Called when the trigger list for a given service changes
+//This is not a guaranteed notification so we should be ready for changes without it
+procedure TTriggerList.HandleTriggerListChanged(Sender: TObject; const AService: string);
+begin
+  Self.Reload; //For now, reload everything
+end;
+
 
 function TTriggerList.FocusedTrigger: PNdTriggerData;
 begin
@@ -547,7 +556,10 @@ begin
     with OpenService2(Sel[0].ServiceName,
       STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
       SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+    begin
       ChangeServiceTrigger(SvcHandle, Sel[0].TriggerCopy^, TriggerData^);
+      TriggerUtils.TriggerListChanged(Self, Sel[0].ServiceName);
+    end;
 
   finally
     FreeAndNil(EditForm);

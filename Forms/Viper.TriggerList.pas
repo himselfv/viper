@@ -610,7 +610,7 @@ begin
     SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
   begin
     DeleteServiceTriggers(SvcHandle, SelData);
-    TriggerUtils.TriggerListChanged(Self, Sel[0].ServiceName);
+    TriggerUtils.TriggerListChanged(Self, '');
   end;
   Reload;
 end;

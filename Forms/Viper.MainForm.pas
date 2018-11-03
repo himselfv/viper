@@ -302,7 +302,10 @@ end;
 
 
 resourcestring
-  sTypeDependencyGroup = 'Dependency group'; //"Type" text for the dependency group entry in service list
+  sTypeDependencyGroup = 'Group';
+    //Type text for the dependency group entry in service list
+    //Windows Registry calls these "Driver Groups" (Control/SafeBoot) even when they
+    //are service groups.
 
 function TSlDependencyGroupNode.GetDisplayName: string;
 begin

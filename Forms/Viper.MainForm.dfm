@@ -162,7 +162,7 @@ object MainForm: TMainForm
         Caption = 'Depends on'
         ImageIndex = -1
         OnShow = tsDependenciesShow
-        inline DependencyList: TDependencyList
+        inline DependencySvcList: TDependencyList
           Left = 0
           Top = 0
           Width = 849
@@ -184,7 +184,7 @@ object MainForm: TMainForm
         Caption = 'Required by'
         ImageIndex = -1
         OnShow = tsDependentsShow
-        inline DependentsList: TServiceList
+        inline DependentsSvcList: TDependencyList
           Left = 0
           Top = 0
           Width = 849

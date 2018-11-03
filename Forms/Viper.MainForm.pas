@@ -58,8 +58,8 @@ type
     MainServiceList: TServiceList;
     N1: TMenuItem;
     Refresh2: TMenuItem;
-    DependencyList: TDependencyList;
-    DependentsList: TServiceList;
+    DependencySvcList: TDependencyList;
+    DependentsSvcList: TDependencyList;
     tsTriggers: TTabSheet;
     TriggerList: TServiceTriggerList;
     aIncludeSubfolders: TAction;
@@ -232,9 +232,7 @@ type
     procedure ReloadDetails;
     procedure ReloadServiceInfo;
     procedure ReloadServiceDependencies;
-    procedure LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadServiceDependents;
-    procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
     procedure ReloadTriggers;
     function mmNotes: TRichEdit; inline;
 
@@ -301,6 +299,8 @@ begin
   DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
   RpcInterfacesFile := AppFolder()+'\RpcInterfaces.txt';
   TriggerList.Initialize;
+  DependencySvcList.SetServiceList(FServices);
+  DependentsSvcList.SetServiceList(FServices);
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -1295,60 +1295,8 @@ begin
 end;
 
 procedure TMainForm.ReloadServiceDependencies;
-var service: TServiceEntry;
 begin
-  service := FDetailsPaneFocusedService;
-  DependencyList.BeginUpdate;
-  try
-    DependencyList.Clear;
-    if service <> nil then
-      LoadServiceDependencyNodes(service, nil);
-  finally
-    DependencyList.EndUpdate;
-  end;
-end;
-
-resourcestring
-  eServiceDependentNotFound = 'Service %s is not found in a general list.';
-
-//Works with DependencyList. Adds child nodes for service dependencies to the node given by ParentNode.
-//Call ReloadServiceDependencies if you need to reload the whole DependencyList.
-procedure TMainForm.LoadServiceDependencyNodes(AService: TServiceEntry; AParentNode: PVirtualNode);
-var deps: TArray<string>;
-  dep: string;
-  depService: TServiceEntry;
-  depNode: PVirtualNode;
-  folder: TSlDependencyGroupNode;
-  broken: TSlBrokenDependencyNode;
-begin
-  if (AService = nil) or (AService.Config = nil) then
-    exit;
-
-  deps := SplitNullSeparatedList(AService.Config.lpDependencies);
-  for dep in deps do begin
-    if dep.StartsWith(SC_GROUP_IDENTIFIER) then begin
-      //this is a dependency group, not service name
-      //for now we'll just create a folder with this name
-      //TODO: Also add the contents, all services from this group
-      folder := TSlDependencyGroupNode.Create(Copy(dep, 2, MaxInt));
-      folder.AutoDestroy := true;
-      DependencyList.AddNode(AParentNode, folder);
-      continue;
-    end;
-    depService := FServices.Find(dep);
-   //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
-   //(as we do now), or to ignore failed matches.
-   //NOTE: Dependencies DO sometimes contain failed matches, we should not crash on that!
-   //Show that as a valid, but broken, dependency.
-    if depService = nil then begin
-      broken := TSlBrokenDependencyNode.Create(dep);
-      broken.AutoDestroy := true;
-      DependencyList.AddNode(AParentNode, broken);
-      continue;
-    end;
-    depNode := DependencyList.AddService(AParentNode, depService);
-    LoadServiceDependencyNodes(depService, depNode);
-  end;
+  DependencySvcList.ReloadDependencies(FDetailsPaneFocusedService);
 end;
 
 procedure TMainForm.tsDependentsShow(Sender: TObject);
@@ -1357,56 +1305,8 @@ begin
 end;
 
 procedure TMainForm.ReloadServiceDependents;
-var service: TServiceEntry;
-  hSC: SC_HANDLE;
 begin
-  service := FDetailsPaneFocusedService;
-  if service = nil then begin
-    DependentsList.Clear;
-    exit;
-  end;
-
-  hSC := 0;
-  DependentsList.BeginUpdate;
-  try
-    DependentsList.Clear;
-    hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-    LoadServiceDependentsNodes(hSC, service, nil);
-
-  finally
-    if hSC <> 0 then CloseServiceHandle(hSC);
-    DependentsList.EndUpdate;
-  end;
-end;
-
-procedure TMainForm.LoadServiceDependentsNodes(hSC: SC_HANDLE; AService: TServiceEntry; AParentNode: PVirtualNode);
-var hSvc: SC_HANDLE;
-  depnt: LPENUM_SERVICE_STATUS;
-  depntCount: cardinal;
-  depService: TServiceEntry;
-  depNode: PVirtualNode;
-begin
-  if AService = nil then exit;
-
-  hSvc := OpenService(hSC, AService.ServiceName, SERVICE_ENUMERATE_DEPENDENTS);
-  if hSvc = 0 then exit;
-  try
-    depnt := EnumDependentServices(hSvc, SERVICE_STATE_ALL, depntCount);
-    if depnt = nil then exit;
-
-    while depntCount > 0 do begin
-      depService := FServices.Find(depnt.lpServiceName);
-      if depService = nil then
-        raise Exception.CreateFmt(eServiceDependentNotFound, [depnt.lpServiceName]);
-      depNode := DependentsList.AddService(AParentNode, depService);
-      LoadServiceDependentsNodes(hSC, depService, depNode);
-
-      Inc(depnt);
-      Dec(depntCount);
-    end;
-  finally
-    CloseServiceHandle(hSvc);
-  end;
+  DependentsSvcList.ReloadDependents(FDetailsPaneFocusedService);
 end;
 
 //Triggers are Windows 7-introduced instructions to start/stop service on a certain system events.

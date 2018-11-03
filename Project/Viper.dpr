@@ -9,6 +9,7 @@ uses
   Viper.StyleSettings in '..\Forms\Viper.StyleSettings.pas' {StyleSettingsForm},
   Viper.StyleEdit in '..\Forms\Viper.StyleEdit.pas' {StyleEditForm},
   Viper.ServiceList in '..\Forms\Viper.ServiceList.pas' {ServiceList: TFrame},
+  Viper.DependencyList in '..\Forms\Viper.DependencyList.pas' {DependencyList: TFrame},
   Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
   Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
   Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},

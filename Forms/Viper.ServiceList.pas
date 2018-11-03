@@ -194,6 +194,34 @@ type
       var ImageIndex: Integer; var ImageList: TCustomImageList); override;
   end;
 
+resourcestring
+  sServiceStatusStopped = 'Stopped';
+  sServiceStatusStartPending = 'Starting...';
+  sServiceStatusStopPending = 'Stopping...';
+  sServiceStatusRunning = 'Running';
+  sServiceStatusContinuePending = 'Resuming...';
+  sServiceStatusPausePending = 'Pausing...';
+  sServiceStatusPaused = 'Paused';
+  sServiceStatusOther = 'Other (%d)';
+
+  sServiceStartTypeAuto = 'Auto';
+  sServiceStartTypeDemand = 'Manual';
+  sServiceStartTypeDisabled = 'Disabled';
+  sServiceStartTypeBoot = 'Auto (boot)';
+  sServiceStartTypeSystem = 'Auto (system)';
+
+  sServiceProtectionNone = '';
+  sServiceProtectionWindows = 'OS (full)';
+  sServiceProtectionWindowsLight = 'OS (light)';
+  sServiceProtectionAntimalwareLight = 'Antimalware';
+
+  sServiceTriggerCount = '%d triggers';
+
+  sServiceTypeDriver = 'Driver';
+  sServiceTypeService = 'Service';
+  sServiceTypeUserService = 'User service';
+  sServiceTypeUserProto = 'Prototype';
+
 
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl, Viper.StyleSettings,
@@ -316,34 +344,6 @@ begin
 end;
 
 
-resourcestring
-  sStatusStopped = 'Stopped';
-  sStatusStartPending = 'Starting...';
-  sStatusStopPending = 'Stopping...';
-  sStatusRunning = 'Running';
-  sStatusContinuePending = 'Resuming...';
-  sStatusPausePending = 'Pausing...';
-  sStatusPaused = 'Paused';
-  sStatusOther = 'Other (%d)';
-
-  sStartTypeAuto = 'Auto';
-  sStartTypeDemand = 'Manual';
-  sStartTypeDisabled = 'Disabled';
-  sStartTypeBoot = 'Auto (boot)';
-  sStartTypeSystem = 'Auto (system)';
-
-  sProtectionNone = '';
-  sProtectionWindows = 'OS (full)';
-  sProtectionWindowsLight = 'OS (light)';
-  sProtectionAntimalwareLight = 'Antimalware';
-
-  sTriggerCount = '%d triggers';
-
-  sTypeDriver = 'Driver';
-  sTypeService = 'Service';
-  sTypeUserService = 'User service';
-  sTypeUserProto = 'Prototype';
-
 procedure TServiceList.vtServicesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -360,32 +360,32 @@ begin
       colDisplayName: CellText := Data.GetEffectiveDisplayName;
       colStatus: case Data.Status.dwCurrentState of
            SERVICE_STOPPED: CellText := '';
-           SERVICE_START_PENDING: CellText := sStatusStartPending;
-           SERVICE_STOP_PENDING: CellText := sStatusStopPending;
-           SERVICE_RUNNING: CellText := sStatusRunning;
-           SERVICE_CONTINUE_PENDING: CellText := sStatusContinuePending;
-           SERVICE_PAUSE_PENDING: CellText := sStatusPausePending;
-           SERVICE_PAUSED: CellText := sStatusPaused;
-         else CellText := Format(sStatusOther, [Data.Status.dwCurrentState]);
+           SERVICE_START_PENDING: CellText := sServiceStatusStartPending;
+           SERVICE_STOP_PENDING: CellText := sServiceStatusStopPending;
+           SERVICE_RUNNING: CellText := sServiceStatusRunning;
+           SERVICE_CONTINUE_PENDING: CellText := sServiceStatusContinuePending;
+           SERVICE_PAUSE_PENDING: CellText := sServiceStatusPausePending;
+           SERVICE_PAUSED: CellText := sServiceStatusPaused;
+         else CellText := Format(sServiceStatusOther, [Data.Status.dwCurrentState]);
          end;
       colStartMode: if Data.Config = nil then
            CellText := ''
          else
          case Data.Config.dwStartType of
-           SERVICE_AUTO_START: CellText := sStartTypeAuto;
-           SERVICE_DEMAND_START: CellText := sStartTypeDemand;
-           SERVICE_DISABLED: CellText := sStartTypeDisabled;
-           SERVICE_BOOT_START: CellText := sStartTypeBoot;
-           SERVICE_SYSTEM_START: CellText := sStartTypeSystem;
+           SERVICE_AUTO_START: CellText := sServiceStartTypeAuto;
+           SERVICE_DEMAND_START: CellText := sServiceStartTypeDemand;
+           SERVICE_DISABLED: CellText := sServiceStartTypeDisabled;
+           SERVICE_BOOT_START: CellText := sServiceStartTypeBoot;
+           SERVICE_SYSTEM_START: CellText := sServiceStartTypeSystem;
          else CellText := '';
          end;
       colDescription: CellText := Data.Description;
       colFilename: CellText := Data.GetImageFilename;
       colProtection: case Data.LaunchProtection of
-           SERVICE_LAUNCH_PROTECTED_NONE: CellText := sProtectionNone;
-           SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sProtectionWindows;
-           SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sProtectionWindowsLight;
-           SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sProtectionAntimalwareLight;
+           SERVICE_LAUNCH_PROTECTED_NONE: CellText := sServiceProtectionNone;
+           SERVICE_LAUNCH_PROTECTED_WINDOWS: CellText := sServiceProtectionWindows;
+           SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT: CellText := sServiceProtectionWindowsLight;
+           SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT: CellText := sServiceProtectionAntimalwareLight;
          else CellText := '';
          end;
       colTriggers: if Data.TriggerCount > 0 then
@@ -394,15 +394,15 @@ begin
            CellText := '';
       colType:
         if Data.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE <> 0 then
-          CellText := sTypeUserService
+          CellText := sServiceTypeUserService
         else
         if Data.Status.dwServiceType and SERVICE_USER_SERVICE <> 0 then
-          CellText := sTypeUserProto
+          CellText := sServiceTypeUserProto
         else
         if Data.Status.dwServiceType and SERVICE_DRIVER <> 0 then
-          CellText := sTypeDriver
+          CellText := sServiceTypeDriver
         else
-          CellText := sTypeService;
+          CellText := sServiceTypeService;
       colPID:
         if Data.Status.dwCurrentState = SERVICE_STOPPED then
           CellText := ''

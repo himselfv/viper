@@ -9,7 +9,7 @@ uses
 
 type
   TPaintStyle = record
-    Font: TFont;
+    Font: TFont;      //you MUST provide initial Font object to be adjusted
     BgColor: TColor;
   end;
   PPaintStyle = ^TPaintStyle;
@@ -17,6 +17,10 @@ type
   TStyleElement = (seBgColor, seFont);
   TStyleElements = set of TStyleElement;
 
+const
+  seAll = [seBgColor, seFont];
+
+type
   TStyleSettingsForm = class(TForm)
     FontDialog: TFontDialog;
     ColorDialog: TColorDialog;
@@ -60,8 +64,10 @@ type
     procedure ResetStyles;
     procedure SaveStyles;
     procedure LoadStyles;
+    procedure GetStyleForStartType(StartType: dword; var Style: TPaintStyle;
+      Elements: TStyleElements = seAll);
     procedure GetCombinedStyle(Service: TServiceEntry; var Result: TPaintStyle;
-      Elements: TStyleElements = [seBgColor, seFont]);
+      Elements: TStyleElements = seAll);
     function GetCombinedBgColor(Service: TServiceEntry): TColor;
     procedure GetCombinedFont(Service: TServiceEntry; Result: TFont);
   end;
@@ -319,6 +325,23 @@ begin
   end;
 end;
 
+//Sometimes people want to know a style for just a single trait
+procedure TStyleSettingsForm.GetStyleForStartType(StartType: dword; var Style: TPaintStyle;
+  Elements: TStyleElements);
+begin
+  case StartType of
+    SERVICE_BOOT_START,
+    SERVICE_SYSTEM_START:
+      AdjustStyle(Style, pnlStartAutoBoot, Elements);
+    SERVICE_AUTO_START:
+      AdjustStyle(Style, pnlStartAuto, Elements);
+    SERVICE_DEMAND_START:
+      AdjustStyle(Style, pnlStartManual, Elements);
+    SERVICE_DISABLED:
+      AdjustStyle(Style, pnlStartDisabled, Elements);
+  end;
+end;
+
 //Calculates the combined color and font style for a given service
 //If no override is configured for some aspect of the style, the original value will be kept
 procedure TStyleSettingsForm.GetCombinedStyle(Service: TServiceEntry; var Result: TPaintStyle;
@@ -396,7 +419,6 @@ begin
   Style.Font := Result; //font is an object
   GetCombinedStyle(Service, Style, [seFont]);
 end;
-
 
 
 end.

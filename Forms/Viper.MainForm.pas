@@ -6,7 +6,7 @@ uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
   Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList, Viper.TriggerList,
-  Viper.ServiceTriggerList, Viper.RichEditEx;
+  Viper.DependencyList, Viper.ServiceTriggerList, Viper.RichEditEx;
 
 type
   //Folder node data contains only a single pointer.
@@ -58,7 +58,7 @@ type
     MainServiceList: TServiceList;
     N1: TMenuItem;
     Refresh2: TMenuItem;
-    DependencyList: TServiceList;
+    DependencyList: TDependencyList;
     DependentsList: TServiceList;
     tsTriggers: TTabSheet;
     TriggerList: TServiceTriggerList;
@@ -264,13 +264,6 @@ type
     function PrepareEdit(Tree: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex): Boolean; override; stdcall;
   end;
 
-  //Dependency group node for ServiceList
-  TSlDependencyGroupNode = class(TSlFolderNode)
-  protected
-    function GetDisplayName: string; override;
-    function GetTypeText: string; override;
-  end;
-
 
 var
   MainForm: TMainForm;
@@ -298,23 +291,6 @@ begin
     AIndex := CommonRes.iDriver
   else
     AIndex := CommonRes.iService;
-end;
-
-
-resourcestring
-  sTypeDependencyGroup = 'Group';
-    //Type text for the dependency group entry in service list
-    //Windows Registry calls these "Driver Groups" (Control/SafeBoot) even when they
-    //are service groups.
-
-function TSlDependencyGroupNode.GetDisplayName: string;
-begin
-  Result := Self.FName;
-end;
-
-function TSlDependencyGroupNode.GetTypeText: string;
-begin
-  Result := sTypeDependencyGroup;
 end;
 
 
@@ -1333,7 +1309,6 @@ begin
 end;
 
 resourcestring
-  eServiceDependencyNotFound = 'Service %s is not found in a general list.';
   eServiceDependentNotFound = 'Service %s is not found in a general list.';
 
 //Works with DependencyList. Adds child nodes for service dependencies to the node given by ParentNode.
@@ -1344,6 +1319,7 @@ var deps: TArray<string>;
   depService: TServiceEntry;
   depNode: PVirtualNode;
   folder: TSlDependencyGroupNode;
+  broken: TSlBrokenDependencyNode;
 begin
   if (AService = nil) or (AService.Config = nil) then
     exit;
@@ -1356,14 +1332,20 @@ begin
       //TODO: Also add the contents, all services from this group
       folder := TSlDependencyGroupNode.Create(Copy(dep, 2, MaxInt));
       folder.AutoDestroy := true;
-      DependencyList.AddNode(nil, folder);
+      DependencyList.AddNode(AParentNode, folder);
       continue;
     end;
     depService := FServices.Find(dep);
    //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
    //(as we do now), or to ignore failed matches.
-    if depService = nil then
-      raise Exception.CreateFmt(eServiceDependencyNotFound, [dep]);
+   //NOTE: Dependencies DO sometimes contain failed matches, we should not crash on that!
+   //Show that as a valid, but broken, dependency.
+    if depService = nil then begin
+      broken := TSlBrokenDependencyNode.Create(dep);
+      broken.AutoDestroy := true;
+      DependencyList.AddNode(AParentNode, broken);
+      continue;
+    end;
     depNode := DependencyList.AddService(AParentNode, depService);
     LoadServiceDependencyNodes(depService, depNode);
   end;

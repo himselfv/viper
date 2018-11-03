@@ -95,6 +95,10 @@
             <Form>ServiceList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.DependencyList.pas">
+            <Form>DependencyList</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="..\Forms\Viper.RestoreServiceConfig.pas">
             <Form>RestoreServiceConfigForm</Form>
         </DCCReference>

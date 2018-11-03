@@ -264,6 +264,13 @@ type
     function PrepareEdit(Tree: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex): Boolean; override; stdcall;
   end;
 
+  //Dependency group node for ServiceList
+  TSlDependencyGroupNode = class(TSlFolderNode)
+  protected
+    function GetDisplayName: string; override;
+    function GetTypeText: string; override;
+  end;
+
 
 var
   MainForm: TMainForm;
@@ -291,6 +298,20 @@ begin
     AIndex := CommonRes.iDriver
   else
     AIndex := CommonRes.iService;
+end;
+
+
+resourcestring
+  sTypeDependencyGroup = 'Dependency group'; //"Type" text for the dependency group entry in service list
+
+function TSlDependencyGroupNode.GetDisplayName: string;
+begin
+  Result := Self.FName;
+end;
+
+function TSlDependencyGroupNode.GetTypeText: string;
+begin
+  Result := sTypeDependencyGroup;
 end;
 
 
@@ -1319,7 +1340,7 @@ var deps: TArray<string>;
   dep: string;
   depService: TServiceEntry;
   depNode: PVirtualNode;
-  folder: TTreeFolder;
+  folder: TSlDependencyGroupNode;
 begin
   if (AService = nil) or (AService.Config = nil) then
     exit;
@@ -1330,7 +1351,7 @@ begin
       //this is a dependency group, not service name
       //for now we'll just create a folder with this name
       //TODO: Also add the contents, all services from this group
-      folder := TTreeFolder.Create(dep.Substring(2));
+      folder := TSlDependencyGroupNode.Create(dep.Substring(2));
       folder.AutoDestroy := true;
       DependencyList.AddNode(nil, folder);
       continue;

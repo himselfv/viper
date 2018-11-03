@@ -13,9 +13,9 @@ managed elsewhere.
 NodeData is always a TObject. If the tree recognizes the object type it presents
 it well:
 - TServiceEntry is a service entry
-- TTreeFolder and its descendants provide folders
+- TSlCustomNode and its descendants provide customizable general purpose nodes (e.g. folders)
 
-Clients can use TServiceEntry descendants, that's fine.
+Clients can use TServiceEntry descendants.
 }
 
 type
@@ -167,16 +167,31 @@ type
 
   end;
 
-  //Node data for a logical grouping of services
-  //Used by clients to implement dependency groups and inline subfolders
-  TTreeFolder = class(TObject)
+  { Base class for custom nodes (e.g. folders)
+  Used by clients to implement dependency groups and inline subfolders. }
+  TSlCustomNode = class(TObject)
   protected
-    FName: string;
     FAutoDestroy: boolean; //if true, the list will dispose of the object on clear
+    FName: string;
+    //Override to provide customized information
+    function GetName: string; virtual;
+    function GetDisplayName: string; virtual;
+    function GetTypeText: string; virtual;
   public
     constructor Create(const AName: string);
-    property Name: string read FName write FName;
+    procedure GetImageIndex(Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean;
+      var ImageIndex: Integer; var ImageList: TCustomImageList); virtual;
+    property Name: string read GetName;
+    property DisplayName: string read GetDisplayName;
+    property TypeText: string read GetTypeText;
     property AutoDestroy: boolean read FAutoDestroy write FAutoDestroy;
+  end;
+
+  //Base class for folders, only overrides the icon
+  TSlFolderNode = class(TSlCustomNode)
+  public
+    procedure GetImageIndex(Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean;
+      var ImageIndex: Integer; var ImageList: TCustomImageList); override;
   end;
 
 
@@ -186,10 +201,44 @@ uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
 
 {$R *.dfm}
 
-constructor TTreeFolder.Create(const AName: string);
+constructor TSlCustomNode.Create(const AName: string);
 begin
   inherited Create;
   FName := AName;
+end;
+
+function TSlCustomNode.GetName: string;
+begin
+  Result := FName;
+end;
+
+function TSlCustomNode.GetDisplayName: string;
+begin
+  Result := '';
+end;
+
+function TSlCustomNode.GetTypeText: string;
+begin
+  Result := '';
+end;
+
+procedure TSlCustomNode.GetImageIndex(Kind: TVTImageKind; Column: TColumnIndex;
+  var Ghosted: Boolean; var ImageIndex: Integer; var ImageList: TCustomImageList);
+begin
+  //Nothing.
+end;
+
+procedure TSlFolderNode.GetImageIndex(Kind: TVTImageKind; Column: TColumnIndex;
+  var Ghosted: Boolean; var ImageIndex: Integer; var ImageList: TCustomImageList);
+begin
+  if (Column <> NoColumn) and (Column <> TServiceList.colServiceName) then
+    exit;
+  case Kind of
+    ikNormal, ikSelected: begin
+      ImageList := CommonRes.ilImages;
+      ImageIndex := CommonRes.iFolder;
+    end;
+  end;
 end;
 
 constructor TServiceList.Create(AOwner: TComponent);
@@ -262,7 +311,7 @@ begin
   if Data = nil then exit;
 
   //We provide some courtesy auto destroy on client request
-  if (Data is TTreeFolder) and TTreeFolder(Data).AutoDestroy then
+  if (Data is TSlCustomNode) and TSlCustomNode(Data).AutoDestroy then
     Data.Destroy;
 end;
 
@@ -363,11 +412,14 @@ begin
     end;
 
   end else
-  if BaseData is TTreeFolder then begin
+  if BaseData is TSlCustomNode then begin
 
     if TextType <> ttNormal then exit;
     case Column of
-      NoColumn, colServiceName: CellText := TTreeFolder(BaseData).Name;
+      NoColumn, colServiceName: CellText := TSlCustomNode(BaseData).Name;
+      colDisplayName: CellText := TSlCustomNode(BaseData).DisplayName;
+      colType: CellText := TSlCustomNode(BaseData).TypeText;
+    else CellText := '';
     end;
 
   end;
@@ -447,14 +499,8 @@ begin
     end;
 
   end else
-  if BaseData is TTreeFolder then begin
-    case Kind of
-      ikNormal, ikSelected: begin
-        ImageList := CommonRes.ilImages;
-        ImageIndex := CommonRes.iFolder;
-      end;
-    end;
-  end;
+  if BaseData is TSlCustomNode then
+    TSlCustomNode(BaseData).GetImageIndex(Kind, Column, Ghosted, ImageIndex, ImageList);
 end;
 
 procedure TServiceList.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
@@ -468,8 +514,8 @@ begin
   BaseData2 := TObject(Sender.GetNodeData(Node2)^);
 
   //Currently column-by-column comparisons are only possible for TServiceEntry
-  //or for column 0
-  if (Column <> NoColumn) and (Column <> colServiceName)
+  //or for certain columns
+  if (Column<>NoColumn) and (not Column in [colServiceName, colDisplayName])
   and (not (BaseData1 is TServiceEntry) or not (BaseData2 is TServiceEntry)) then begin
     Result := Integer(BaseData1.ClassType) - Integer(BaseData2.ClassType);
     exit; //that's it
@@ -478,15 +524,13 @@ begin
   Data1 := TServiceEntry(BaseData1);
   Data2 := TServiceEntry(BaseData2);
   case Column of
-    NoColumn, colServiceName: begin
+    NoColumn, colServiceName, colDisplayName: begin
       //Compare by text, this way we handle any supported node types
       Text1 := vtServices.Text[Node1, Column];
       Text2 := vtServices.Text[Node2, Column];
       Result := CompareText(Text1, Text2);
       //Result := CompareText(Data1.ServiceName, Data2.ServiceName);
     end;
-
-    colDisplayName: Result := CompareText(Data1.GetEffectiveDisplayName, Data2.GetEffectiveDisplayName);
     colStatus: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
     colStartMode: if Data1.Config = nil then
          if Data2.Config = nil then

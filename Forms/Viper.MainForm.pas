@@ -17,9 +17,10 @@ type
   TFolderNodeType = (
     //The order is important, folders are sorted by it
     ntNone = 0,               //no folder type OR information is assigned
-    ntAllServices = 1,
+    ntAllServicesDrivers = 1, //drivers and services together
+    ntAllServices = 10,
     ntAllDrivers,
-    ntTriggers = 10,
+    ntTriggers = 20,
     ntFolder = 100,           //represents the other values when cast to TFolderNodeType, for sorting purposes
     ntUnknownServices = 200,  //unsorted
     ntRunningServices,
@@ -518,6 +519,7 @@ begin
     folderData := GetFolderData(folderNode);
     case SpecialFolderType(folderData) of
       ntNone: isVisible := false;
+      ntAllServicesDrivers: isVisible := true;
       ntRunningServices: isVisible := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
       ntAllServices: isVisible :=  isService;
       ntUnknownServices: isVisible := isService and ((svc.Info = nil) or (Length(svc.Info.Folders) <= 0));
@@ -629,6 +631,7 @@ end;
 
 
 resourcestring
+  sFolderAllServicesDrivers = 'Everything';
   sFolderAllServices = 'Services';
   sFolderUnknownServices = 'Unknown';
   sFolderRunningServices = 'Running';
@@ -645,6 +648,7 @@ begin
     FServiceCat.Clear;
     FServiceCat.Load(AppFolder+'\SvcData');
     vtFolders.Clear;
+    vtFolders_AddSpecial(nil, ntAllServicesDrivers);
     section := vtFolders_AddSpecial(nil, ntAllServices);
     vtFolders_AddSpecial(section, ntRunningServices);
     CreateFolderNodes(section, nil);
@@ -748,6 +752,7 @@ begin
     NoColumn, 0:
       case SpecialFolderType(Data) of
         ntNone: CellText := '';
+        ntAllServicesDrivers: CellText := sFolderAllServicesDrivers;
         ntRunningServices: CellText := sFolderRunningServices;
         ntUnknownServices: CellText := sFolderUnknownServices;
         ntAllServices: CellText := sFolderAllServices;
@@ -770,6 +775,7 @@ begin
     ImageIndex := CommonRes.iFolder
   else
   case TFolderNodeType(Data) of
+    ntAllServicesDrivers: ImageIndex := CommonRes.iService;
     ntRunningServices: ImageIndex := CommonRes.iStart;
     ntAllServices: ImageIndex := CommonRes.iService;
     ntRunningDrivers: ImageIndex := CommonRes.iStart;
@@ -1049,6 +1055,7 @@ begin
 
   if IsSpecialFolder(nd) then begin
     case SpecialFolderType(nd) of
+      ntAllServicesDrivers,
       ntRunningDrivers,
       ntAllDrivers:
         if aShowDrivers.Checked then NodeMarkVisible(Sender, Node);

@@ -1351,7 +1351,7 @@ begin
       //this is a dependency group, not service name
       //for now we'll just create a folder with this name
       //TODO: Also add the contents, all services from this group
-      folder := TSlDependencyGroupNode.Create(dep.Substring(2));
+      folder := TSlDependencyGroupNode.Create(Copy(dep, 2, MaxInt));
       folder.AutoDestroy := true;
       DependencyList.AddNode(nil, folder);
       continue;

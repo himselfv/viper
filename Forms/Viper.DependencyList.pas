@@ -5,6 +5,26 @@ Can only host one or the other.
 }
 
 interface
+{
+A driver/service can depend on another driver/service or a group. Groups simply
+reference driver/service's assigned group:
+  LoadOrderGroup  in SCM's SERVICE_CONFIG.
+  Group           in the registry
+
+In the SCM dependency list groups are indicated by SC_GROUP_IDENTIFIER ("+").
+In registry they are listed separately:
+  DependOnGroup
+  DependOnService
+
+There's apparent separation between driver and service groups. Services use one
+set of groups, drivers use another.
+  Control/GroupOrderList        contains only driver groups
+  Control/ServiceGroupOrder     contains both service and driver groups
+
+Some groups are listed in SafeBoot/, always as "type=Driver Group". Most of them
+are, but "NetworkProvider" and "TDI" are only used by services and don't appear in
+GroupOrderList, hinting that the distinction is superficial.
+}
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,

@@ -652,7 +652,7 @@ begin
   try
     WellKnownDeviceInterfaceClasses.LoadFromFile(DeviceInterfaceClassesFile);
   except
-    on E: EFCreateError do begin end;
+    on E: EFOpenError do begin end;
   end;
 end;
 
@@ -679,7 +679,11 @@ end;
 procedure __LoadWellKnownRpcInterfaces;
 begin
   WellKnownRpcInterfaces := TGuidDictionary.Create;
-  WellKnownRpcInterfaces.LoadFromFile(RpcInterfacesFile);
+  try
+    WellKnownRpcInterfaces.LoadFromFile(RpcInterfacesFile);
+  except
+    on E: EFOpenError do begin end;
+  end;
 end;
 
 procedure __NeedWellKnownRpcInterfaces; inline;

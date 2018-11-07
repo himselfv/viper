@@ -100,10 +100,14 @@ var ini: TCustomIniFile;
   event: TSettingsEvent;
 begin
   ini := GetSettings;
-  //No local settings
-  //Call subscribers:
-  for event in Self.FOnLoadSettings do
-    event(Self, ini);
+  try
+    //No local settings
+    //Call subscribers:
+    for event in Self.FOnLoadSettings do
+      event(Self, ini);
+  finally
+    FreeAndNil(ini);
+  end;
 end;
 
 procedure TSettingsForm.SaveSettings;
@@ -111,10 +115,14 @@ var ini: TCustomIniFile;
   event: TSettingsEvent;
 begin
   ini := GetSettings;
-  //No local settings
-  //Call subscribers:
-  for event in Self.FOnSaveSettings do
-    event(Self, ini);
+  try
+    //No local settings
+    //Call subscribers:
+    for event in Self.FOnSaveSettings do
+      event(Self, ini);
+  finally
+    FreeAndNil(ini);
+  end;
 end;
 
 

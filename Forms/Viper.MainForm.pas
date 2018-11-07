@@ -251,6 +251,7 @@ type
     procedure ShowTriggerBrowser;
 
   protected
+    procedure InitInterfaceClasses;
     procedure RefreshServiceList;
   public
     procedure Refresh;
@@ -270,7 +271,7 @@ var
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
   CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
-  Viper.StyleSettings, Viper.Settings;
+  Viper.StyleSettings, Viper.Settings, IniFiles;
 
 {$R *.dfm}
 
@@ -292,13 +293,19 @@ begin
     AIndex := CommonRes.iService;
 end;
 
+resourcestring
+  eDeviceInterfaceClassesFileNotFound = 'Device interface list file not found:'#13'%s'#13
+    +'The application will use values from the operating system, but some entries '
+    +'may be left undeciphered.';
+  eRpcInterfacesFileNotFound = 'RPC interface list file not found:'#13'%s'#13
+    +'The application will use values from the operating system, but some entries '
+    +'may be left undeciphered.';
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create();
   FServices := TServiceEntryList.Create;
-  DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
-  RpcInterfacesFile := AppFolder()+'\RpcInterfaces.txt';
+  InitInterfaceClasses;
   TriggerList.Initialize;
   DependencySvcList.SetServiceList(FServices);
   DependentsSvcList.SetServiceList(FServices);
@@ -309,6 +316,59 @@ begin
   FreeTriggerBrowser;
   FreeAndNil(FServices);
   FreeAndNil(FServiceCat);
+end;
+
+//Initializes interface classes lists
+procedure TMainForm.InitInterfaceClasses;
+var Settings: TCustomIniFile;
+  SettingsChanged: boolean;
+  SeenDeviceInterfaceClassesWarning: boolean;
+  SeenRpcInterfacesWarning: boolean;
+begin
+  //Delay loading the files until they're needed
+  DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
+  RpcInterfacesFile := AppFolder()+'\RpcInterfaces.txt';
+
+  //But warn ONCE if they're missing - now's the best time.
+  Settings := GetSettings();
+  try
+    SettingsChanged := false;
+    SeenDeviceInterfaceClassesWarning := Settings.ReadBool('', 'SeenDeviceInterfaceClassesWarning', false);
+    SeenRpcInterfacesWarning := Settings.ReadBool('', 'SeenRpcInterfacesWarning', false);
+
+    if FileExists(DeviceInterfaceClassesFile) then begin
+      if SeenDeviceInterfaceClassesWarning then
+        SettingsChanged := true;
+      SeenDeviceInterfaceClassesWarning := false; //reset
+    end else
+    if not SeenDeviceInterfaceClassesWarning then begin
+      MessageBox(Self.Handle, PChar(Format(eDeviceInterfaceClassesFileNotFound, [DeviceInterfaceClassesFile])),
+        PChar(self.Caption), MB_OK + MB_ICONERROR + MB_TASKMODAL);
+      SeenDeviceInterfaceClassesWarning := true;
+      SettingsChanged := true;
+    end;
+
+    if FileExists(RpcInterfacesFile) then begin
+      if SeenRpcInterfacesWarning then
+        SettingsChanged := true;
+      SeenRpcInterfacesWarning := false //reset
+    end else
+    if not SeenRpcInterfacesWarning then begin
+      MessageBox(Self.Handle, PChar(Format(eRpcInterfacesFileNotFound, [RpcInterfacesFile])),
+        PChar(self.Caption), MB_OK + MB_ICONERROR + MB_TASKMODAL);
+      SeenRpcInterfacesWarning := true;
+      SettingsChanged := true;
+    end;
+
+    if SettingsChanged then begin
+      Settings.WriteBool('', 'SeenDeviceInterfaceClassesWarning', SeenDeviceInterfaceClassesWarning);
+      Settings.WriteBool('', 'SeenRpcInterfacesWarning', SeenRpcInterfacesWarning);
+      Settings.UpdateFile;
+    end;
+  finally
+    FreeAndNil(Settings);
+  end;
+
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);

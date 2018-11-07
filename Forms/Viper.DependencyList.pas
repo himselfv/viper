@@ -101,7 +101,7 @@ end;
 
 
 resourcestring
-  sServiceMissing = '%s (missing)';
+  sServiceMissing = 'Dependency missing';
 
 function TSlBrokenDependencyNode.GetDisplayName: string;
 begin
@@ -117,7 +117,7 @@ begin
     ikNormal, ikSelected: begin
       //We don't really know if it's a service or a driver! Tentatively show it as a service.
       ImageList := CommonRes.ilImages;
-      ImageIndex := CommonRes.iService;
+      ImageIndex := CommonRes.iBrokenDependency;
       Ghosted := true; //try this for now
     end;
   end;

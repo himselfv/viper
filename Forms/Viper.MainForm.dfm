@@ -287,7 +287,7 @@ object MainForm: TMainForm
         object N1: TMenuItem [16]
           Caption = '-'
         end
-        inherited Advanced1: TMenuItem
+        inherited miAdvancedSubmenu: TMenuItem
           object Saveserviceconfig2: TMenuItem [0]
             Action = aSaveSelectedServicesConfig
           end

@@ -45,7 +45,11 @@ type
       TextType: TVSTTextType);
   protected
     FServices: TServiceEntryList;
-    procedure LoadServiceDependencyNodes(const AService: TServiceEntry; AParentNode: PVirtualNode);
+    function AddBrokenDependencyNode(AParent: PVirtualNode; const AName: string): PVirtualNode;
+    function AddServiceDependencyNode(AParent: PVirtualNode; const AService: TServiceEntry): PVirtualNode;
+    procedure LoadServiceDependencyNodes(AParentNode: PVirtualNode; const AService: TServiceEntry);
+    function AddGroupDependencyNode(AParent: PVirtualNode; const AGroup: string): PVirtualNode;
+    procedure LoadGroupDependencyContentNodes(AParentNode: PVirtualNode; const AGroup: string);
     procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; const AService: TServiceEntry; AParentNode: PVirtualNode);
   public
     procedure SetServiceList(AServices: TServiceEntryList);
@@ -170,24 +174,34 @@ begin
   try
     Self.Clear;
     if AService <> nil then
-      LoadServiceDependencyNodes(AService, nil);
+      LoadServiceDependencyNodes(nil, AService);
   finally
     Self.EndUpdate;
   end;
 end;
 
-resourcestring
-  eServiceDependentNotFound = 'Service %s is not found in a general list.';
+//Adds a node for a broken dependency/dependent
+function TDependencyList.AddBrokenDependencyNode(AParent: PVirtualNode; const AName: string): PVirtualNode;
+var broken: TSlBrokenDependencyNode;
+begin
+  broken := TSlBrokenDependencyNode.Create(AName);
+  broken.AutoDestroy := true;
+  Result := Self.AddNode(AParent, broken);
+end;
+
+//Adds a service node with its further dependencies
+function TDependencyList.AddServiceDependencyNode(AParent: PVirtualNode; const AService: TServiceEntry): PVirtualNode;
+begin
+  Result := Self.AddService(AParent, AService);
+  LoadServiceDependencyNodes(Result, AService);
+end;
 
 //Adds child nodes for service dependencies to the node given by ParentNode.
 //Call ReloadDependencies if you need to reload the whole list.
-procedure TDependencyList.LoadServiceDependencyNodes(const AService: TServiceEntry; AParentNode: PVirtualNode);
+procedure TDependencyList.LoadServiceDependencyNodes(AParentNode: PVirtualNode; const AService: TServiceEntry);
 var deps: TArray<string>;
   dep: string;
   depService: TServiceEntry;
-  depNode: PVirtualNode;
-  folder: TSlDependencyGroupNode;
-  broken: TSlBrokenDependencyNode;
 begin
   if (AService = nil) or (AService.Config = nil) then
     exit;
@@ -195,28 +209,48 @@ begin
   deps := SplitNullSeparatedList(AService.Config.lpDependencies);
   for dep in deps do begin
     if dep.StartsWith(SC_GROUP_IDENTIFIER) then begin
-      //this is a dependency group, not service name
-      //for now we'll just create a folder with this name
-      //TODO: Also add the contents, all services from this group
-      folder := TSlDependencyGroupNode.Create(Copy(dep, 2, MaxInt));
-      folder.AutoDestroy := true;
-      Self.AddNode(AParentNode, folder);
+      //This is a dependency group, not a service name.
+      AddGroupDependencyNode(AParentNode, Copy(dep, 2, MaxInt));
       continue;
     end;
+
     depService := FServices.Find(dep);
-   //NOTE: Dependencies sometimes refer to drivers, so we either have to always load drivers
+   //Dependencies sometimes refer to drivers, so we either have to always load drivers
    //(as we do now), or to ignore failed matches.
-   //NOTE: Dependencies DO sometimes contain failed matches, we should not crash on that!
+
+   //Dependencies do sometimes contain failed matches, we should not crash on that!
    //Show that as a valid, but broken, dependency.
     if depService = nil then begin
-      broken := TSlBrokenDependencyNode.Create(dep);
-      broken.AutoDestroy := true;
-      Self.AddNode(AParentNode, broken);
+      AddBrokenDependencyNode(AParentNode, dep);
       continue;
     end;
-    depNode := Self.AddService(AParentNode, depService);
-    LoadServiceDependencyNodes(depService, depNode);
+
+    AddServiceDependencyNode(AParentNode, depService);
   end;
+end;
+
+//Adds a group dependency with its entry list
+function TDependencyList.AddGroupDependencyNode(AParent: PVirtualNode; const AGroup: string): PVirtualNode;
+var group: TSlDependencyGroupNode;
+begin
+  group := TSlDependencyGroupNode.Create(AGroup);
+  group.AutoDestroy := true;
+  Result := Self.AddNode(AParent, group);
+  Self.LoadGroupDependencyContentNodes(Result, group.Name);
+end;
+
+//Adds child nodes for all services in a given group to the node given by ParentNode.
+//Used to populate a dependency group node
+procedure TDependencyList.LoadGroupDependencyContentNodes(AParentNode: PVirtualNode; const AGroup: string);
+var service: TServiceEntry;
+begin
+  if AGroup = '' then exit;
+
+  //We could ask SCM but it's quicker to check our own list. Saves us opening
+  //SCM on each call too or passing the handle
+  for service in FServices do
+    if SameText(service.LoadOrderGroup, AGroup) then
+      AddServiceDependencyNode(AParentNode, service);
 end;
 
 
@@ -259,8 +293,14 @@ begin
 
     while depntCount > 0 do begin
       depService := FServices.Find(depnt.lpServiceName);
-      if depService = nil then
-        raise Exception.CreateFmt(eServiceDependentNotFound, [depnt.lpServiceName]);
+
+     //Weird: SCM gives us a valid service but we don't know it.
+     //Maybe our list is stale. Not crashing is still better - let's reuse the broken dependency mechanics.
+      if depService = nil then begin
+        AddBrokenDependencyNode(AParentNode, depnt.lpServiceName);
+        continue;
+      end;
+
       depNode := Self.AddService(AParentNode, depService);
       LoadServiceDependentsNodes(hSC, depService, depNode);
 

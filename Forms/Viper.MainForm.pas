@@ -5,8 +5,8 @@ interface
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
-  Generics.Collections, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList, Viper.TriggerList,
-  Viper.DependencyList, Viper.ServiceTriggerList, Viper.RichEditEx;
+  Generics.Collections, IniFiles, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList,
+  Viper.TriggerList, Viper.DependencyList, Viper.ServiceTriggerList, Viper.RichEditEx;
 
 type
   //Folder node data contains only a single pointer.
@@ -252,6 +252,7 @@ type
 
   protected
     procedure InitInterfaceClasses;
+    function CheckClassFilePresent(Settings: TCustomIniFile; const AFilename: string; const AName: string): boolean;
     procedure RefreshServiceList;
   public
     procedure Refresh;
@@ -271,7 +272,7 @@ var
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
   CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
-  Viper.StyleSettings, Viper.Settings, IniFiles;
+  Viper.StyleSettings, Viper.Settings;
 
 {$R *.dfm}
 
@@ -293,14 +294,6 @@ begin
     AIndex := CommonRes.iService;
 end;
 
-resourcestring
-  eDeviceInterfaceClassesFileNotFound = 'Device interface list file not found:'#13'%s'#13
-    +'The application will use values from the operating system, but some entries '
-    +'may be left undeciphered.';
-  eRpcInterfacesFileNotFound = 'RPC interface list file not found:'#13'%s'#13
-    +'The application will use values from the operating system, but some entries '
-    +'may be left undeciphered.';
-
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create();
@@ -321,9 +314,6 @@ end;
 //Initializes interface classes lists
 procedure TMainForm.InitInterfaceClasses;
 var Settings: TCustomIniFile;
-  SettingsChanged: boolean;
-  SeenDeviceInterfaceClassesWarning: boolean;
-  SeenRpcInterfacesWarning: boolean;
 begin
   //Delay loading the files until they're needed
   DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
@@ -332,43 +322,41 @@ begin
   //But warn ONCE if they're missing - now's the best time.
   Settings := GetSettings();
   try
-    SettingsChanged := false;
-    SeenDeviceInterfaceClassesWarning := Settings.ReadBool('', 'SeenDeviceInterfaceClassesWarning', false);
-    SeenRpcInterfacesWarning := Settings.ReadBool('', 'SeenRpcInterfacesWarning', false);
-
-    if FileExists(DeviceInterfaceClassesFile) then begin
-      if SeenDeviceInterfaceClassesWarning then
-        SettingsChanged := true;
-      SeenDeviceInterfaceClassesWarning := false; //reset
-    end else
-    if not SeenDeviceInterfaceClassesWarning then begin
-      MessageBox(Self.Handle, PChar(Format(eDeviceInterfaceClassesFileNotFound, [DeviceInterfaceClassesFile])),
-        PChar(self.Caption), MB_OK + MB_ICONERROR + MB_TASKMODAL);
-      SeenDeviceInterfaceClassesWarning := true;
-      SettingsChanged := true;
-    end;
-
-    if FileExists(RpcInterfacesFile) then begin
-      if SeenRpcInterfacesWarning then
-        SettingsChanged := true;
-      SeenRpcInterfacesWarning := false //reset
-    end else
-    if not SeenRpcInterfacesWarning then begin
-      MessageBox(Self.Handle, PChar(Format(eRpcInterfacesFileNotFound, [RpcInterfacesFile])),
-        PChar(self.Caption), MB_OK + MB_ICONERROR + MB_TASKMODAL);
-      SeenRpcInterfacesWarning := true;
-      SettingsChanged := true;
-    end;
-
-    if SettingsChanged then begin
-      Settings.WriteBool('', 'SeenDeviceInterfaceClassesWarning', SeenDeviceInterfaceClassesWarning);
-      Settings.WriteBool('', 'SeenRpcInterfacesWarning', SeenRpcInterfacesWarning);
+    if CheckClassFilePresent(Settings, DeviceInterfaceClassesFile, 'DeviceInterfaceClasses')
+    or CheckClassFilePresent(Settings, RpcInterfacesFile, 'RpcInterfaces') then
       Settings.UpdateFile;
-    end;
   finally
     FreeAndNil(Settings);
   end;
+end;
 
+resourcestring
+  eClassFileNotFound = 'File not found:'#13'%s'#13#13
+    +'Viper uses this file to translate GUIDs to readable class names.'#13
+    +'Some GUIDs might not be translated without it.';
+
+//True if made changes to Settings
+function TMainForm.CheckClassFilePresent(Settings: TCustomIniFile; const AFilename: string; const AName: string): boolean;
+var SeenFlagName: string;
+begin
+  SeenFlagName := 'Seen'+AName+'Warning';
+  if FileExists(AFilename) then begin
+    Result := Settings.ReadBool('', SeenFlagName, false);
+    if Result then
+      Settings.DeleteKey('', SeenFlagName);
+    exit;
+  end;
+
+  Result := false;
+  if not Settings.ReadBool('', SeenFlagName, false) then begin
+    MessageBox(Self.Handle,
+      PChar(Format(eClassFileNotFound, [ExtractFilename(AFilename)])),
+      PChar(self.Caption),
+      MB_OK + MB_ICONERROR + MB_TASKMODAL
+    );
+    Settings.WriteBool('', SeenFlagName, true);
+    Result := true;
+  end;
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);

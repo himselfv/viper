@@ -19,6 +19,8 @@ Clients can use TServiceEntry descendants.
 }
 
 type
+  TNodeList = TArray<PVirtualNode>;
+  PNodeList = ^TNodeList;
   TServiceList = class(TFrame)
     vtServices: TVirtualStringTree;
     ActionList: TActionList;
@@ -129,12 +131,14 @@ type
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 
   protected
+    procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure Iterate_AddServiceDataToArray(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Data: Pointer; var Abort: Boolean);
     procedure ServiceInvalidated(Sender: TObject);
-    procedure SelectionChanged;
+    procedure SelectionChanged; virtual;
     function GetCommonStartType(const Services: TServiceEntries): DWORD;
     function GetCommonProtectionType(const Services: TServiceEntries): DWORD;
     procedure FindServiceNode_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer;
@@ -162,6 +166,7 @@ type
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     function GetServiceEntry(Node: PVirtualNode): TServiceEntry; inline;
     function GetFocusedService: TServiceEntry;
+    function GetSelectedNodes: TNodeList;
     function GetSelectedServices: TServiceEntries;
     function GetFirstSelectedService: TServiceEntry;
     function FindServiceNode(Service: TServiceEntry): PVirtualNode;
@@ -604,18 +609,20 @@ end;
 //Call when there's reason to suspect that node selection or the properties of those nodes
 //could have changed;
 procedure TServiceList.SelectionChanged;
-var services: TServiceEntries;
+var nodes: TNodeList;
+  services: TServiceEntries;
   service: TServiceEntry;
   CanStart, CanForceStart, CanStop, CanPause, CanResume: boolean;
   CommonStartType: cardinal;
   CommonProtectionType: cardinal;
 begin
-  services := Self.GetSelectedServices();
+  nodes := Self.GetSelectedNodes(); //all nodes
+  services := Self.GetSelectedServices(); //only service entries
 
-  aCopyServiceID.Visible := Length(services)>0;
-  aCopyServiceName.Visible := Length(services)>0;
+  aCopyServiceID.Visible := Length(nodes)>0;
+  aCopyServiceName.Visible := Length(nodes)>0;
   aCopyServiceDescription.Visible := Length(services)>0;
-  aCopyServiceSummary.Visible := Length(services)>0;
+  aCopyServiceSummary.Visible := Length(nodes)>0;
   aCopyExecutableFilename.Visible := Length(services)>0;
   miCopySubmenu.Visible := aCopyServiceID.Visible or aCopyServiceName.Visible
     or aCopyServiceDescription.Visible or aCopyServiceSummary.Visible
@@ -758,6 +765,20 @@ begin
     Result := TServiceEntry(Data);
 end;
 
+function TServiceList.GetSelectedNodes: TNodeList;
+begin
+  SetLength(Result, 0);
+  vtServices.IterateSubtree(nil, Iterate_AddNodeToArray, @Result, [vsSelected]);
+end;
+
+procedure TServiceList.Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var entries: PNodeList absolute Data;
+begin
+  SetLength(entries^, Length(entries^)+1);
+  entries^[Length(entries^)-1] := Node;
+end;
+
 function TServiceList.GetSelectedServices: TServiceEntries;
 begin
   SetLength(Result, 0);
@@ -825,38 +846,46 @@ begin
   vtServices.Invalidate;
 end;
 
+//Try to make at least some copy commands universal (available for non-service nodes)
+
 procedure TServiceList.aCopyServiceIDExecute(Sender: TObject);
-var service: TServiceEntry;
+var node: PVirtualNode;
   str: string;
 begin
   str := '';
-  for service in GetSelectedServices() do begin
+  for node in GetSelectedNodes() do begin
     if str <> '' then str := str + #13;
-    str := str + Service.ServiceName;
+    str := str + vtServices.Text[node, Self.colServiceName];
   end;
   Clipboard.AsText := str;
 end;
 
 procedure TServiceList.aCopyServiceNameExecute(Sender: TObject);
-var Service: TServiceEntry;
-  str: string;
+var node: PVirtualNode;
+  str, val: string;
 begin
   str := '';
-  for service in GetSelectedServices() do begin
-    if str <> '' then str := str + #13;
-    str := str + Service.DisplayName;
+  for node in GetSelectedNodes() do begin
+    val := vtServices.Text[node, Self.colDisplayName];
+    if val <> '' then begin
+      if str <> '' then str := str + #13;
+      str := str + val;
+    end;
   end;
   Clipboard.AsText := str;
 end;
 
 procedure TServiceList.aCopyServiceSummaryExecute(Sender: TObject);
-var service: TServiceEntry;
-  str: string;
+var node: PVirtualNode;
+  str, disp: string;
 begin
   str := '';
-  for service in GetSelectedServices() do begin
+  for node in GetSelectedNodes() do begin
     if str <> '' then str := str + #13;
-    str := str + Service.ServiceName + ' (' + Service.DisplayName + ')';
+    str := str + vtServices.Text[node, Self.colServiceName];
+    disp := vtServices.Text[node, Self.colDisplayName];
+    if disp <> '' then
+       str := str+ ' (' + disp + ')';
   end;
   Clipboard.AsText := str;
 end;

@@ -55,6 +55,7 @@ type
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
     function IsLaunchProtected: boolean; inline;
+    function DependsOn(const ADependency: string): boolean;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil
@@ -304,6 +305,20 @@ end;
 function TServiceEntry.IsLaunchProtected: boolean;
 begin
   Result := Self.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE;
+end;
+
+//True if a given string is included in service dependencies
+function TServiceEntry.DependsOn(const ADependency: string): boolean;
+var deps: TArray<string>;
+  dep: string;
+begin
+  Result := false;
+  deps := SplitNullSeparatedList(Self.Config.lpDependencies);
+  for dep in deps do
+    if SameText(dep, ADependency) then begin
+      Result := true;
+      break;
+    end;
 end;
 
 

@@ -50,7 +50,11 @@ type
     procedure LoadServiceDependencyNodes(AParentNode: PVirtualNode; const AService: TServiceEntry);
     function AddGroupDependencyNode(AParent: PVirtualNode; const AGroup: string): PVirtualNode;
     procedure LoadGroupDependencyContentNodes(AParentNode: PVirtualNode; const AGroup: string);
-    procedure LoadServiceDependentsNodes(hSC: SC_HANDLE; const AService: TServiceEntry; AParentNode: PVirtualNode);
+
+    function AddServiceDependentNode(AParent: PVirtualNode; const AService: TServiceEntry): PVirtualNode;
+    procedure LoadServiceDependentsNodes(AParentNode: PVirtualNode; const AService: TServiceEntry);
+    function AddGroupDependentNode(AParent: PVirtualNode; const AGroup: string): PVirtualNode;
+    procedure LoadGroupDependentContentNodes(AParentNode: PVirtualNode; const AGroup: string);
   public
     procedure SetServiceList(AServices: TServiceEntryList);
     procedure ReloadDependencies(const AService: TServiceEntry);
@@ -256,60 +260,76 @@ end;
 
 //Loads the dependents tree for the given service
 procedure TDependencyList.ReloadDependents(const AService: TServiceEntry);
-var hSC: SC_HANDLE;
 begin
   if AService = nil then begin
     Self.Clear;
     exit;
   end;
 
-  hSC := 0;
   Self.BeginUpdate;
   try
     Self.Clear;
-    hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-    LoadServiceDependentsNodes(hSC, AService, nil);
-
+    LoadServiceDependentsNodes(nil, AService);
   finally
-    if hSC <> 0 then CloseServiceHandle(hSC);
     Self.EndUpdate;
   end;
 end;
 
-procedure TDependencyList.LoadServiceDependentsNodes(hSC: SC_HANDLE; const AService: TServiceEntry; AParentNode: PVirtualNode);
-var hSvc: SC_HANDLE;
-  depnt: LPENUM_SERVICE_STATUS;
-  depntCount: cardinal;
-  depService: TServiceEntry;
-  depNode: PVirtualNode;
+function TDependencyList.AddServiceDependentNode(AParent: PVirtualNode; const AService: TServiceEntry): PVirtualNode;
+begin
+  Result := Self.AddService(AParent, AService);
+  LoadServiceDependentsNodes(Result, AService);
+end;
+
+procedure TDependencyList.LoadServiceDependentsNodes(AParentNode: PVirtualNode; const AService: TServiceEntry);
+var depService: TServiceEntry;
 begin
   if AService = nil then exit;
 
-  hSvc := OpenService(hSC, AService.ServiceName, SERVICE_ENUMERATE_DEPENDENTS);
-  if hSvc = 0 then exit;
-  try
-    depnt := EnumDependentServices(hSvc, SERVICE_STATE_ALL, depntCount);
-    if depnt = nil then exit;
+  //We could ask SCM but it's quicker to check our own list. Saves us opening
+  //SCM on each call too or passing the handle
+  for depService in FServices do
+    if depService.DependsOn(AService.ServiceName) then
+      AddServiceDependentNode(AParentNode, depService);
 
-    while depntCount > 0 do begin
-      depService := FServices.Find(depnt.lpServiceName);
+  //Add the group to which this service belongs -- someone may depend on that too
+  AddGroupDependentNode(AParentNode, AService.LoadOrderGroup);
+end;
 
-     //Weird: SCM gives us a valid service but we don't know it.
-     //Maybe our list is stale. Not crashing is still better - let's reuse the broken dependency mechanics.
-      if depService = nil then begin
-        AddBrokenDependencyNode(AParentNode, depnt.lpServiceName);
-        continue;
-      end;
-
-      depNode := Self.AddService(AParentNode, depService);
-      LoadServiceDependentsNodes(hSC, depService, depNode);
-
-      Inc(depnt);
-      Dec(depntCount);
+function TDependencyList.AddGroupDependentNode(AParent: PVirtualNode; const AGroup: string): PVirtualNode;
+var group: TSlDependencyGroupNode;
+  depService: TServiceEntry;
+  Found: boolean;
+begin
+  //We're going to add this node only if someone depends on it.
+  //For most groups this is not true so no point in showing them
+  Found := false;
+  for depService in FServices do
+    if depService.DependsOn(SC_GROUP_IDENTIFIER+AGroup) then begin
+      Found := true;
+      break;
     end;
-  finally
-    CloseServiceHandle(hSvc);
+  if not Found then begin
+    Result := nil;
+    exit;
   end;
+
+  group := TSlDependencyGroupNode.Create(AGroup);
+  group.AutoDestroy := true;
+  Result := Self.AddNode(AParent, group);
+  Self.LoadGroupDependencyContentNodes(Result, group.Name);
+end;
+
+procedure TDependencyList.LoadGroupDependentContentNodes(AParentNode: PVirtualNode; const AGroup: string);
+var depService: TServiceEntry;
+begin
+  if AGroup = '' then exit;
+
+  //We could ask SCM but it's quicker to check our own list. Saves us opening
+  //SCM on each call too or passing the handle
+  for depService in FServices do
+    if depService.DependsOn(SC_GROUP_IDENTIFIER+AGroup) then
+      AddServiceDependentNode(AParentNode, depService);
 end;
 
 

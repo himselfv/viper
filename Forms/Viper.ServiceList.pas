@@ -51,7 +51,7 @@ type
     N2: TMenuItem;
     Jumptobinary1: TMenuItem;
     Openregistrykey1: TMenuItem;
-    Copy1: TMenuItem;
+    miCopySubmenu: TMenuItem;
     Ident1: TMenuItem;
     Name1: TMenuItem;
     Description1: TMenuItem;
@@ -61,9 +61,11 @@ type
     Automatic1: TMenuItem;
     Manual1: TMenuItem;
     Disabled1: TMenuItem;
-    Advanced1: TMenuItem;
+    miAdvancedSubmenu: TMenuItem;
     Exporttoreg1: TMenuItem;
     Deleteservice1: TMenuItem;
+    aEditSecurity: TAction;
+    aUnlockSecurity: TAction;
     miEditSecurity: TMenuItem;
     N1: TMenuItem;
     miProtectionType: TMenuItem;
@@ -75,7 +77,7 @@ type
     aProtectionWindows: TAction;
     aProtectionWindowsLight: TAction;
     aProtectionAntimalwareLight: TAction;
-    Security1: TMenuItem;
+    miSecuritySubmenu: TMenuItem;
     miUnlockSecurity: TMenuItem;
     N4: TMenuItem;
     Shortsummary1: TMenuItem;
@@ -119,9 +121,9 @@ type
     procedure vtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure aColorByStartTypeExecute(Sender: TObject);
-    procedure miEditSecurityClick(Sender: TObject);
     procedure aProtectionNoneExecute(Sender: TObject);
-    procedure miUnlockSecurityClick(Sender: TObject);
+    procedure aEditSecurityExecute(Sender: TObject);
+    procedure aUnlockSecurityExecute(Sender: TObject);
     procedure vtServicesFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
@@ -285,6 +287,7 @@ end;
 procedure TServiceList.Clear;
 begin
   vtServices.Clear;
+  SelectionChanged;
 end;
 
 procedure TServiceList.BeginUpdate;
@@ -609,6 +612,15 @@ var services: TServiceEntries;
 begin
   services := Self.GetSelectedServices();
 
+  aCopyServiceID.Visible := Length(services)>0;
+  aCopyServiceName.Visible := Length(services)>0;
+  aCopyServiceDescription.Visible := Length(services)>0;
+  aCopyServiceSummary.Visible := Length(services)>0;
+  aCopyExecutableFilename.Visible := Length(services)>0;
+  miCopySubmenu.Visible := aCopyServiceID.Visible or aCopyServiceName.Visible
+    or aCopyServiceDescription.Visible or aCopyServiceSummary.Visible
+    or aCopyExecutableFilename.Visible;
+
  //Show an action if any of the selected services allows it
   CanStart := false;
   CanForceStart := false;
@@ -655,6 +667,11 @@ begin
   aProtectionAntimalwareLight.Visible := Length(services)>0;
   miProtectionType.Visible := aProtectionNone.Visible or aProtectionWindows.Visible
     or aProtectionWindowsLight.Visible or aProtectionAntimalwareLight.Visible;
+
+  aEditSecurity.Visible := Length(services)>0;
+  aUnlockSecurity.Visible := Length(services)>0;
+  miSecuritySubmenu.Visible := aEditSecurity.Visible or aUnlockSecurity.Visible
+    or miProtectionType.Visible;
 end;
 
 //Returns a StartType common for all listed services, or -1 if there's variation
@@ -1036,7 +1053,7 @@ end;
 
 // Security
 
-procedure TServiceList.miEditSecurityClick(Sender: TObject);
+procedure TServiceList.aEditSecurityExecute(Sender: TObject);
 var Service: TServiceEntry;
   hPriv: TPrivToken;
 begin
@@ -1100,7 +1117,7 @@ resourcestring
   sUnlockDone = 'Done.';
   sNothingToChange = 'Nothing to change.';
 
-procedure TServiceList.miUnlockSecurityClick(Sender: TObject);
+procedure TServiceList.aUnlockSecurityExecute(Sender: TObject);
 var Services: TServiceEntries;
   Service: TServiceEntry;
   hPriv: TPrivToken;

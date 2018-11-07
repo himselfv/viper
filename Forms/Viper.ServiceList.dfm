@@ -238,6 +238,20 @@ object ServiceList: TServiceList
       GroupIndex = 2
       OnExecute = aProtectionNoneExecute
     end
+    object aEditSecurity: TAction
+      Category = 'Protection'
+      Caption = 'Edit security'
+      Hint = 'Edit the service access permissions'
+      OnExecute = aEditSecurityExecute
+    end
+    object aUnlockSecurity: TAction
+      Category = 'Protection'
+      Caption = 'Unlock security'
+      Hint = 
+        'Remove protection and take ownership as neccessary to access the' +
+        ' service'
+      OnExecute = aUnlockSecurityExecute
+    end
   end
   object pmServices: TPopupMenu
     OnPopup = pmServicesPopup
@@ -270,7 +284,7 @@ object ServiceList: TServiceList
     object Openregistrykey1: TMenuItem
       Action = aJumpToRegistry
     end
-    object Copy1: TMenuItem
+    object miCopySubmenu: TMenuItem
       Caption = 'Copy'
       object Shortsummary1: TMenuItem
         Action = aCopyServiceSummary
@@ -315,12 +329,11 @@ object ServiceList: TServiceList
         RadioItem = True
       end
     end
-    object Security1: TMenuItem
+    object miSecuritySubmenu: TMenuItem
       Caption = 'Security'
       object miEditSecurity: TMenuItem
+        Action = aEditSecurity
         Caption = 'Edit...'
-        Hint = 'Edit the service access permissions'
-        OnClick = miEditSecurityClick
       end
       object miProtectionType: TMenuItem
         Caption = 'Protection'
@@ -356,14 +369,11 @@ object ServiceList: TServiceList
         Caption = '-'
       end
       object miUnlockSecurity: TMenuItem
+        Action = aUnlockSecurity
         Caption = 'Unlock'
-        Hint = 
-          'Remove protection and take ownership as neccessary to access the' +
-          ' service'
-        OnClick = miUnlockSecurityClick
       end
     end
-    object Advanced1: TMenuItem
+    object miAdvancedSubmenu: TMenuItem
       Caption = 'Advanced'
       object Exporttoreg1: TMenuItem
         Caption = 'Export to .reg...'

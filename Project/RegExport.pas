@@ -82,7 +82,7 @@ end;
 
 
 resourcestring
-  eCannotOpenKey = 'Cannot open registry key %s';
+  eCannotOpenKey = 'Cannot open registry key %s, error %d';
 
 constructor TRegistryExporter.Create(ARegFile: TRegFile; AOwnsRegFile: boolean);
 begin
@@ -125,10 +125,12 @@ procedure TRegistryExporter.ExportKey(const ARootKey: HKEY; const APath: string;
 begin
   if FRegistry = nil then
     FRegistry := TRegistry.Create;
+  FRegistry.CloseKey; //just in case
   FRegistry.RootKey := ARootKey;
-  if not FRegistry.OpenKey(APath, false) then
-    raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(ARootKey)+'\'+APath]);
+  if not FRegistry.OpenKeyReadOnly(APath) then
+    raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(ARootKey)+'\'+APath, FRegistry.LastError]);
   ExportKey(FRegistry, Recursive);
+  FRegistry.CloseKey;
 end;
 
 //Exports a key opened in a given TRegistry object
@@ -161,13 +163,13 @@ begin
         continue;
       ARegistry.CloseKey; //must close sibling key
       NewPath := BasePath+'\'+Name;
-      if not ARegistry.OpenKey(NewPath, false) then
-        raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(FRegistry.RootKey)+'\'+NewPath]);
+      if not ARegistry.OpenKeyReadOnly(NewPath) then
+        raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(FRegistry.RootKey)+'\'+NewPath, FRegistry.LastError]);
       ExportKey(ARegistry, Recursive);
     end;
     if ARegistry.CurrentPath <> BasePath then begin
       ARegistry.CloseKey; //=> start from root, whether BasePath is relative or not
-      ARegistry.OpenKey(BasePath, false);
+      ARegistry.OpenKeyReadOnly(BasePath);
     end;
   finally
     FreeAndNil(Names);

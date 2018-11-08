@@ -46,29 +46,38 @@ type
         REG_MULTI_SZ
         REG_QWORD:  hex string
     }
-    //Use these shortcuts
+    //Use these setters
     procedure SetDwordValue(const val: dword); inline;
     procedure SetStringValue(const val: string); inline;
     procedure SetOtherValue(const pb: PByte; cb: cardinal); inline;
     property AsDword: dword write SetDwordValue;
     property AsString: string write SetStringValue;
+    //Export
+    function ExportToString: string;
   end;
+
   TRegFileKey = record
     Name: string;
     Delete: boolean;
     Entries: TArray<TRegFileEntry>;
     procedure AddValueEntry(const Entry: TRegFileEntry);
+    //Shortcuts
+    procedure AddStringValue(const Name: string; DataType: integer; const Data: string);
+    procedure AddDwordValue(const Name: string; DataType: integer; const Data: dword);
+    procedure AddOtherValue(const Name: string; DataType: integer; const Data: PByte; const Size: integer);
+    //Export
+    procedure ExportToStrings(sl: TStrings);
   end;
+
   TRegFile = class(TList<TRegFileKey>)
   protected
     function ParseNameValue(const line: string; out re: TRegFileEntry): boolean;
-    procedure SaveRegKey(sl: TStringList; const rk: TRegFileKey);
-    procedure SaveRegEntry(sl: TStringList; const re: TRegFileEntry);
   public
     constructor Create;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
     procedure SaveToFile(const AFilename: string);
+    procedure SaveToStrings(sl: TStrings);
   end;
 
   ERegFileFormatError = class(Exception);
@@ -164,6 +173,7 @@ begin
 end;
 
 
+//Sets TRegFileEntry value in dword format
 procedure TRegFileEntry.SetDwordValue(const val: dword);
 begin
   Self.Data := IntToHex(val, 8);
@@ -181,10 +191,75 @@ begin
   Self.Data := string(RegBinToHex(pb, cb));
 end;
 
+//Compiles the exported string that represents this name=value pair in the .reg file
+function TRegFileEntry.ExportToString: string;
+var nameStr: string;
+begin
+  //Entry format:
+  //  "Name"=datatype:value
+  //  "Name"="string value"
+  //  "Name"=-
+
+  if Self.Name = '' then //default value
+    nameStr := '@='
+  else
+    nameStr := '"'+RegEscapeString(Self.Name)+'"=';
+
+  case Self.DataType of
+    REG_DELETE: Result := nameStr+'-';
+    REG_SZ: Result := nameStr+'"'+RegEscapeString(Self.Data)+'"';
+    REG_BINARY: Result := nameStr+'hex:'+Self.Data;
+  else
+   //All the other types are stored as hex!
+    Result := nameStr + 'hex('+IntToHex(Self.DataType, 1)+'):' + Self.Data;
+  end;
+end;
+
+
 procedure TRegFileKey.AddValueEntry(const Entry: TRegFileEntry);
 begin
   SetLength(Self.Entries, Length(Self.Entries)+1);
   Self.Entries[Length(Self.Entries)-1] := Entry;
+end;
+
+procedure TRegFileKey.AddStringValue(const Name: string; DataType: integer; const Data: string);
+var Entry: TRegFileEntry;
+begin
+  Entry.Name := Name;
+  Entry.DataType := DataType;
+  Entry.SetStringValue(Data);
+  Self.AddValueEntry(Entry);
+end;
+
+procedure TRegFileKey.AddDwordValue(const Name: string; DataType: integer; const Data: dword);
+var Entry: TRegFileEntry;
+begin
+  Entry.Name := Name;
+  Entry.DataType := DataType;
+  Entry.SetDwordValue(Data);
+  Self.AddValueEntry(Entry);
+end;
+
+procedure TRegFileKey.AddOtherValue(const Name: string; DataType: integer; const Data: PByte; const Size: integer);
+var Entry: TRegFileEntry;
+begin
+  Entry.Name := Name;
+  Entry.DataType := DataType;
+  Entry.SetOtherValue(Data, Size);
+  Self.AddValueEntry(Entry);
+end;
+
+//Appends the exported set of string that represents this section in the .reg file
+procedure TRegFileKey.ExportToStrings(sl: TStrings);
+var i: integer;
+begin
+  if not Self.Delete then
+    sl.Add('['+Self.Name+']')
+  else
+    sl.Add('[-'+Self.Name+']');
+
+  for i := 0 to Length(Self.Entries)-1 do
+    sl.Add(Self.Entries[i].ExportToString);
 end;
 
 
@@ -450,58 +525,25 @@ end;
 
 procedure TRegFile.SaveToFile(const AFilename: string);
 var sl: TStringList;
-  i: integer;
 begin
   sl := TStringList.Create;
   try
-    sl.Add(sRegFileFormat500);
-    sl.Add('');
-
-    for i := 0 to Self.Count-1 do begin
-      SaveRegKey(sl, Self.Items[i]);
-      sl.Add('');
-    end;
-
+    Self.SaveToStrings(sl);
     sl.SaveToFile(AFilename);
   finally
     FreeAndNil(sl);
   end;
 end;
 
-procedure TRegFile.SaveRegKey(sl: TStringList; const rk: TRegFileKey);
+procedure TRegFile.SaveToStrings(sl: TStrings);
 var i: integer;
 begin
-  if not rk.Delete then
-    sl.Add('['+rk.Name+']')
-  else
-    sl.Add('[-'+rk.Name+']');
+  sl.Add(sRegFileFormat500);
+  sl.Add('');
 
-  for i := 0 to Length(rk.Entries)-1 do
-    SaveRegEntry(sl, rk.Entries[i]);
-end;
-
-procedure TRegFile.SaveRegEntry(sl: TStringList; const re: TRegFileEntry);
-var nameStr: string;
-begin
-  //Entry format:
-  //  "Name"=datatype:value
-  //  "Name"="string value"
-  //  "Name"=-
-
-  if re.Name = '' then //default value
-    nameStr := '@='
-  else
-    nameStr := '"'+RegEscapeString(re.Name)+'"=';
-
-  case re.DataType of
-    REG_DELETE: sl.Add(nameStr+'-');
-    REG_SZ: sl.Add(nameStr+'"'+RegEscapeString(re.Data)+'"');
-    REG_BINARY: sl.Add(nameStr+'hex:'+re.Data);
-  else
-   //All the other types are stored as hex!
-    sl.Add(nameStr +
-      'hex('+IntToHex(re.DataType, 1)+'):'
-      +re.Data);
+  for i := 0 to Self.Count-1 do begin
+    Self.Items[i].ExportToStrings(sl);
+    sl.Add('');
   end;
 end;
 

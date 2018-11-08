@@ -489,7 +489,7 @@ begin
   //  "Name"=-
 
   if re.Name = '' then //default value
-    nameStr := '@'
+    nameStr := '@='
   else
     nameStr := '"'+RegEscapeString(re.Name)+'"=';
 

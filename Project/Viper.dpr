@@ -28,7 +28,8 @@ uses
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   TriggerExport in 'TriggerExport.pas',
-  RegFile in 'RegFile.pas';
+  RegFile in 'RegFile.pas',
+  RegExport in 'RegExport.pas';
 
 {$R *.res}
 

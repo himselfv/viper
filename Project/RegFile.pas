@@ -60,6 +60,29 @@ function BinToRegHex(pb: PByte; cb: cardinal): AnsiString;
 procedure RegHexToBin(const hex: AnsiString; pb: PByte; cb: cardinal); overload;
 function RegHexToBin(const hex: AnsiString; cb: PCardinal = nil): PByte; overload;
 
+resourcestring
+  sRegFileFormat500 = 'Windows Registry Editor Version 5.00';
+
+
+// Root keys
+
+const
+  RootKeyNames: array[HKEY_CLASSES_ROOT..HKEY_DYN_DATA] of string = (
+    'HKEY_CLASSES_ROOT',
+    'HKEY_CURRENT_USER',
+    'HKEY_LOCAL_MACHINE',
+    'HKEY_USERS',
+    'HKEY_PERFORMANCE_DATA',
+    'HKEY_CURRENT_CONFIG',
+    'HKEY_DYN_DATA');
+
+const
+  RootShortKeyNames: array[HKEY_CLASSES_ROOT..HKEY_DYN_DATA] of string = (
+    'HKCR', 'HKCU', 'HKLM', 'HKU', 'HKPD', 'HKCC', 'HKDD');
+
+function RootKeyToStr(const AKey: HKEY): string;
+function RootKeyToShortStr(const AKey: HKEY): string;
+
 implementation
 uses UniStrUtils;
 {
@@ -100,8 +123,25 @@ Various formats are stored like this:
 "deleteParam"=-
 }
 
-resourcestring
-  sRegFileFormat500 = 'Windows Registry Editor Version 5.00';
+
+//Converts root HKEYs such as HKEY_LOCAL_MACHINE to their string constant names
+function RootKeyToStr(const AKey: HKEY): string;
+begin
+  if (AKey >= Low(RootKeyNames)) and (AKey <= High(RootKeyNames)) then
+    Result := RootKeyNames[AKey]
+  else
+    Result := 'HKEY('+IntToStr(AKey)+')';
+end;
+
+//Converts root HKEYs such as HKEY_LOCAL_MACHINE to their short string names such as HKLM
+function RootKeyToShortStr(const AKey: HKEY): string;
+begin
+  if (AKey >= Low(RootShortKeyNames)) and (AKey <= High(RootShortKeyNames)) then
+    Result := RootShortKeyNames[AKey]
+  else
+    Result := 'HKEY('+IntToStr(AKey)+')';
+end;
+
 
 //Converts binary data to "A1,00,3F,25" hex representation
 function BinToRegHex(pb: PByte; cb: cardinal): AnsiString;

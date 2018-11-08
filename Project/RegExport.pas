@@ -11,14 +11,17 @@ type
 
 
 type
-  //TRegistry simplifies various data types into its own enumeration - undesirable
   TRegNativeDataInfo = record
-    RegData: integer;
+    DataType: integer;
     DataSize: Integer;
   end;
   TRegistryHelper = class helper for TRegistry
   public
+    //TRegistry simplifies various data types into its own enumeration - undesirable
     function GetDataInfoNative(const ValueName: string; var Value: TRegNativeDataInfo): Boolean;
+    //TRegistry doesn't give us a way to read flat data (ReadBinary checks data type)
+    function GetData(const Name: string; Buffer: Pointer; BufSize: Integer; var DataType: integer): Integer;
+    procedure PutData(const Name: string; Buffer: Pointer; BufSize: Integer; DataType: integer);
   end;
 
 {
@@ -36,9 +39,10 @@ type
     FRegistry: TRegistry;
     function GetRegistry: TRegistry; inline;
     function FilterKey(ARegistry: TRegistry; const AName: string): boolean; overload;
-    procedure FilterKey(ARegistry: TRegistry; const AName: string; var SkipKey: boolean); virtual; overload;
+    procedure FilterKey(ARegistry: TRegistry; const AName: string; var SkipKey: boolean); overload; virtual;
     function FilterValue(ARegistry: TRegistry; const AName: string): boolean; overload;
-    procedure FilterValue(ARegistry: TRegistry; const AName: string; var SkipValue: boolean); virtual;
+    procedure FilterValue(ARegistry: TRegistry; const AName: string; var SkipValue: boolean); overload; virtual;
+    function ExportValue(ARegistry: TRegistry; const AName: string): TRegFileEntry;
   public
     constructor Create(ARegFile: TRegFile = nil; AOwnsRegFile: boolean = false);
     destructor Destroy; override;
@@ -54,12 +58,28 @@ uses Classes;
 
 //Retrieves size and type data for the value
 //On error returns false and sets LastError
-function TRegistryHelper.GetDataInfoNative(const ValueName: string; var Value: TRegDataInfo): Boolean;
+function TRegistryHelper.GetDataInfoNative(const ValueName: string; var Value: TRegNativeDataInfo): Boolean;
 begin
   FillChar(Value, SizeOf(TRegDataInfo), 0);
   Result := CheckResult(RegQueryValueEx(CurrentKey, PChar(ValueName), nil, @Value.DataType, nil,
     @Value.DataSize));
 end;
+
+function TRegistryHelper.GetData(const Name: string; Buffer: Pointer; BufSize: Integer; var DataType: integer): Integer;
+begin
+  DataType := REG_NONE;
+  if not CheckResult(RegQueryValueEx(CurrentKey, PChar(Name), nil, @DataType, PByte(Buffer), @BufSize)) then
+    RaiseLastOsError(Self.LastError);
+  Result := BufSize;
+end;
+
+procedure TRegistryHelper.PutData(const Name: string; Buffer: Pointer; BufSize: Integer; DataType: integer);
+begin
+  if not CheckResult(RegSetValueEx(CurrentKey, PChar(Name), 0, DataType, Buffer, BufSize)) then
+    RaiseLastOsError(Self.LastError);
+end;
+
+
 
 resourcestring
   eCannotOpenKey = 'Cannot open registry key %s';
@@ -107,7 +127,7 @@ begin
     FRegistry := TRegistry.Create;
   FRegistry.RootKey := ARootKey;
   if not FRegistry.OpenKey(APath, false) then
-    raise ERegistryExportError.Create(eCannotOpenKey, [RootKeyToStr(ARootKey)+'\'+APath]);
+    raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(ARootKey)+'\'+APath]);
   ExportKey(FRegistry, Recursive);
 end;
 
@@ -117,8 +137,7 @@ var Names: TStringList;
   Name: string;
   KeyEntry: TRegFileKey;
   ValueEntry: TRegFileEntry;
-  ValueInfo: TRegNativeDataInfo;
-  BasePath: string;
+  BasePath, NewPath: string;
 begin
   Names := TStringList.Create; //need a new one for each recursion
   try
@@ -128,11 +147,8 @@ begin
     for Name in Names do begin
       if self.FilterValue(ARegistry, Name) then
         continue;
-      ValueEntry.Name := Name;
-      if not ARegistry.GetDataInfo(Name, ValueInfo) then
-        RaiseLastOsError(ARegistry.LastError);
-      ValueEntry.DataType := ValueInfo.RegData;
-      //TODO: Read + encode/decode value depending on its type
+      ValueEntry := Self.ExportValue(ARegistry, Name);
+      KeyEntry.AddValueEntry(ValueEntry);
     end;
     Self.FRegFile.Add(KeyEntry);
 
@@ -143,13 +159,39 @@ begin
     for Name in Names do begin
       if self.FilterKey(ARegistry, Name) then
         continue;
-      ARegistry.OpenKey(BasePath + '\' + Name, false);
+      ARegistry.CloseKey; //must close sibling key
+      NewPath := BasePath+'\'+Name;
+      if not ARegistry.OpenKey(NewPath, false) then
+        raise ERegistryExportError.CreateFmt(eCannotOpenKey, [RootKeyToStr(FRegistry.RootKey)+'\'+NewPath]);
       ExportKey(ARegistry, Recursive);
     end;
-    if ARegistry.CurrentPath <> BasePath then
-      ARegistry.CurrentPath := BasePath;
+    if ARegistry.CurrentPath <> BasePath then begin
+      ARegistry.CloseKey; //=> start from root, whether BasePath is relative or not
+      ARegistry.OpenKey(BasePath, false);
+    end;
   finally
     FreeAndNil(Names);
+  end;
+end;
+
+function TRegistryExporter.ExportValue(ARegistry: TRegistry; const AName: string): TRegFileEntry;
+var ValueInfo: TRegNativeDataInfo;
+  Buf: array of byte;
+begin
+  Result.Name := AName;
+  if not ARegistry.GetDataInfoNative(AName, ValueInfo) then
+    RaiseLastOsError(ARegistry.LastError);
+  Result.DataType := ValueInfo.DataType;
+
+  //Read and convert the data depending on its type
+  //Both the read method and the text representation might differ
+  case Result.DataType of
+  REG_SZ:    Result.AsString := ARegistry.ReadString(AName);
+  REG_DWORD: Result.AsDword := ARegistry.ReadInteger(AName);
+  else //Everything else is stored as hex
+    SetLength(Buf, ValueInfo.DataSize);
+    ARegistry.GetData(AName, @Buf[0], ValueInfo.DataSize, ValueInfo.DataType);
+    Result.SetOtherValue(@Buf[0], ValueInfo.DataSize);
   end;
 end;
 

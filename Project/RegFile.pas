@@ -24,20 +24,40 @@ We support:
 interface
 uses SysUtils, Classes, Windows, Generics.Collections;
 
-const
- //Additional datatype to store deletion marker
-  REG_DELETE = -1;
+const //Additional data types
+  REG_QWORD  = 11;  //Missing in Winapi.Windows
+  REG_DELETE = -1;  //Custom type to store deletion marker
+
+
+resourcestring
+  sRegFileFormat500 = 'Windows Registry Editor Version 5.00';
 
 type
   TRegFileEntry = record
     Name: string;
     DataType: integer;
-    Data: string;
+    Data: string; {
+      In the appropriate data type:
+        REG_SZ: string, unescaped
+        DWORD: hex dword, 8 characters
+      Everything else, including:
+        REG_BINARY
+        REG_EXPAND_SZ
+        REG_MULTI_SZ
+        REG_QWORD:  hex string
+    }
+    //Use these shortcuts
+    procedure SetDwordValue(const val: dword); inline;
+    procedure SetStringValue(const val: string); inline;
+    procedure SetOtherValue(const pb: PByte; cb: cardinal); inline;
+    property AsDword: dword write SetDwordValue;
+    property AsString: string write SetStringValue;
   end;
   TRegFileKey = record
     Name: string;
     Delete: boolean;
     Entries: TArray<TRegFileEntry>;
+    procedure AddValueEntry(const Entry: TRegFileEntry);
   end;
   TRegFile = class(TList<TRegFileKey>)
   protected
@@ -53,15 +73,15 @@ type
 
   ERegFileFormatError = class(Exception);
 
-function RegEncodeValue(const val: string): string;
-function RegDecodeValue(const val: string): string;
 
-function BinToRegHex(pb: PByte; cb: cardinal): AnsiString;
+//Convert binary data to hex string and back
+function RegBinToHex(pb: PByte; cb: cardinal): AnsiString;
 procedure RegHexToBin(const hex: AnsiString; pb: PByte; cb: cardinal); overload;
 function RegHexToBin(const hex: AnsiString; cb: PCardinal = nil): PByte; overload;
 
-resourcestring
-  sRegFileFormat500 = 'Windows Registry Editor Version 5.00';
+//Escape - do not apply to values manually
+function RegEscapeString(const val: string): string;
+function RegUnescapeString(const val: string): string;
 
 
 // Root keys
@@ -82,6 +102,7 @@ const
 
 function RootKeyToStr(const AKey: HKEY): string;
 function RootKeyToShortStr(const AKey: HKEY): string;
+
 
 implementation
 uses UniStrUtils;
@@ -143,8 +164,32 @@ begin
 end;
 
 
+procedure TRegFileEntry.SetDwordValue(const val: dword);
+begin
+  Self.Data := IntToHex(val, 8);
+end;
+
+procedure TRegFileEntry.SetStringValue(const val: string);
+begin
+  //Do not escape the string here, we'll do it on writing
+  Self.Data := val;
+end;
+
+procedure TRegFileEntry.SetOtherValue(const pb: PByte; cb: cardinal);
+begin
+  //All the other values are simply presented as hex
+  Self.Data := string(RegBinToHex(pb, cb));
+end;
+
+procedure TRegFileKey.AddValueEntry(const Entry: TRegFileEntry);
+begin
+  SetLength(Self.Entries, Length(Self.Entries)+1);
+  Self.Entries[Length(Self.Entries)-1] := Entry;
+end;
+
+
 //Converts binary data to "A1,00,3F,25" hex representation
-function BinToRegHex(pb: PByte; cb: cardinal): AnsiString;
+function RegBinToHex(pb: PByte; cb: cardinal): AnsiString;
 var i: integer;
   pc: PAnsiChar;
 begin
@@ -183,12 +228,12 @@ begin
   end;
 end;
 
-function RegEncodeValue(const val: string): string;
+function RegEscapeString(const val: string): string;
 begin
   Result := val.Replace('\', '\\').Replace('"', '\"');
 end;
 
-function RegDecodeValue(const val: string): string;
+function RegUnescapeString(const val: string): string;
 var pc: PChar;
   cnt: integer;
   specSymbol: boolean;
@@ -446,11 +491,11 @@ begin
   if re.Name = '' then //default value
     nameStr := '@'
   else
-    nameStr := '"'+RegEncodeValue(re.Name)+'"=';
+    nameStr := '"'+RegEscapeString(re.Name)+'"=';
 
   case re.DataType of
     REG_DELETE: sl.Add(nameStr+'-');
-    REG_SZ: sl.Add(nameStr+'"'+RegEncodeValue(re.Data)+'"');
+    REG_SZ: sl.Add(nameStr+'"'+RegEscapeString(re.Data)+'"');
     REG_BINARY: sl.Add(nameStr+'hex:'+re.Data);
   else
    //All the other types are stored as hex!

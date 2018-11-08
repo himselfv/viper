@@ -164,6 +164,8 @@ object ServiceList: TServiceList
     object aExportService: TAction
       Category = 'ServiceSetup'
       Caption = 'Export to .reg...'
+      Hint = 'Save all registry configuration for this service in a .reg file'
+      OnExecute = aExportServiceExecute
     end
     object aUseColors: TAction
       Category = 'Coloring'
@@ -375,15 +377,21 @@ object ServiceList: TServiceList
     end
     object miAdvancedSubmenu: TMenuItem
       Caption = 'Advanced'
-      object Exporttoreg1: TMenuItem
-        Caption = 'Export to .reg...'
+      object miExportService: TMenuItem
+        Action = aExportService
       end
       object N1: TMenuItem
         Caption = '-'
       end
-      object Deleteservice1: TMenuItem
-        Caption = 'Delete service'
+      object miDeleteService: TMenuItem
+        Action = aDeleteService
       end
     end
+  end
+  object SaveRegFileDialog: TSaveDialog
+    DefaultExt = '.reg'
+    Filter = 'Registry Export Files (*.reg)|*.reg|All files (*.*)|*.*'
+    Left = 88
+    Top = 16
   end
 end

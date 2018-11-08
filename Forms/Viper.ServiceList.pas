@@ -64,8 +64,8 @@ type
     Manual1: TMenuItem;
     Disabled1: TMenuItem;
     miAdvancedSubmenu: TMenuItem;
-    Exporttoreg1: TMenuItem;
-    Deleteservice1: TMenuItem;
+    miExportService: TMenuItem;
+    miDeleteService: TMenuItem;
     aEditSecurity: TAction;
     aUnlockSecurity: TAction;
     miEditSecurity: TMenuItem;
@@ -84,6 +84,7 @@ type
     N4: TMenuItem;
     Shortsummary1: TMenuItem;
     N5: TMenuItem;
+    SaveRegFileDialog: TSaveDialog;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -129,6 +130,7 @@ type
     procedure vtServicesFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure aExportServiceExecute(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
@@ -231,8 +233,8 @@ resourcestring
 
 
 implementation
-uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl, Viper.StyleSettings,
-  Viper.Log;
+uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
+  RegExport, Viper.StyleSettings, Viper.Log;
 
 {$R *.dfm}
 
@@ -679,6 +681,10 @@ begin
   aUnlockSecurity.Visible := Length(services)>0;
   miSecuritySubmenu.Visible := aEditSecurity.Visible or aUnlockSecurity.Visible
     or miProtectionType.Visible;
+
+  aExportService.Visible := Length(services)>0;
+  aDeleteService.Visible := Length(services)>0;
+  miAdvancedSubmenu.Visible := aExportService.Visible or aDeleteService.Visible;
 end;
 
 //Returns a StartType common for all listed services, or -1 if there's variation
@@ -1241,8 +1247,37 @@ var Service: TServiceEntry;
 begin
   Service := GetFirstSelectedService();
   Assert(Service <> nil);
-  RegeditAtKey('HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\'+Service.ServiceName);
+  RegeditAtKey('HKEY_LOCAL_MACHINE'+GetServiceKey(Service.ServiceName));
 end;
 
+resourcestring
+  sExportServiceDialogTitle = 'Export "%s" to...';
+  sExportMultipleServicesDialogTitle = 'Export %d services to...';
+
+procedure TServiceList.aExportServiceExecute(Sender: TObject);
+var exp: TRegistryExporter;
+  Services: TServiceEntries;
+  Service: TServiceEntry;
+begin
+  Services := GetSelectedServices();
+  if Length(Services) <= 0 then exit;
+
+  if Length(Services) = 1 then
+    SaveRegFileDialog.Title := Format(sExportServiceDialogTitle, [Services[0].DisplayName])
+  else
+    SaveRegFileDialog.Title := Format(sExportMultipleServicesDialogTitle, [Length(Services)]);
+  with SaveRegFileDialog do
+    if not Execute then
+      exit;
+
+  exp := TRegistryExporter.Create();
+  try
+    for Service in Services do
+      exp.ExportKey(HKEY_LOCAL_MACHINE, GetServiceKey(Service.ServiceName));
+    exp.SaveToFile(SaveRegFileDialog.FileName);
+  finally
+    FreeAndNil(exp);
+  end;
+end;
 
 end.

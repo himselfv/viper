@@ -211,6 +211,11 @@ function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED
 function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED; overload;
 
 
+const
+  BaseScmKey = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+
+//Returns the base key for this service's configuration in HKEY_LOCAL_MACHINE
+function GetServiceKey(const AServiceName: string): string;
 //Opens a configuration key for this service in the registry. The result has to be freed.
 function OpenServiceKey(const AServiceName: string): TRegistry;
 
@@ -883,13 +888,18 @@ begin
 end;
 
 
+function GetServiceKey(const AServiceName: string): string;
+begin
+  Result := BaseScmKey+'\'+AServiceName;
+end;
+
 function OpenServiceKey(const AServiceName: string): TRegistry;
 begin
   Result := TRegistry.Create;
   try
     Result.RootKey := HKEY_LOCAL_MACHINE;
     Result.Access := KEY_READ;
-    if not Result.OpenKey('\System\CurrentControlSet\services\'+AServiceName, false) then
+    if not Result.OpenKey(GetServiceKey(AServiceName), false) then
       RaiseLastOsError();
   except
     FreeAndNil(Result);
@@ -935,8 +945,9 @@ end;
 function QueryServiceServiceDll(const AServiceName: string): string;
 var hk: HKEY;
 begin
-  if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar('System\CurrentControlSet\services\'
-    +AServiceName+'\Parameters'), 0, KEY_QUERY_VALUE, hk) <> 0 then begin
+  if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)+'\Parameters'),
+    0, KEY_QUERY_VALUE, hk) <> 0 then
+  begin
     Result := '';
     exit;
   end;
@@ -1132,7 +1143,7 @@ procedure OverwriteServiceLaunchProtection(const AServiceName: string; dwLaunchP
 var hk: HKEY;
   err: integer;
 begin
-  err := RegOpenKey(HKEY_LOCAL_MACHINE, PChar('SYSTEM\CurrentControlSet\Services\'+AServiceName), hk);
+  err := RegOpenKey(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)), hk);
   if err <> 0 then
     RaiseLastOsError(err);
   try

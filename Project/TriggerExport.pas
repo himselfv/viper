@@ -112,7 +112,7 @@ begin
   Result := Result +
      '"Type"=dword:'+AnsiString(IntToHex(tr.dwTriggerType, 8))+#13
     +'"Action"=dword:'+AnsiString(IntToHex(tr.dwAction, 8))+#13
-    +'"GUID"=hex:'+BinToRegHex(PByte(tr.pTriggerSubtype), SizeOf(TGUID));
+    +'"GUID"=hex:'+RegBinToHex(PByte(tr.pTriggerSubtype), SizeOf(TGUID));
   pDataItem := tr.pDataItems;
   for i := 1 to tr.cDataItems do begin
     Result := Result + #13 + ExportTriggerDataItem(pDataItem^, AnsiString(IntToStr(i-1)));
@@ -125,7 +125,7 @@ end;
 function ExportTriggerDataItem(const item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   const IndexStr: AnsiString): AnsiString;
 begin
-  Result := '"Data'+IndexStr+'"=hex:'+BinToRegHex(item.pData, item.cbData)+#13
+  Result := '"Data'+IndexStr+'"=hex:'+RegBinToHex(item.pData, item.cbData)+#13
     +'"DataType'+IndexStr+'"=dword:'+AnsiString(IntToHex(item.dwDataType, 8));
 end;
 

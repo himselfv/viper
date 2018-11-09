@@ -214,13 +214,6 @@ end;
 {
 Imports a .reg file containing exported trigger definitions.
 
-Some export files might be service-neutral, e.g.:
-  [0]
-  //service params
-  [1]
-  //service params
-  //etc...
-
 You can also pass other registry export files which contain trigger definitions,
 including Viper's service configuration exports, and this function
 will try to load as much as it can.
@@ -248,17 +241,18 @@ begin
           continue;
         end;
 
-        st.Trigger := ImportTrigger(rk);
-        if st.Trigger = nil then begin
+        //The section name is our way of checking that this is a trigger export indeed.
+        //Do NOT try to load sections with incompatible names - they may have a similar
+        //set of parameters but that doesn't mean they're really triggers.
+        if not TryDecodeTriggerSectionName(rk.Name, st.ServiceName, st.Index) then begin
           Status := Status + [sfMalformedFile];
           continue;
         end;
 
-        if not TryDecodeTriggerSectionName(rk.Name, st.ServiceName, st.Index) then begin
-          //Keep the trigger but mark it as weird
-          st.ServiceName := '';
-          st.Index := -1;
+        st.Trigger := ImportTrigger(rk);
+        if st.Trigger = nil then begin
           Status := Status + [sfMalformedFile];
+          continue;
         end;
 
         SetLength(Triggers, Length(Triggers)+1);
@@ -297,8 +291,8 @@ begin
     exit;
   end;
 
-  ServiceName := Copy(SectionName, 1, i_pos);
-  Delete(SectionName, 1, i_pos+1); //with the "\"
+  ServiceName := Copy(SectionName, 1, i_pos-1);
+  Delete(SectionName, 1, i_pos); //with the "\"
 
   if not SectionName.StartsWith(sTriggerSubkey) then begin
     Result := false;
@@ -412,10 +406,11 @@ begin
     Result[i] := FItems[i].item;
 end;
 
-
-//Tries to parse a single reg file key as a trigger description.
-//Returns a new trigger contents (which you have to free), or nil, if there
-//was no trigger data in this key.
+{
+Tries to parse a single reg file key as a trigger description.
+Returns a new trigger contents or nil, if there was no trigger data in this key.
+NOTE: You have to free the returned PSERVICE_TRIGGER.
+}
 function ImportTrigger(rk: TRegFileKey): PSERVICE_TRIGGER;
 var st: SERVICE_TRIGGER;
   guid: TGuid;

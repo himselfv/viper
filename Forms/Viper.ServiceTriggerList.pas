@@ -141,11 +141,18 @@ begin
   Self.Reload;
 end;
 
+resourcestring
+  sTriggerImportCaption = 'Import triggers';
+  sTriggerImportMalformed = 'WARNING: Some of the entries in the file were skipped as incompatible.';
+  sConfirmTriggerImport = 'Do you really want to add %d triggers from the file to the service %s?';
+  sNoTriggersToImport = 'No triggers found in this file.';
+
 procedure TServiceTriggerList.aImportTriggerExecute(Sender: TObject);
 var Triggers: TArray<TRegTriggerEntry>;
   Triggers2: TArray<SERVICE_TRIGGER>;
   Status: TTriggerImportStatus;
   i: integer;
+  NotificationText: string;
 begin
   with OpenTriggersDialog do
     if not Execute then
@@ -155,8 +162,21 @@ begin
   try
     ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
 
-    //TODO: Show the dialog to inform the user of the malformed file (potential missed triggers)
-    // + let them choose the triggers to import.
+    if Length(Triggers) <= 0 then begin
+      NotificationText := sNoTriggersToImport;
+    if sfMalformedFile in Status then
+      NotificationText := NotificationText + #13#13 + sTriggerImportMalformed;
+      MessageBox(Self.Handle, PChar(NotificationText), PChar(sTriggerImportCaption),
+        MB_OK + MB_ICONINFORMATION);
+      exit;
+    end;
+
+    NotificationText := Format(sConfirmTriggerImport, [Length(Triggers), Self.FServiceName]);
+    if sfMalformedFile in Status then
+      NotificationText := NotificationText + #13#13 + sTriggerImportMalformed;
+    if MessageBox(Self.Handle, PChar(NotificationText), PChar(sTriggerImportCaption),
+      MB_YESNO + MB_ICONQUESTION) <> ID_YES then
+      exit;
 
     SetLength(Triggers2, Length(Triggers));
     for i := 0 to Length(Triggers)-1 do

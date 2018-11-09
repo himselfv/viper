@@ -12,15 +12,16 @@ type
     ServiceName: string;   //The service which stores this trigger
     TriggerIndex: integer; //The index of this trigger in the service's trigger list. 0-based
                            //WARNING: Will change if we delete/add triggers.
-    TriggerType: DWORD;
-    TriggerSubtype: TGUID;
-    Description: string;
-    Source: TTriggerSource;
-    Params: string;
-    Action: DWORD;
     //Our own trigger copy, stored in the main form.
     //List entries which spawn from the same trigger will have the same pointer.
     TriggerCopy: PSERVICE_TRIGGER;
+    //Cached details of this particular entry
+    Description: string;
+    Source: TTriggerSource;
+    Params: string;
+    TriggerType: DWORD;
+    TriggerSubtype: TGUID;
+    Action: DWORD;
     function Summary: string;
   end;
   PNdTriggerData = ^TNdTriggerData;

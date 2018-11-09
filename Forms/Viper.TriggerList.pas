@@ -9,13 +9,15 @@ uses
 
 type
   TNdTriggerData = record
+    ServiceName: string;   //The service which stores this trigger
+    TriggerIndex: integer; //The index of this trigger in the service's trigger list. 0-based
+                           //WARNING: Will change if we delete/add triggers.
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
     Description: string;
     Source: TTriggerSource;
     Params: string;
     Action: DWORD;
-    ServiceName: string;
     //Our own trigger copy, stored in the main form.
     //List entries which spawn from the same trigger will have the same pointer.
     TriggerCopy: PSERVICE_TRIGGER;
@@ -84,9 +86,9 @@ type
   protected
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
     FOnFocusChanged: TTriggerEvent;
-    procedure Add(const AServiceName: string; const ATrigger: PSERVICE_TRIGGER);
+    procedure Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER);
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
-    procedure TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
+    procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
@@ -97,6 +99,7 @@ type
     procedure Reload; virtual;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     function SelectedTriggers: TArray<PNdTriggerData>;
+    function AllTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function FocusedTrigger: PNdTriggerData;
@@ -106,7 +109,8 @@ type
 
 
 implementation
-uses UITypes, Clipbrd, CommonResources, TriggerExport, Viper.TriggerEditor;
+uses UITypes, Clipbrd, Generics.Collections, CommonResources, TriggerExport,
+  RegFile, Viper.TriggerEditor;
 
 {$R *.dfm}
 
@@ -301,7 +305,7 @@ begin
 end;
 
 //Adds a trigger to the list. Trigger data is not ours and should be copied if needed.
-procedure TTriggerList.Add(const AServiceName: string; const ATrigger: PSERVICE_TRIGGER);
+procedure TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER);
 var Node: PVirtualNode;
   NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
@@ -326,6 +330,7 @@ begin
     Tree.ReinitNode(Node, false);
     NodeData := Tree.GetNodeData(Node);
     NodeData.ServiceName := AServiceName;
+    NodeData.TriggerIndex := AIndex;
     NodeData.TriggerType := ATrigger^.dwTriggerType;
     NodeData.Action := ATrigger^.dwAction;
     NodeData.TriggerSubtype := ATrigger.pTriggerSubtype^;
@@ -369,14 +374,17 @@ end;
 //Does not refresh the presentation: intended to be used in batch operations.
 procedure TTriggerList.LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE);
 var triggers: PSERVICE_TRIGGER_INFO;
+  i: integer;
 begin
   triggers := QueryServiceTriggers(AServiceHandle);
   if triggers = nil then exit;
   try
+    i := 0;
     while triggers.cTriggers > 0 do begin
-      Self.Add(AServiceName, triggers.pTriggers);
+      Self.Add(AServiceName, i, triggers.pTriggers);
       Inc(triggers.pTriggers);
       Dec(triggers.cTriggers);
+      Inc(i);
     end;
   finally
     FreeMem(triggers);
@@ -417,6 +425,7 @@ begin
     Result := Tree.GetNodeData(Tree.FocusedNode);
 end;
 
+//Returns selected trigger node list as a TArray<>
 function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
 var ANode: PVirtualNode;
 begin
@@ -427,6 +436,18 @@ begin
   end;
 end;
 
+function TTriggerList.AllTriggers: TArray<PNdTriggerData>;
+var ANode: PVirtualNode;
+begin
+  SetLength(Result, 0);
+  for ANode in Tree.ChildNodes(Tree.RootNode) do begin
+    SetLength(Result, Length(Result)+1);
+    Result[Length(Result)-1] := Tree.GetNodeData(ANode);
+  end;
+end;
+
+//A single trigger can result in multiple list entries (e.g. if it lists several ports)
+//This returns a list of unique triggers for the selected nodes.
 function TTriggerList.NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
 var ANode: PVirtualNode;
   AData: PNdTriggerData;
@@ -616,9 +637,11 @@ begin
 end;
 
 
-procedure TTriggerList.TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
-var Text: string;
+//Exports triggers for all given nodes
+procedure TTriggerList.TryExportTriggers(const Sel: TArray<PNdTriggerData>);
+var nl: TList<PSERVICE_TRIGGER>;
   sl: TStringList;
+  Node: PNdTriggerData;
 begin
   if Length(Sel) <= 0 then exit;
 
@@ -626,27 +649,40 @@ begin
     if not Execute then
       exit;
 
-  Text := ExportTriggers(Sel);
-
-  sl := TStringList.Create;
+  sl := nil;
+  //The list might contain multiple nodes for some of the triggers, keep track of them
+  nl := TList<PSERVICE_TRIGGER>.Create;
   try
-    sl.SetText(PChar(string(Text)));
+    sl := TStringList.Create;
+    for Node in Sel do begin
+      if Node.TriggerCopy = nil then continue; //what
+      if nl.Contains(Node.TriggerCopy) then continue;
+      nl.Add(Node.TriggerCopy);
+
+      //All triggers are exported under their full registry path + their real index
+      ExportTrigger(
+        Node.TriggerCopy^,
+        GetTriggerKeyFull(Node.ServiceName) + '\' + IntToStr(Node.TriggerIndex)
+      ).ExportToStrings(sl);
+    end;
+
     sl.SaveToFile(SaveTriggersDialog.FileName);
   finally
     FreeAndNil(sl);
+    FreeAndNil(nl);
   end;
 end;
 
 procedure TTriggerList.aExportTriggerExecute(Sender: TObject);
 begin
-  TryExportTriggers(Self.SelectedUniqueTriggers);
+  TryExportTriggers(Self.SelectedTriggers);
 end;
 
 //"Export All" is available but not included in the menus by default, because it
 //makes little sense for multi-service trigger lists. Descendants can include it.
 procedure TTriggerList.aExportAllTriggersExecute(Sender: TObject);
 begin
-  TryExportTriggers(Self.AllUniqueTriggers);
+  TryExportTriggers(Self.AllTriggers);
 end;
 
 

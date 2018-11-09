@@ -213,11 +213,18 @@ function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string)
 
 const
   BaseScmKey = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+  HkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
+  TriggerSubkey = 'TriggerInfo';
 
-//Returns the base key for this service's configuration in HKEY_LOCAL_MACHINE
+//Returns the base key for this service's configuration, relative to HKEY_LOCAL_MACHINE
 function GetServiceKey(const AServiceName: string): string;
+//Returns the full path to the service key, including 'HKEY_LOCAL_MACHINE'
+function GetServiceKeyFull(const AServiceName: string): string; inline;
 //Opens a configuration key for this service in the registry. The result has to be freed.
 function OpenServiceKey(const AServiceName: string): TRegistry;
+//Returns the base key for the service's trigger configuration, relative to HKEY_LOCAL_MACHINE
+function GetTriggerKey(const AServiceName: string): string;
+function GetTriggerKeyFull(const AServiceName: string): string;
 
 //Services which have svchost as their executable support additional parameter specifying
 //the DLL to load.
@@ -893,6 +900,11 @@ begin
   Result := BaseScmKey+'\'+AServiceName;
 end;
 
+function GetServiceKeyFull(const AServiceName: string): string;
+begin
+  Result := HkeyLocalMachine + GetServiceKey(AServiceName);
+end;
+
 function OpenServiceKey(const AServiceName: string): TRegistry;
 begin
   Result := TRegistry.Create;
@@ -905,6 +917,16 @@ begin
     FreeAndNil(Result);
     raise;
   end;
+end;
+
+function GetTriggerKey(const AServiceName: string): string;
+begin
+  Result := GetServiceKey(AServiceName) + '\' + TriggerSubkey;
+end;
+
+function GetTriggerKeyFull(const AServiceName: string): string;
+begin
+  Result := GetServiceKeyFull(AServiceName) + '\' + TriggerSubkey;
 end;
 
 //Old version, supposedly slower

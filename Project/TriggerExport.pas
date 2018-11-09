@@ -17,10 +17,10 @@ reproduce.
 interface
 uses WinSvc, RegFile;
 
+//Note: These functions do not use the trigger's full registry path unless you
+//  explicitly give it in KeyPrefix
 function ExportTriggers(const tri: SERVICE_TRIGGER_INFO; const KeyPrefix: string = ''): string; overload;
-
 function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
-
 function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
 
 function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;

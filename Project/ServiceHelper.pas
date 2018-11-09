@@ -212,9 +212,9 @@ function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string)
 
 
 const
-  BaseScmKey = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
-  HkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
-  TriggerSubkey = 'TriggerInfo';
+  sBaseScmKey = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+  sHkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
+  sTriggerSubkey = 'TriggerInfo';
 
 //Returns the base key for this service's configuration, relative to HKEY_LOCAL_MACHINE
 function GetServiceKey(const AServiceName: string): string;
@@ -897,12 +897,12 @@ end;
 
 function GetServiceKey(const AServiceName: string): string;
 begin
-  Result := BaseScmKey+'\'+AServiceName;
+  Result := sBaseScmKey+'\'+AServiceName;
 end;
 
 function GetServiceKeyFull(const AServiceName: string): string;
 begin
-  Result := HkeyLocalMachine + GetServiceKey(AServiceName);
+  Result := sHkeyLocalMachine + GetServiceKey(AServiceName);
 end;
 
 function OpenServiceKey(const AServiceName: string): TRegistry;
@@ -921,12 +921,12 @@ end;
 
 function GetTriggerKey(const AServiceName: string): string;
 begin
-  Result := GetServiceKey(AServiceName) + '\' + TriggerSubkey;
+  Result := GetServiceKey(AServiceName) + '\' + sTriggerSubkey;
 end;
 
 function GetTriggerKeyFull(const AServiceName: string): string;
 begin
-  Result := GetServiceKeyFull(AServiceName) + '\' + TriggerSubkey;
+  Result := GetServiceKeyFull(AServiceName) + '\' + sTriggerSubkey;
 end;
 
 //Old version, supposedly slower

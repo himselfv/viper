@@ -142,7 +142,7 @@ begin
 end;
 
 procedure TServiceTriggerList.aImportTriggerExecute(Sender: TObject);
-var Triggers: TArray<PSERVICE_TRIGGER>;
+var Triggers: TArray<TRegTriggerEntry>;
   Triggers2: TArray<SERVICE_TRIGGER>;
   Status: TTriggerImportStatus;
   i: integer;
@@ -160,7 +160,7 @@ begin
 
     SetLength(Triggers2, Length(Triggers));
     for i := 0 to Length(Triggers)-1 do
-      Triggers2[i] := Triggers[i]^;
+      Triggers2[i] := Triggers[i].Trigger^;
 
     //Add these triggers
     //We only have a handle with read access, so reopen
@@ -174,7 +174,7 @@ begin
 
   finally
     for i := 0 to Length(Triggers)-1 do
-      FreeMem(Triggers[i]);
+      Triggers[i].ReleaseTriggerData;
   end;
 
   Self.Reload;

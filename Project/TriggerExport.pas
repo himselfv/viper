@@ -5,6 +5,7 @@ Trigger import/export.
 Triggers are stored in the registry, in the service key's TriggerInfo subkey.
 When exported to a .reg file format, they assume a certain form which we here
 reproduce.
+  [Section name]
   "Type"=dword:00000004
   "Action"=dword:00000001
   "GUID"=hex:07,9e,56,b7,21,...
@@ -12,18 +13,50 @@ reproduce.
   "DataType0"=dword:00000002
   "Data1"=hex:31,00,33,00,37,00,...
   "DataType1"=dword:00000002
+
+This is exactly the same format as in a direct registry export.
+- Regedit can import these files
+- We can import trigger sections from service keys exported by Regedit
+
+Section names should always store trigger's full registry path, including its
+index in the list of triggers:
+  HKEY_LOCAL_MACHINE\...\ServiceName\TriggerInfo\1
+Those who don't need this information can ignore it on import.
 }
 
 interface
 uses WinSvc, RegFile;
 
-//Note: These functions do not use the trigger's full registry path unless you
+type
+  //Trigger entry in the export file
+  TRegTriggerEntry = record
+    ServiceName: string;
+    Index: integer;
+    Trigger: PSERVICE_TRIGGER;
+    procedure ReleaseTriggerData;
+  end;
+
+
+// Export
+
+function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey; overload;
+function ExportTrigger(const tr: TRegTriggerEntry): TRegFileKey; overload; inline;
+
+procedure ExportTriggers(reg: TRegFile; const tri: TArray<TRegTriggerEntry>); overload;
+function ExportTriggers(const tri: TArray<TRegTriggerEntry>): string; overload;
+
+//Note: These functions do not know the trigger's full registry path unless you
 //  explicitly give it in KeyPrefix
 function ExportTriggers(const tri: SERVICE_TRIGGER_INFO; const KeyPrefix: string = ''): string; overload;
 function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
 function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
 
-function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;
+
+// Import
+// Parses available registry file sections and decodes those which seem to contain triggers
+
+function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string; out Index: integer): boolean;
+function ImportTrigger(rk: TRegFileKey): PSERVICE_TRIGGER;
 
 type
   TTriggerImportStatusFlag = (
@@ -31,13 +64,77 @@ type
   );
   TTriggerImportStatus = set of TTriggerImportStatusFlag;
 
-procedure ImportTriggers(const AFilename: string; out Triggers: TArray<PSERVICE_TRIGGER>;
+procedure ImportTriggers(const AFilename: string; out Triggers: TArray<TRegTriggerEntry>;
   out Status: TTriggerImportStatus);
 
-function ImportTrigger(rk: TRegFileKey): PSERVICE_TRIGGER;
 
 implementation
 uses SysUtils, Windows, UniStrUtils, ServiceHelper, TriggerUtils;
+
+procedure TRegTriggerEntry.ReleaseTriggerData;
+begin
+  if Self.Trigger <> nil then begin
+    FreeMem(Self.Trigger);
+    Self.Trigger := nil;
+  end;
+end;
+
+
+{
+Exports a single trigger as a set of exported registry values.
+KeyName:
+  A name of this trigger's section in the file.
+Example:
+  KeyName=HKLM\Test\1
+Export:
+  [HKLM\Test\1]
+}
+function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;
+var i: integer;
+  pDataItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  IndexStr: string;
+begin
+  Result.Name := KeyName;
+  Result.Delete := false;
+  Result.AddDwordValue('Type', REG_DWORD, tr.dwTriggerType);
+  Result.AddDwordValue('Action', REG_DWORD, tr.dwAction);
+  Result.AddOtherValue('GUID', REG_BINARY, PByte(tr.pTriggerSubtype), SizeOf(TGUID));
+  pDataItem := tr.pDataItems;
+  for i := 1 to tr.cDataItems do begin
+    IndexStr := IntToStr(i-1);
+    Result.AddOtherValue('Data'+IndexStr, REG_BINARY, pDataItem^.pData, pDataItem^.cbData);
+    Result.AddDwordValue('DataType'+IndexStr, REG_DWORD, pDataItem^.dwDataType);
+    Inc(pDataItem);
+  end;
+end;
+
+//Exports a single trigger with the proper KeyName for the given service and index
+function ExportTrigger(const tr: TRegTriggerEntry): TRegFileKey;
+begin
+  Result := ExportTrigger(tr.Trigger^, GetTriggerKeyFull(tr.ServiceName) + '\' + IntToStr(tr.Index));
+end;
+
+
+//Exports a number of triggers together to a given TRegFile
+procedure ExportTriggers(reg: TRegFile; const tri: TArray<TRegTriggerEntry>);
+var i: integer;
+begin
+  for i := 0 to Length(tri)-1 do
+    reg.Add(ExportTrigger(tri[i]));
+end;
+
+//Exports a number of triggers together to a string
+function ExportTriggers(const tri: TArray<TRegTriggerEntry>): string;
+var exp: TRegFile;
+begin
+  exp := TRegFile.Create;
+  try
+    ExportTriggers(exp, tri);
+    Result := exp.ExportToString;
+  finally
+    FreeAndNil(exp);
+  end;
+end;
 
 {
 Exports all triggers for a given service as a set of exported registry keys.
@@ -112,32 +209,12 @@ begin
   end;
 end;
 
-//Exports a single trigger as a set of exported registry values.
-//If KeyName is specified, this will be used as a key name.
-function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;
-var i: integer;
-  pDataItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
-  IndexStr: string;
-begin
-  Result.Name := KeyName;
-  Result.Delete := false;
-  Result.AddDwordValue('Type', REG_DWORD, tr.dwTriggerType);
-  Result.AddDwordValue('Action', REG_DWORD, tr.dwAction);
-  Result.AddOtherValue('GUID', REG_BINARY, PByte(tr.pTriggerSubtype), SizeOf(TGUID));
-  pDataItem := tr.pDataItems;
-  for i := 1 to tr.cDataItems do begin
-    IndexStr := IntToStr(i-1);
-    Result.AddOtherValue('Data'+IndexStr, REG_BINARY, pDataItem^.pData, pDataItem^.cbData);
-    Result.AddDwordValue('DataType'+IndexStr, REG_DWORD, pDataItem^.dwDataType);
-    Inc(pDataItem);
-  end;
-end;
 
 
 {
 Imports a .reg file containing exported trigger definitions.
 
-A well-formed Viper registry export file is service-neutral and looks like this:
+Some export files might be service-neutral, e.g.:
   [0]
   //service params
   [1]
@@ -148,12 +225,12 @@ You can also pass other registry export files which contain trigger definitions,
 including Viper's service configuration exports, and this function
 will try to load as much as it can.
 }
-procedure ImportTriggers(const AFilename: string; out Triggers: TArray<PSERVICE_TRIGGER>;
+procedure ImportTriggers(const AFilename: string; out Triggers: TArray<TRegTriggerEntry>;
   out Status: TTriggerImportStatus);
 var reg: TRegFile;
   rk: TRegFileKey;
   i: integer;
-  st: PSERVICE_TRIGGER;
+  st: TRegTriggerEntry;
 begin
   Status := [];
   SetLength(Triggers, 0);
@@ -165,18 +242,23 @@ begin
     try
       for i := 0 to reg.Count-1 do begin
         rk := reg[i];
-        if rk.Name <> IntToStr(i) then
-          Status := Status + [sfMalformedFile];
 
         if rk.Delete then begin
           Status := Status + [sfMalformedFile];
           continue;
         end;
 
-        st := ImportTrigger(rk);
-        if st = nil then begin
+        st.Trigger := ImportTrigger(rk);
+        if st.Trigger = nil then begin
           Status := Status + [sfMalformedFile];
           continue;
+        end;
+
+        if not TryDecodeTriggerSectionName(rk.Name, st.ServiceName, st.Index) then begin
+          //Keep the trigger but mark it as weird
+          st.ServiceName := '';
+          st.Index := -1;
+          Status := Status + [sfMalformedFile];
         end;
 
         SetLength(Triggers, Length(Triggers)+1);
@@ -185,7 +267,7 @@ begin
     except
       //Release what we have allocated
       for i := 0 to Length(Triggers)-1 do
-        FreeMem(Triggers[i]);
+        Triggers[i].ReleaseTriggerData;
       raise;
     end;
 
@@ -193,6 +275,41 @@ begin
     FreeAndNil(reg);
   end;
 end;
+
+//Tries to decode the trigger section name in the default format
+//Returns false on failure
+function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string;
+  out Index: integer): boolean;
+var i_pos: integer;
+begin
+  ServiceName := '';
+  Index := -1;
+
+  if not SectionName.StartsWith(sHkeyLocalMachine+sBaseScmKey) then begin
+    Result := false;
+    exit;
+  end;
+  Delete(SectionName, 1, Length(sHkeyLocalMachine)+Length(sBaseScmKey)+1); //with the "\"
+
+  i_pos := pos('\', SectionName);
+  if i_pos <= 0 then begin
+    Result := false;
+    exit;
+  end;
+
+  ServiceName := Copy(SectionName, 1, i_pos);
+  Delete(SectionName, 1, i_pos+1); //with the "\"
+
+  if not SectionName.StartsWith(sTriggerSubkey) then begin
+    Result := false;
+    exit;
+  end;
+  Delete(SectionName, 1, Length(sTriggerSubkey)+1); //with the "\"
+
+  Result := TryStrToInt(SectionName, Index); //all that should remain is the index
+end;
+
+
 
 const
   //We don't support more data items cause it would be weird (and eat memory).

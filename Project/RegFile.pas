@@ -67,6 +67,7 @@ type
     procedure AddOtherValue(const Name: string; DataType: integer; const Data: PByte; const Size: integer);
     //Export
     procedure ExportToStrings(sl: TStrings);
+    function ExportToString: string;
   end;
 
   TRegFile = class(TList<TRegFileKey>)
@@ -78,6 +79,7 @@ type
     procedure LoadFromFile(const AFilename: string);
     procedure SaveToFile(const AFilename: string);
     procedure SaveToStrings(sl: TStrings);
+    function ExportToString: string;
   end;
 
   ERegFileFormatError = class(Exception);
@@ -209,6 +211,7 @@ begin
     REG_DELETE: Result := nameStr+'-';
     REG_SZ: Result := nameStr+'"'+RegEscapeString(Self.Data)+'"';
     REG_BINARY: Result := nameStr+'hex:'+Self.Data;
+    REG_DWORD: Result := nameStr+'dword:'+Self.Data;
   else
    //All the other types are stored as hex!
     Result := nameStr + 'hex('+IntToHex(Self.DataType, 1)+'):' + Self.Data;
@@ -260,6 +263,18 @@ begin
 
   for i := 0 to Length(Self.Entries)-1 do
     sl.Add(Self.Entries[i].ExportToString);
+end;
+
+function TRegFileKey.ExportToString: string;
+var sl: TStringList;
+begin
+  sl := TStringList.Create;
+  try
+    Self.ExportToStrings(sl);
+    Result := sl.Text;
+  finally
+    FreeAndNil(sl);
+  end;
 end;
 
 
@@ -544,6 +559,18 @@ begin
   for i := 0 to Self.Count-1 do begin
     Self.Items[i].ExportToStrings(sl);
     sl.Add('');
+  end;
+end;
+
+function TRegFile.ExportToString: string;
+var sl: TStringList;
+begin
+  sl := TStringList.Create;
+  try
+    Self.SaveToStrings(sl);
+    Result := sl.Text;
+  finally
+    FreeAndNil(sl);
   end;
 end;
 

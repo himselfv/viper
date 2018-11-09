@@ -17,16 +17,13 @@ reproduce.
 interface
 uses WinSvc, RegFile;
 
-function ExportTriggers(const tri: SERVICE_TRIGGER_INFO; const KeyPrefix: AnsiString = ''): AnsiString; overload;
+function ExportTriggers(const tri: SERVICE_TRIGGER_INFO; const KeyPrefix: string = ''): string; overload;
 
-function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: AnsiString = ''): AnsiString; overload;
+function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
 
-function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>; const KeyPrefix: AnsiString = ''): AnsiString; overload;
+function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>; const KeyPrefix: string = ''): string; overload;
 
-function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: AnsiString = ''): AnsiString; overload;
-
-function ExportTriggerDataItem(const item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
-  const IndexStr: AnsiString): AnsiString;
+function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;
 
 type
   TTriggerImportStatusFlag = (
@@ -56,77 +53,84 @@ Export:
 Pass KeyPrefix=='' to export a generic trigger list (non service-bound).
 }
 function ExportTriggers(const tri: SERVICE_TRIGGER_INFO;
-  const KeyPrefix: AnsiString = ''): AnsiString;
-var i: integer;
+  const KeyPrefix: string = ''): string;
+var exp: TRegFile;
+  key: TRegFileKey;
+  i: integer;
   ptr: PSERVICE_TRIGGER;
 begin
-  ptr := tri.pTriggers;
-  for i := 1 to tri.cTriggers do begin
-    Result := Result
-      + '['+KeyPrefix+AnsiString(IntToStr(i-1))+']'#13
-      + ExportTrigger(ptr^) + #13;
-    Inc(ptr);
+  exp := TRegFile.Create;
+  try
+    ptr := tri.pTriggers;
+    for i := 1 to tri.cTriggers do begin
+      key := ExportTrigger(ptr^);
+      key.Name := KeyPrefix + IntToStr(i-1);
+      exp.Add(key);
+      Inc(ptr);
+    end;
+    Result := exp.ExportToString;
+  finally
+    FreeAndNil(exp);
   end;
-  if Length(Result) > 0 then
-    SetLength(Result, Length(Result)-1);
 end;
 
 //Same, but the list of triggers is explicitly passed as an array.
 function ExportTriggers(const tri: TArray<SERVICE_TRIGGER>;
-  const KeyPrefix: AnsiString = ''): AnsiString; overload;
-var i: integer;
+  const KeyPrefix: string = ''): string; overload;
+var exp: TRegFile;
+  key: TRegFileKey;
+  i: integer;
 begin
-  for i := 0 to Length(tri)-1 do begin
-    Result := Result
-      + '['+KeyPrefix+AnsiString(IntToStr(i))+']'#13
-      + ExportTrigger(tri[i]) + #13;
+  exp := TRegFile.Create;
+  try
+    for i := 0 to Length(tri)-1 do begin
+      key := ExportTrigger(tri[i]);
+      key.Name := KeyPrefix + IntToStr(i);
+      exp.Add(key);
+    end;
+    Result := exp.ExportToString;
+  finally
+    FreeAndNil(exp);
   end;
-  if Length(Result) > 0 then
-    SetLength(Result, Length(Result)-1);
 end;
 
 function ExportTriggers(const tri: TArray<PSERVICE_TRIGGER>;
-  const KeyPrefix: AnsiString = ''): AnsiString; overload;
-var i: integer;
+  const KeyPrefix: string = ''): string; overload;
+var exp: TRegFile;
+  key: TRegFileKey;
+  i: integer;
 begin
-  for i := 0 to Length(tri)-1 do begin
-    Result := Result
-      + '['+KeyPrefix+AnsiString(IntToStr(i))+']'#13
-      + ExportTrigger(tri[i]^) + #13;
+  exp := TRegFile.Create;
+  try
+    for i := 0 to Length(tri)-1 do begin
+      key := ExportTrigger(tri[i]^);
+      key.Name := KeyPrefix + IntToStr(i);
+      exp.Add(key);
+    end;
+  finally
+    FreeAndNil(exp);
   end;
-  if Length(Result) > 0 then
-    SetLength(Result, Length(Result)-1);
 end;
 
-//Exports a single trigger as a set of exported registry values (without a key)
-//If KeyName is specified, that key header will be added at the beginning.
-function ExportTrigger(const tr: SERVICE_TRIGGER;
-  const KeyName: AnsiString = ''): AnsiString;
+//Exports a single trigger as a set of exported registry values.
+//If KeyName is specified, this will be used as a key name.
+function ExportTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey;
 var i: integer;
   pDataItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  IndexStr: string;
 begin
-  if KeyName = '' then
-    Result := ''
-  else
-    Result := '[' + KeyName + ']'#13;
-  Result := Result +
-     '"Type"=dword:'+AnsiString(IntToHex(tr.dwTriggerType, 8))+#13
-    +'"Action"=dword:'+AnsiString(IntToHex(tr.dwAction, 8))+#13
-    +'"GUID"=hex:'+RegBinToHex(PByte(tr.pTriggerSubtype), SizeOf(TGUID));
+  Result.Name := KeyName;
+  Result.Delete := false;
+  Result.AddDwordValue('Type', REG_DWORD, tr.dwTriggerType);
+  Result.AddDwordValue('Action', REG_DWORD, tr.dwAction);
+  Result.AddOtherValue('GUID', REG_BINARY, PByte(tr.pTriggerSubtype), SizeOf(TGUID));
   pDataItem := tr.pDataItems;
   for i := 1 to tr.cDataItems do begin
-    Result := Result + #13 + ExportTriggerDataItem(pDataItem^, AnsiString(IntToStr(i-1)));
+    IndexStr := IntToStr(i-1);
+    Result.AddOtherValue('Data'+IndexStr, REG_BINARY, pDataItem^.pData, pDataItem^.cbData);
+    Result.AddDwordValue('DataType'+IndexStr, REG_DWORD, pDataItem^.dwDataType);
     Inc(pDataItem);
   end;
-end;
-
-//Returns a .reg-file formatted chunk of several strings defining the keys
-//which fully describe this trigger data item.
-function ExportTriggerDataItem(const item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
-  const IndexStr: AnsiString): AnsiString;
-begin
-  Result := '"Data'+IndexStr+'"=hex:'+RegBinToHex(item.pData, item.cbData)+#13
-    +'"DataType'+IndexStr+'"=dword:'+AnsiString(IntToHex(item.dwDataType, 8));
 end;
 
 

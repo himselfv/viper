@@ -9,7 +9,6 @@ uses SysUtils, Windows, Registry, RegFile;
 type
   ERegistryExportError = class(Exception);
 
-
 type
   TRegNativeDataInfo = record
     DataType: integer;

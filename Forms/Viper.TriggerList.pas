@@ -526,7 +526,7 @@ begin
   i := 0;
   for Data in SelectedTriggers do begin
     Result := Result
-      + string(ExportTrigger(Data.TriggerCopy^, AnsiString(IntToStr(i)))) + #13#10;
+      + ExportTrigger(Data.TriggerCopy^, IntToStr(i)).ExportToString + #13#10;
     Inc(i);
   end;
 
@@ -617,7 +617,7 @@ end;
 
 
 procedure TTriggerList.TryExportTriggers(const Sel: TArray<PSERVICE_TRIGGER>);
-var Text: AnsiString;
+var Text: string;
   sl: TStringList;
 begin
   if Length(Sel) <= 0 then exit;

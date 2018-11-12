@@ -74,6 +74,9 @@ type
     Registrydefinition1: TMenuItem;
     OpenTriggersDialog: TOpenDialog;
     SaveTriggersDialog: TSaveDialog;
+    aImportTrigger: TAction;
+    N2: TMenuItem;
+    miImportTrigger: TMenuItem;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -86,6 +89,13 @@ type
       var ImageList: TCustomImageList);
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
+      Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+    procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+    procedure TreeFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex);
+    procedure TreeCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      var Allowed: Boolean);
     procedure aCopyTriggerTextExecute(Sender: TObject);
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
@@ -94,13 +104,7 @@ type
     procedure aCopyTriggerRegDefinitionExecute(Sender: TObject);
     procedure aExportTriggerExecute(Sender: TObject);
     procedure aExportAllTriggersExecute(Sender: TObject);
-    procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
-      Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-    procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
-    procedure TreeFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex);
-    procedure TreeCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      var Allowed: Boolean);
+    procedure aImportTriggerExecute(Sender: TObject);
   const
     colTrigger = 0;
     colAction = 1;
@@ -136,7 +140,7 @@ type
 
 implementation
 uses UITypes, Clipbrd, Generics.Collections, CommonResources, TriggerExport,
-  RegFile, Viper.TriggerEditor;
+  RegFile, Viper.TriggerEditor, Viper.TriggerImport;
 
 {$R *.dfm}
 
@@ -250,6 +254,7 @@ begin
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
   aDeleteTrigger.Visible := Tree.SelectedCount > 0;
+  aImportTrigger.Visible := true;
 end;
 
 procedure TTriggerList.TreeFocusChanged(Sender: TBaseVirtualTree;
@@ -753,6 +758,16 @@ end;
 procedure TTriggerList.aExportAllTriggersExecute(Sender: TObject);
 begin
   TryExportTriggers(Self.AllTriggers);
+end;
+
+procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
+begin
+  with OpenTriggersDialog do
+    if not Execute then
+      exit;
+  //Multi-trigger version
+  Viper.TriggerImport.ImportTriggers(Self, '', OpenTriggersDialog.FileName);
+  Self.Reload;
 end;
 
 

@@ -90,6 +90,12 @@ object TriggerList: TTriggerList
     object miDeleteTrigger: TMenuItem
       Action = aDeleteTrigger
     end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object miImportTrigger: TMenuItem
+      Action = aImportTrigger
+    end
   end
   object ActionList: TActionList
     Left = 16
@@ -142,6 +148,11 @@ object TriggerList: TTriggerList
       Category = 'Copy'
       Caption = 'Registry definition'
       OnExecute = aCopyTriggerRegDefinitionExecute
+    end
+    object aImportTrigger: TAction
+      Category = 'Modify'
+      Caption = 'Import...'
+      OnExecute = aImportTriggerExecute
     end
   end
   object OpenTriggersDialog: TOpenDialog

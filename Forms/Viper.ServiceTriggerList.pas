@@ -13,14 +13,12 @@ uses
 type
   TServiceTriggerList = class(TTriggerList)
     miAddTrigger: TMenuItem;
-    miImportTrigger: TMenuItem;
     N1: TMenuItem;
     aAddTrigger: TAction;
-    aImportTrigger: TAction;
     miExportAllTriggers: TMenuItem;
     procedure aAddTriggerExecute(Sender: TObject);
-    procedure aImportTriggerExecute(Sender: TObject);
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure aImportTriggerExecute(Sender: TObject);
   protected
     //We need to be able to reload and edit
     FServiceName: string;
@@ -146,9 +144,10 @@ begin
   with OpenTriggersDialog do
     if not Execute then
       exit;
-
+  //Single trigger version
   Viper.TriggerImport.ImportTriggers(Self, Self.FServiceName, OpenTriggersDialog.FileName);
   Self.Reload;
 end;
+
 
 end.

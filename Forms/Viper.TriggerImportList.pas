@@ -122,7 +122,7 @@ begin
   Result := inherited Add(ServiceName, ATrigger.Index, ATrigger.Trigger);
   GetTriggerImportData(Result).GrayedOut := GrayedOut;
   for ChildNode in Tree.ChildNodes(Result) do //multi-entry triggers may spawn child nodes
-    GetTriggerImportData(ChildNode).GrayedOut := true;
+    GetTriggerImportData(ChildNode).GrayedOut := GrayedOut;
   Tree.CheckType[Result] := ctCheckBox;
   if GrayedOut then
     Tree.CheckState[Result] := csUncheckedNormal

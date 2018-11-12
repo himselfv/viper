@@ -97,6 +97,8 @@ function OpenService2(hSC: SC_HANDLE; const AServiceName: string;
   dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
 
 
+function ServiceExists(const AServiceName: string): boolean;
+
 
 type
   PEnumServiceStatusProcessA = ^TEnumServiceStatusProcessA;
@@ -370,6 +372,26 @@ begin
   Result := TAutoService.Create(hSC, hSvc, false);
 end;
 
+
+function ServiceExists(const AServiceName: string): boolean;
+var hSvc: SC_HANDLE;
+  err: integer;
+begin
+  Result := false;
+  with OpenScm(SC_MANAGER_CONNECT and SC_MANAGER_ENUMERATE_SERVICE) do begin
+    hSvc := WinSvc.OpenService(ScmHandle, PChar(AServiceName), SERVICE_QUERY_CONFIG);
+    if hSvc <> 0 then begin
+      WinSvc.CloseServiceHandle(hSvc);
+      Result := true;
+      exit;
+    end;
+    err := GetLastError();
+    if (err = ERROR_ACCESS_DENIED) or (err = ERROR_SERVICE_DOES_NOT_EXIST) then
+      Result := false
+    else
+      RaiseLastOsError(err);
+  end;
+end;
 
 
 //Enumerates services and their status. The result has to be freed with FreeMem.

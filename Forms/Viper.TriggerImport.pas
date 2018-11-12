@@ -1,4 +1,15 @@
 unit Viper.TriggerImport;
+{
+Trigger import form.
+Lists the triggers found in the registry export file. Allows user to choose
+which ones to import.
+
+Has two modes:
+1. Universal: Import triggers into their respective services. Triggers for
+  services that aren't found will be grayed out.
+2. Single service: Import all available triggers into the specified service.
+  Ignores the service names from the file.
+}
 
 interface
 
@@ -33,6 +44,7 @@ function ImportTriggers(AOwner: TComponent; const AServiceName: string;
 
 
 implementation
+uses ServiceHelper;
 
 {$R *.dfm}
 
@@ -74,12 +86,15 @@ end;
 //Repopulates TVirtualTreeview with triggers from FTriggers.
 procedure TTriggerImportForm.ReloadTriggerList;
 var Trigger: TRegTriggerEntry;
+  GrayedOut: boolean;
 begin
   TriggerList.Tree.BeginUpdate;
   try
     TriggerList.Clear;
-    for Trigger in FTriggers do
+    for Trigger in FTriggers do begin
+      GrayedOut := (FServiceName = '') and ServiceExists(FServiceName);
       TriggerList.Add(Trigger);
+    end;
   finally
     TriggerList.Tree.EndUpdate;
   end;

@@ -3,9 +3,6 @@ inherited TriggerImportList: TTriggerImportList
     Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
     PopupMenu = nil
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    OnChecking = TreeChecking
-    OnFocusChanging = TreeFocusChanging
-    OnPaintText = TreePaintText
     Columns = <
       item
         Position = 0

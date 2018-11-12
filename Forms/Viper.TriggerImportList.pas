@@ -24,14 +24,6 @@ type
   TTriggerImportList = class(TTriggerList)
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
-    procedure TreeFocusChanging(Sender: TBaseVirtualTree; OldNode,
-      NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
-      var Allowed: Boolean);
-    procedure TreePaintText(Sender: TBaseVirtualTree;
-      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      TextType: TVSTTextType);
-    procedure TreeChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      var NewState: TCheckState; var Allowed: Boolean);
   protected
     FInheritedNodeDataSize: integer;
   public
@@ -70,39 +62,6 @@ begin
     Result := PNdTriggerImportData(NativeUint(Result) + FInheritedNodeDataSize);
 end;
 
-procedure TTriggerImportList.TreePaintText(Sender: TBaseVirtualTree;
-  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType);
-var Data: PNdTriggerImportData;
-begin
-  inherited;
-  Data := Self.GetTriggerImportData(Node);
-  if Data.GrayedOut then
-    TargetCanvas.Font.Color := clGrayText;
-end;
-
-procedure TTriggerImportList.TreeFocusChanging(Sender: TBaseVirtualTree;
-  OldNode, NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
-  var Allowed: Boolean);
-var Data: PNdTriggerImportData;
-begin
-  inherited;
-  if NewNode = nil then exit;
-  Data := Self.GetTriggerImportData(NewNode);
-  if Data.GrayedOut then
-    Allowed := false;
-end;
-
-procedure TTriggerImportList.TreeChecking(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; var NewState: TCheckState; var Allowed: Boolean);
-var Data: PNdTriggerImportData;
-begin
-  inherited;
-  Data := Self.GetTriggerImportData(Node);
-  if Data.GrayedOut then
-    Allowed := (NewState = csUncheckedNormal);
-end;
-
 procedure TTriggerImportList.Reload;
 begin
   //Do nothing -- we're reloaded from the outside.
@@ -135,7 +94,7 @@ begin
     Tree.CheckState[Result] := csUncheckedNormal
   else
     Tree.CheckState[Result] := csCheckedNormal;
-  Tree.IsDisabled[Result] := true;
+  Tree.IsDisabled[Result] := AGrayedOut;
 end;
 
 

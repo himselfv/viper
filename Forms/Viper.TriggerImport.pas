@@ -171,6 +171,7 @@ begin
   finally
     TriggerList.Tree.EndUpdate;
   end;
+  btnOk.Enabled := (TriggerList.Tree.ChildCount[nil] > 0);
 end;
 
 //Returns the list of all triggers which are checked

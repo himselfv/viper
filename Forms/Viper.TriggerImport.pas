@@ -92,8 +92,8 @@ begin
   try
     TriggerList.Clear;
     for Trigger in FTriggers do begin
-      GrayedOut := (FServiceName = '') and ServiceExists(FServiceName);
-      TriggerList.Add(Trigger);
+      GrayedOut := (FServiceName = '') and not ServiceExists(Trigger.ServiceName);
+      TriggerList.Add(Trigger, GrayedOut);
     end;
   finally
     TriggerList.Tree.EndUpdate;

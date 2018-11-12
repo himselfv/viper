@@ -16,6 +16,7 @@ object TriggerImportForm: TTriggerImportForm
   Padding.Bottom = 5
   OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object lblPrompt: TLabel

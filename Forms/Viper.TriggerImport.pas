@@ -14,6 +14,7 @@ type
     btnOk: TButton;
     btnCancel: TButton;
     TriggerList: TTriggerList;
+    procedure FormCreate(Sender: TObject);
   protected
     FServiceName: string;
     FTriggers: TArray<TRegTriggerEntry>;
@@ -48,6 +49,12 @@ begin
   finally
     FreeAndNil(Form);
   end;
+end;
+
+procedure TTriggerImportForm.FormCreate(Sender: TObject);
+begin
+  inherited;
+  Self.TriggerList.FEntryMode := emChildEntries;
 end;
 
 resourcestring

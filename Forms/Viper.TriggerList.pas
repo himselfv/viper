@@ -34,6 +34,20 @@ type
 
   TTriggerEvent = procedure(Sender: TObject; const TriggerData: PNdTriggerData) of object;
 
+  {
+  Enables or disables splitting some triggers into multiple trigger entries for clarity,
+  e.g.
+    Start on Port 100,101 available
+  ->
+    Start on Port 100 available
+    Start on Port 101 available
+  }
+  TTriggerEntryMode = (
+    emSingleEntry,      //One trigger = one entry
+    emMultiEntries,     //One trigger = multiple entries
+    emChildEntries      //One trigger = multiple entries, but additional ones as child nodes
+  );
+
   TTriggerList = class(TFrame)
     Tree: TVirtualStringTree;
     PopupMenu: TPopupMenu;
@@ -85,6 +99,8 @@ type
     procedure TreeHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
     procedure TreeFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
+    procedure TreeCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      var Allowed: Boolean);
   const
     colTrigger = 0;
     colAction = 1;
@@ -92,15 +108,15 @@ type
     colParams = 3;
   protected
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
-    FMultiNodeTriggers: boolean;
     FOnFocusChanged: TTriggerEvent;
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
-    procedure SetMultinodeTriggers(const Value: boolean);
+    procedure SetEntryMode(const Value: TTriggerEntryMode);
   public
+    FEntryMode: TTriggerEntryMode;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
@@ -112,7 +128,7 @@ type
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function FocusedTrigger: PNdTriggerData;
-    property MultiNodeTriggers: boolean read FMultinodeTriggers write SetMultinodeTriggers;
+    property EntryMode: TTriggerEntryMode read FEntryMode write SetEntryMode;
     property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
 
   end;
@@ -142,7 +158,7 @@ constructor TTriggerList.Create(AOwner: TComponent);
 begin
   inherited;
   OnTriggerListChanged.Add(Self.HandleTriggerListChanged);
-  FMultiNodeTriggers := true; //by default
+  FEntryMode := emMultiEntries; //by default
 end;
 
 destructor TTriggerList.Destroy;
@@ -254,6 +270,13 @@ begin
     aCopySummary.Execute;
 end;
 
+procedure TTriggerList.TreeCollapsing(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; var Allowed: Boolean);
+begin
+ //The only tree structure currently is child nodes in emChildEntries mode, don't collapse that:
+  Allowed := false;
+end;
+
 procedure TTriggerList.TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var Data1, Data2: PNdTriggerData;
@@ -318,10 +341,11 @@ end;
 {
 Adds a trigger to the list.
 Trigger data is copied. The original trigger data can be freed.
-Returns the virtual node added. In single-trigger-multi-node mode returns the last of such nodes.
+Returns the virtual node added. In single-trigger-multi-node mode returns the first of such nodes.
 }
 function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
-var NodeData: PNdTriggerData;
+var Node: PVirtualNode;
+  NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
   Sources: TArray<TTriggerSource>;
   Source, NewSource: TTriggerSource;
@@ -339,7 +363,7 @@ begin
   SetLength(FOwnTriggerCopies, Length(FOwnTriggerCopies)+1);
   FOwnTriggerCopies[Length(FOwnTriggerCopies)-1] := TriggerCopy;
 
-  if (not Self.FMultiNodeTriggers) and (Length(Sources) > 0) then begin
+  if (Self.FEntryMode = emSingleEntry) and (Length(Sources) > 0) then begin
     //Ugly. Squash all sources together into a single source if in multi-mode
     NewSource.DisplayText := '';
     NewSource.Data := '';
@@ -357,9 +381,14 @@ begin
 
   Result := nil;
   for Source in Sources do begin
-    Result := Tree.AddChild(nil);
-    Tree.ReinitNode(Result, false);
-    NodeData := Tree.GetNodeData(Result);
+    if (Self.FEntryMode = emChildEntries) and (Result <> nil) then
+      Node := Tree.AddChild(Result)
+    else begin
+      Node := Tree.AddChild(nil);
+      Result := Node;
+    end;
+    Tree.ReinitNode(Node, false);
+    NodeData := Tree.GetNodeData(Node);
     NodeData.ServiceName := AServiceName;
     NodeData.TriggerIndex := AIndex;
     NodeData.TriggerType := ATrigger^.dwTriggerType;
@@ -373,6 +402,9 @@ begin
     NodeData.Params := TriggerData.ParamsToString('; ');
     NodeData.TriggerCopy := TriggerCopy;
   end;
+
+  if Self.FEntryMode = emChildEntries then
+    Self.Tree.Expanded[Result] := true; //auto-expand
 end;
 
 procedure TTriggerList.Reload;
@@ -447,18 +479,10 @@ begin
   Self.Reload; //For now, reload everything
 end;
 
-{
-Enables or disables splitting some triggers into multiple trigger entries for clarity,
-e.g.
-  Start on Port 100,101 available
-->
-  Start on Port 100 available
-  Start on Port 101 available
-}
-procedure TTriggerList.SetMultinodeTriggers(const Value: boolean);
+procedure TTriggerList.SetEntryMode(const Value: TTriggerEntryMode);
 begin
-  if FMultinodeTriggers = Value then exit;
-  FMultinodeTriggers := Value;
+  if FEntryMode = Value then exit;
+  FEntryMode := Value;
   Self.Reload;
 end;
 

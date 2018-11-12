@@ -25,6 +25,7 @@ object TriggerList: TTriggerList
     TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
     TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toMultiSelect, toRightClickSelect, toSimpleDrawSelection]
     OnChange = TreeChange
+    OnCollapsing = TreeCollapsing
     OnCompareNodes = TreeCompareNodes
     OnFocusChanged = TreeFocusChanged
     OnFreeNode = TreeFreeNode

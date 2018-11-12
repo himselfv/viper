@@ -3,7 +3,7 @@ object TriggerImportForm: TTriggerImportForm
   Top = 0
   Caption = 'Import triggers'
   ClientHeight = 343
-  ClientWidth = 516
+  ClientWidth = 517
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,13 +15,14 @@ object TriggerImportForm: TTriggerImportForm
   Padding.Right = 5
   Padding.Bottom = 5
   OldCreateOrder = False
+  Position = poOwnerFormCenter
   PixelsPerInch = 96
   TextHeight = 13
   object lblPrompt: TLabel
     AlignWithMargins = True
     Left = 8
     Top = 8
-    Width = 500
+    Width = 501
     Height = 13
     Margins.Bottom = 9
     Align = alTop
@@ -32,15 +33,13 @@ object TriggerImportForm: TTriggerImportForm
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    ExplicitLeft = 5
-    ExplicitTop = 5
     ExplicitWidth = 148
   end
   object pnlButtons: TPanel
     AlignWithMargins = True
     Left = 5
     Top = 312
-    Width = 506
+    Width = 507
     Height = 26
     Margins.Left = 0
     Margins.Top = 9
@@ -48,13 +47,13 @@ object TriggerImportForm: TTriggerImportForm
     Margins.Bottom = 0
     Align = alBottom
     BevelOuter = bvNone
-    TabOrder = 1
-    ExplicitWidth = 360
+    TabOrder = 0
+    ExplicitWidth = 602
     DesignSize = (
-      506
+      507
       26)
     object btnOk: TButton
-      Left = 347
+      Left = 348
       Top = 0
       Width = 75
       Height = 25
@@ -63,10 +62,10 @@ object TriggerImportForm: TTriggerImportForm
       Default = True
       ModalResult = 1
       TabOrder = 0
-      ExplicitLeft = 201
+      ExplicitLeft = 443
     end
     object btnCancel: TButton
-      Left = 428
+      Left = 429
       Top = 0
       Width = 75
       Height = 25
@@ -75,38 +74,49 @@ object TriggerImportForm: TTriggerImportForm
       Caption = 'Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 282
+      ExplicitLeft = 524
     end
   end
-  object vtTriggers: TVirtualStringTree
+  inline TriggerList: TTriggerList
     Left = 5
     Top = 30
-    Width = 506
+    Width = 507
     Height = 273
     Align = alClient
-    Header.AutoSizeIndex = 0
-    Header.Font.Charset = DEFAULT_CHARSET
-    Header.Font.Color = clWindowText
-    Header.Font.Height = -11
-    Header.Font.Name = 'Tahoma'
-    Header.Font.Style = []
-    Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-    Images = CommonRes.ilImages
-    TabOrder = 0
-    TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-    TreeOptions.PaintOptions = [toHideFocusRect, toThemeAware, toUseBlendedImages]
-    TreeOptions.SelectionOptions = [toExtendedFocus, toFullRowSelect, toRightClickSelect]
-    ExplicitWidth = 360
-    Columns = <
-      item
-        Position = 0
-        Width = 342
-        WideText = 'Trigger'
-      end
-      item
-        Position = 1
-        Width = 160
-        WideText = 'Service'
-      end>
+    TabOrder = 1
+    ExplicitLeft = 5
+    ExplicitTop = 30
+    ExplicitWidth = 602
+    ExplicitHeight = 273
+    inherited Tree: TVirtualStringTree
+      Width = 507
+      Height = 273
+      Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+      PopupMenu = nil
+      TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
+      ExplicitWidth = 602
+      ExplicitHeight = 273
+      Columns = <
+        item
+          Position = 0
+          Width = 250
+          WideText = 'Trigger'
+        end
+        item
+          Position = 1
+          Width = 100
+          WideText = 'Action'
+        end
+        item
+          Position = 2
+          Width = 150
+          WideText = 'Service'
+        end
+        item
+          Position = 3
+          Width = 300
+          WideText = 'Params'
+        end>
+    end
   end
 end

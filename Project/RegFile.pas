@@ -60,6 +60,7 @@ type
     Name: string;
     Delete: boolean;
     Entries: TArray<TRegFileEntry>;
+    procedure Clear;
     procedure AddValueEntry(const Entry: TRegFileEntry);
     //Shortcuts
     procedure AddStringValue(const Name: string; DataType: integer; const Data: string);
@@ -218,6 +219,11 @@ begin
   end;
 end;
 
+
+procedure TRegFileKey.Clear;
+begin
+  SetLength(Self.Entries, 0);
+end;
 
 procedure TRegFileKey.AddValueEntry(const Entry: TRegFileEntry);
 begin

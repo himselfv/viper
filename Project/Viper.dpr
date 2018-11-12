@@ -14,6 +14,9 @@ uses
   Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
   Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
+  Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
+  Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
+  Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',
@@ -25,12 +28,9 @@ uses
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',
   SvcCat in 'SvcCat.pas',
-  Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
-  Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   TriggerExport in 'TriggerExport.pas',
   RegFile in 'RegFile.pas',
-  RegExport in 'RegExport.pas',
-  Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm};
+  RegExport in 'RegExport.pas';
 
 {$R *.res}
 
@@ -44,6 +44,5 @@ begin
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
   Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
   Application.CreateForm(TTriggerDataItemEditor, TriggerDataItemEditor);
-  Application.CreateForm(TTriggerImportForm, TriggerImportForm);
   Application.Run;
 end.

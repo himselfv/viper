@@ -94,6 +94,7 @@ var i: integer;
   pDataItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   IndexStr: string;
 begin
+  Result.Clear;
   Result.Name := KeyName;
   Result.Delete := false;
   Result.AddDwordValue('Type', REG_DWORD, tr.dwTriggerType);

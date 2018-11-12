@@ -38,7 +38,7 @@ var
   ServiceTriggerList: TServiceTriggerList;
 
 implementation
-uses UITypes, TriggerExport, Viper.TriggerEditor;
+uses UITypes, TriggerExport, Viper.TriggerEditor, Viper.TriggerImport;
 
 {$R *.dfm}
 
@@ -160,7 +160,9 @@ begin
 
   SetLength(Triggers, 0);
   try
-    ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
+    TriggerExport.ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
+    Viper.TriggerImport.ImportTriggers(Self, Self.FServiceName, Triggers);
+    exit;
 
     if Length(Triggers) <= 0 then begin
       NotificationText := sNoTriggersToImport;

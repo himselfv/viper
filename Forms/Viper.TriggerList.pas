@@ -1,4 +1,10 @@
 unit Viper.TriggerList;
+{
+Trigger list for a service or multiple services.
+Usage: Either
+1. Reload() to load all triggers for all services.
+2. Reimplement Reload() to Add() the desired triggers manually.
+}
 
 interface
 
@@ -86,24 +92,27 @@ type
     colParams = 3;
   protected
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
+    FMultiNodeTriggers: boolean;
     FOnFocusChanged: TTriggerEvent;
-    procedure Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER);
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
+    procedure SetMultinodeTriggers(const Value: boolean);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
     procedure Reload; virtual;
+    function Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     function SelectedTriggers: TArray<PNdTriggerData>;
     function AllTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
     function FocusedTrigger: PNdTriggerData;
+    property MultiNodeTriggers: boolean read FMultinodeTriggers write SetMultinodeTriggers;
     property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
 
   end;
@@ -133,6 +142,7 @@ constructor TTriggerList.Create(AOwner: TComponent);
 begin
   inherited;
   OnTriggerListChanged.Add(Self.HandleTriggerListChanged);
+  FMultiNodeTriggers := true; //by default
 end;
 
 destructor TTriggerList.Destroy;
@@ -305,13 +315,16 @@ begin
   TreeChange(Tree, nil);
 end;
 
-//Adds a trigger to the list. Trigger data is not ours and should be copied if needed.
-procedure TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER);
-var Node: PVirtualNode;
-  NodeData: PNdTriggerData;
+{
+Adds a trigger to the list.
+Trigger data is copied. The original trigger data can be freed.
+Returns the virtual node added. In single-trigger-multi-node mode returns the last of such nodes.
+}
+function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+var NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
   Sources: TArray<TTriggerSource>;
-  Source: TTriggerSource;
+  Source, NewSource: TTriggerSource;
   TriggerCopy: PSERVICE_TRIGGER;
 begin
   TriggerData := ParseTrigger(ATrigger);
@@ -326,10 +339,27 @@ begin
   SetLength(FOwnTriggerCopies, Length(FOwnTriggerCopies)+1);
   FOwnTriggerCopies[Length(FOwnTriggerCopies)-1] := TriggerCopy;
 
+  if (not Self.FMultiNodeTriggers) and (Length(Sources) > 0) then begin
+    //Ugly. Squash all sources together into a single source if in multi-mode
+    NewSource.DisplayText := '';
+    NewSource.Data := '';
+    for Source in Sources do begin
+      NewSource.DisplayText := NewSource.DisplayText + Source.DisplayText + ', ';
+      NewSource.Data := NewSource.Data + Source.DisplayText + ', ';
+    end;
+    SetLength(NewSource.DisplayText, Length(NewSource.DisplayText)-2);
+    SetLength(NewSource.Data, Length(NewSource.Data)-2);
+    //Replace the Sources list
+    SetLength(Sources, 1);
+    Sources[0] := NewSource;
+    //Handle the rest normally
+  end;
+
+  Result := nil;
   for Source in Sources do begin
-    Node := Tree.AddChild(nil);
-    Tree.ReinitNode(Node, false);
-    NodeData := Tree.GetNodeData(Node);
+    Result := Tree.AddChild(nil);
+    Tree.ReinitNode(Result, false);
+    NodeData := Tree.GetNodeData(Result);
     NodeData.ServiceName := AServiceName;
     NodeData.TriggerIndex := AIndex;
     NodeData.TriggerType := ATrigger^.dwTriggerType;
@@ -415,6 +445,21 @@ end;
 procedure TTriggerList.HandleTriggerListChanged(Sender: TObject; const AService: string);
 begin
   Self.Reload; //For now, reload everything
+end;
+
+{
+Enables or disables splitting some triggers into multiple trigger entries for clarity,
+e.g.
+  Start on Port 100,101 available
+->
+  Start on Port 100 available
+  Start on Port 101 available
+}
+procedure TTriggerList.SetMultinodeTriggers(const Value: boolean);
+begin
+  if FMultinodeTriggers = Value then exit;
+  FMultinodeTriggers := Value;
+  Self.Reload;
 end;
 
 

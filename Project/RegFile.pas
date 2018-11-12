@@ -359,8 +359,8 @@ end;
 //first unescaped occurence of brch, or until the end (if the text is quote-wrapped).
 //Advances the pointer to after the end of the parameter.
 //Handles wrapping quotes, if present, and also de-encodes the value.
-function RegReadEscapedValue(var pc: PChar; const brch: char; out wasEscaped: boolean): string;
-var haveQuotes, specSymbol: boolean;
+function RegReadEscapedValue(var pc: PChar; const brch: char; out haveQuotes: boolean): string;
+var specSymbol: boolean;
 begin
   haveQuotes := (pc^='"');
   if haveQuotes then
@@ -477,7 +477,7 @@ end;
 //name=value line.
 function TRegFile.ParseNameValue(const line: string; out re: TRegFileEntry): boolean;
 var pc: PChar;
-  wasEscaped: boolean;
+  haveQuotes: boolean;
   datatypeStr: string;
 begin
   if line = '' then begin
@@ -487,24 +487,24 @@ begin
   Result := true;
 
   pc := @line[1];
-  re.Name := RegReadEscapedValue(pc, '=', wasEscaped);
+  re.Name := RegReadEscapedValue(pc, '=', haveQuotes);
   //A special case: spaces are allowed after quote-terminated name: "name" = "value"
   while pc^=' ' do Inc(pc);
   //Otherwise name must go right until =, and there must be a =
   if pc^ <> '=' then
     raise ERegFileFormatError.CreateFmt(eRegInvalidEntryLineFormat, [line]);
   re.Name := Trim(re.Name);
-  if (re.Name = '@') and not wasEscaped then
+  if (re.Name = '@') and not haveQuotes then
     re.Name := '';
   Inc(pc);
 
-  re.Data := RegReadEscapedValue(pc, #00, wasEscaped);
+  re.Data := RegReadEscapedValue(pc, #00, haveQuotes);
   while pc^=' ' do Inc(pc);
   //Value must go until the end of the line
   if pc^ <> #00 then
     raise ERegFileFormatError.CreateFmt(eRegInvalidEntryLineFormat, [line]);
-  if wasEscaped then begin
-   //Escaped values are always strings
+  if haveQuotes then begin
+   //Values in quotes are always strings
     re.DataType := REG_SZ;
     exit;
   end;
@@ -516,7 +516,7 @@ begin
     exit;
   end;
 
-  //Non-escaped value must be in the form "datatype:value"
+  //Value without quotes must be in the form "datatype:value"
   datatypeStr := '';
   pc := ReadUpToNext(@re.Data[1], ':', datatypeStr);
   datatypeStr := Trim(datatypeStr).ToLower();

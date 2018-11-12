@@ -67,12 +67,19 @@ resourcestring
   sSingleTriggerPrompt = 'Choose triggers to import into "%s":';
 
 procedure TTriggerImportForm.SetServiceName(const Value: string);
+var col: TVirtualTreeColumn;
 begin
   FServiceName := Value;
   if FServiceName = '' then
     lblPrompt.Caption := sMultiTriggerPrompt
   else
     lblPrompt.Caption := Format(sSingleTriggerPrompt, [Value]);
+  //Show Service column only when it matters
+  col := TriggerList.Tree.Header.Columns[TriggerList.colService];
+  if FServiceName <> '' then
+    col.Options := col.Options - [coVisible]
+  else
+    col.Options := col.Options + [coVisible];
 end;
 
 //Copies the array of service triggers.

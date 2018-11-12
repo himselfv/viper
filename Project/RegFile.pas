@@ -8,10 +8,9 @@ Reg file format specifications:
 We support a LIMITED subset of functionality that our own export uses.
 Limitations:
 - Only 5.00 format is supported
-- Multiline values not supported
 - No key name escapting (there seems to be none)
 - We don't preserve comments or formatting on load-save
-- Not all data types are supported
+- Not all data types are supported on import
 
 We support:
 - Empty lines
@@ -19,6 +18,8 @@ We support:
 - Default values (@)
 - Entry name and value escaping
 - Key and value removal
+- Multiline values
+- All data types on export
 }
 
 interface
@@ -411,7 +412,7 @@ resourcestring
 procedure TRegFile.LoadFromFile(const AFilename: string);
 var sl: TStringList;
   i: integer;
-  line: string;
+  line, line2: string;
   rk: TRegFileKey;
   re: TRegFileEntry;
   haveRk, haveFormat: boolean;
@@ -425,10 +426,13 @@ begin
 
     sl.LoadFromFile(AFilename);
 
-    for i := 0 to sl.Count-1 do begin
+    i := 0;
+    while i <= sl.Count-1 do begin
       line := Trim(sl[i]);
-      if (line='') or (line[1]=';') then
+      if (line='') or (line[1]=';') then begin
+        Inc(i);
         continue;
+      end;
 
       //New section
       if (line[1]='[') then begin
@@ -443,6 +447,7 @@ begin
         rk.Name := line.Substring(1, Length(line)-2);
         rk.Delete := false;
         SetLength(rk.Entries, 0);
+        Inc(i);
         continue;
       end;
 
@@ -453,14 +458,30 @@ begin
         if not SameText(line, sRegFileFormat500) then
           raise ERegFileFormatError.CreateFmt(eRegUnsupportedFormat, [line]);
         haveFormat := true;
+        Inc(i);
         continue;
       end;
 
       //Otherwise must be name=value
+
+      //Name=value strings might have continuations:
+      //   Line1\
+      //   Line2\
+      //   Line3
+      line2 := line;
+      while (Length(line2) > 0) and (line2[Length(line2)] = '\') and (i <= sl.Count-1) do begin
+        Inc(i);
+        line2 := Trim(sl[i]);
+        System.Delete(line, Length(line), 1); //remove the previous \
+        line := line + line2;       //add new chunk
+      end;
+
+      //Now parse it
       if not ParseNameValue(line, re) then
         raise ERegFileFormatError.CreateFmt(eRegInvalidSectionLine, [line]);
       SetLength(rk.Entries, Length(rk.Entries)+1);
       rk.Entries[Length(rk.Entries)-1] := re;
+      Inc(i);
     end;
 
     //Store final section

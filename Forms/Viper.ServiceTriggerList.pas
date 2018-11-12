@@ -67,12 +67,11 @@ begin
     Self.FScmHandle := 0;
   end;
 
-  Clear;
-
   Self.FServiceName := ServiceName;
-  if FServiceName = '' then
-    exit;
-
+  if FServiceName = '' then begin
+    Self.FServiceHandle := 0;
+    Self.FOwnsServiceHandle := false;
+  end else
   if ServiceHandle <> 0 then begin
     Self.FServiceHandle := ServiceHandle;
     Self.FOwnsServiceHandle := false;
@@ -81,6 +80,7 @@ begin
     Self.FOwnsServiceHandle := true;
   end;
 
+  //Do reload even if service==nil because we need to update popup commands
   Reload;
 end;
 
@@ -89,7 +89,8 @@ begin
   Clear;
 
   //Here we need triggers for exactly one service
-  LoadTriggersForService(FServiceName, FServiceHandle);
+  if FServiceName <> '' then
+    LoadTriggersForService(FServiceName, FServiceHandle);
 
   //Reset the popup menu
   //We'd like to put this into FormCreate, but there's no FormCreates for TFrames.

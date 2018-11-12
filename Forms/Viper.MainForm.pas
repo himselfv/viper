@@ -366,6 +366,7 @@ begin
 
   aRestartAsAdmin.Visible := not IsUserAdmin();
   pcBottom.ActivePage := tsDescription;
+  ReloadDetails; //tsDescription doesn't update itself and SetDetailsPaneFocusedService will not work
   ReloadServiceTree;
   Refresh;
 end;

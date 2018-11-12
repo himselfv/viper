@@ -108,6 +108,7 @@ type
     colParams = 3;
   protected
     FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
+    FEntryMode: TTriggerEntryMode;
     FOnFocusChanged: TTriggerEvent;
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
@@ -116,7 +117,6 @@ type
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
     procedure SetEntryMode(const Value: TTriggerEntryMode);
   public
-    FEntryMode: TTriggerEntryMode;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;

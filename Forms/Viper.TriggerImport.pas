@@ -14,7 +14,6 @@ type
     btnOk: TButton;
     btnCancel: TButton;
     TriggerList: TTriggerImportList;
-    procedure FormCreate(Sender: TObject);
   protected
     FServiceName: string;
     FTriggers: TArray<TRegTriggerEntry>;
@@ -51,12 +50,6 @@ begin
   end;
 end;
 
-procedure TTriggerImportForm.FormCreate(Sender: TObject);
-begin
-  inherited;
-  Self.TriggerList.FEntryMode := emChildEntries;
-end;
-
 resourcestring
   sMultiTriggerPrompt = 'Choose triggers to import into respective services:';
   sSingleTriggerPrompt = 'Choose triggers to import into "%s":';
@@ -81,16 +74,12 @@ end;
 //Repopulates TVirtualTreeview with triggers from FTriggers.
 procedure TTriggerImportForm.ReloadTriggerList;
 var Trigger: TRegTriggerEntry;
-  Node: PVirtualNode;
 begin
   TriggerList.Tree.BeginUpdate;
   try
     TriggerList.Clear;
-    for Trigger in FTriggers do begin
-      Node := TriggerList.Add(Trigger.ServiceName, Trigger.Index, Trigger.Trigger);
-      TriggerList.Tree.CheckType[Node] := ctCheckBox;
-      TriggerList.Tree.CheckState[Node] := csCheckedNormal;
-    end;
+    for Trigger in FTriggers do
+      TriggerList.Add(Trigger);
   finally
     TriggerList.Tree.EndUpdate;
   end;

@@ -141,12 +141,8 @@ end;
 
 procedure TServiceTriggerList.aImportTriggerExecute(Sender: TObject);
 begin
-  with OpenTriggersDialog do
-    if not Execute then
-      exit;
   //Single trigger version
-  Viper.TriggerImport.ImportTriggers(Self, Self.FServiceName, OpenTriggersDialog.FileName);
-  Self.Reload;
+  Self.TryImportTriggers(Self.FServiceName);
 end;
 
 

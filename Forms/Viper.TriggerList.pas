@@ -116,6 +116,7 @@ type
     FOnFocusChanged: TTriggerEvent;
     function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
     procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
+    procedure TryImportTriggers(const AServiceName: string = '');
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
@@ -760,14 +761,21 @@ begin
   TryExportTriggers(Self.AllTriggers);
 end;
 
-procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
+//Queries the file name and starts the trigger import process.
+//Supports both single-trigger version (pass AServiceName) and multi-trigger one (pass '')
+procedure TTriggerList.TryImportTriggers(const AServiceName: string = '');
 begin
   with OpenTriggersDialog do
     if not Execute then
       exit;
-  //Multi-trigger version
-  Viper.TriggerImport.ImportTriggers(Self, '', OpenTriggersDialog.FileName);
+  Viper.TriggerImport.ImportTriggers(Self, AServiceName, OpenTriggersDialog.FileName);
   Self.Reload;
+end;
+
+procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
+begin
+  //Multi-trigger version
+  Self.TryImportTriggers('');
 end;
 
 

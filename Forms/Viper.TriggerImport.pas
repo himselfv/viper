@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ExtCtrls, StdCtrls, VirtualTrees, CommonResources, TriggerExport,
-  Viper.TriggerList;
+  Viper.TriggerList, Viper.TriggerImportList;
 
 type
   TTriggerImportForm = class(TForm)
@@ -13,7 +13,7 @@ type
     pnlButtons: TPanel;
     btnOk: TButton;
     btnCancel: TButton;
-    TriggerList: TTriggerList;
+    TriggerList: TTriggerImportList;
     procedure FormCreate(Sender: TObject);
   protected
     FServiceName: string;

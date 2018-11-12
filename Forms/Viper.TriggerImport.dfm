@@ -49,7 +49,6 @@ object TriggerImportForm: TTriggerImportForm
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitWidth = 602
     DesignSize = (
       507
       26)
@@ -63,7 +62,6 @@ object TriggerImportForm: TTriggerImportForm
       Default = True
       ModalResult = 1
       TabOrder = 0
-      ExplicitLeft = 443
     end
     object btnCancel: TButton
       Left = 429
@@ -75,10 +73,9 @@ object TriggerImportForm: TTriggerImportForm
       Caption = 'Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 524
     end
   end
-  inline TriggerList: TTriggerList
+  inline TriggerList: TTriggerImportList
     Left = 5
     Top = 30
     Width = 507
@@ -87,37 +84,13 @@ object TriggerImportForm: TTriggerImportForm
     TabOrder = 1
     ExplicitLeft = 5
     ExplicitTop = 30
-    ExplicitWidth = 602
+    ExplicitWidth = 507
     ExplicitHeight = 273
     inherited Tree: TVirtualStringTree
       Width = 507
       Height = 273
-      Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-      PopupMenu = nil
-      TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-      ExplicitWidth = 602
+      ExplicitWidth = 507
       ExplicitHeight = 273
-      Columns = <
-        item
-          Position = 0
-          Width = 250
-          WideText = 'Trigger'
-        end
-        item
-          Position = 1
-          Width = 100
-          WideText = 'Action'
-        end
-        item
-          Position = 2
-          Width = 150
-          WideText = 'Service'
-        end
-        item
-          Position = 3
-          Width = 300
-          WideText = 'Params'
-        end>
     end
   end
 end

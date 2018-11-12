@@ -30,7 +30,8 @@ uses
   SvcCat in 'SvcCat.pas',
   TriggerExport in 'TriggerExport.pas',
   RegFile in 'RegFile.pas',
-  RegExport in 'RegExport.pas';
+  RegExport in 'RegExport.pas',
+  Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame};
 
 {$R *.res}
 

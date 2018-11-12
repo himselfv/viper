@@ -141,64 +141,13 @@ begin
   Self.Reload;
 end;
 
-resourcestring
-  sTriggerImportCaption = 'Import triggers';
-  sTriggerImportMalformed = 'WARNING: Some of the entries in the file were skipped as incompatible.';
-  sConfirmTriggerImport = 'Do you really want to add %d triggers from the file to the service %s?';
-  sNoTriggersToImport = 'No triggers found in this file.';
-
 procedure TServiceTriggerList.aImportTriggerExecute(Sender: TObject);
-var Triggers: TArray<TRegTriggerEntry>;
-  Triggers2: TArray<SERVICE_TRIGGER>;
-  Status: TTriggerImportStatus;
-  i: integer;
-  NotificationText: string;
 begin
   with OpenTriggersDialog do
     if not Execute then
       exit;
 
-  SetLength(Triggers, 0);
-  try
-    TriggerExport.ImportTriggers(OpenTriggersDialog.FileName, Triggers, Status);
-    Viper.TriggerImport.ImportTriggers(Self, Self.FServiceName, Triggers);
-    exit;
-
-    if Length(Triggers) <= 0 then begin
-      NotificationText := sNoTriggersToImport;
-    if sfMalformedFile in Status then
-      NotificationText := NotificationText + #13#13 + sTriggerImportMalformed;
-      MessageBox(Self.Handle, PChar(NotificationText), PChar(sTriggerImportCaption),
-        MB_OK + MB_ICONINFORMATION);
-      exit;
-    end;
-
-    NotificationText := Format(sConfirmTriggerImport, [Length(Triggers), Self.FServiceName]);
-    if sfMalformedFile in Status then
-      NotificationText := NotificationText + #13#13 + sTriggerImportMalformed;
-    if MessageBox(Self.Handle, PChar(NotificationText), PChar(sTriggerImportCaption),
-      MB_YESNO + MB_ICONQUESTION) <> ID_YES then
-      exit;
-
-    SetLength(Triggers2, Length(Triggers));
-    for i := 0 to Length(Triggers)-1 do
-      Triggers2[i] := Triggers[i].Trigger^;
-
-    //Add these triggers
-    //We only have a handle with read access, so reopen
-    with OpenService2(Self.FServiceName,
-      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
-      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
-    begin
-      AddServiceTriggers(SvcHandle, Triggers2, {UniqueOnly=}true);
-      TriggerUtils.TriggerListChanged(Self, Self.FServiceName);
-    end;
-
-  finally
-    for i := 0 to Length(Triggers)-1 do
-      Triggers[i].ReleaseTriggerData;
-  end;
-
+  Viper.TriggerImport.ImportTriggers(Self, Self.FServiceName, OpenTriggersDialog.FileName);
   Self.Reload;
 end;
 

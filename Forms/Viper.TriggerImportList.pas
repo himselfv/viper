@@ -16,6 +16,7 @@ type
   //Additional data associated with the nodes. Goes after the inherited node data.
   TNdTriggerImportData = record
     GrayedOut: boolean;
+    Entry: PRegTriggerEntry;
   end;
   PNdTriggerImportData = ^TNdTriggerImportData;
 
@@ -33,11 +34,11 @@ type
       var NewState: TCheckState; var Allowed: Boolean);
   protected
     FInheritedNodeDataSize: integer;
-    function GetTriggerImportData(Node: PVirtualNode): PNdTriggerImportData; inline;
   public
     constructor Create(AOwner: TComponent); override;
+    function GetTriggerImportData(Node: PVirtualNode): PNdTriggerImportData; inline;
     procedure Reload; override;
-    function Add(const ATrigger: TRegTriggerEntry; GrayedOut: boolean = false): PVirtualNode; reintroduce;
+    function Add(const ATrigger: TRegTriggerEntry; AGrayedOut: boolean = false): PVirtualNode; reintroduce;
   end;
 
 var
@@ -111,23 +112,30 @@ resourcestring
   sServiceNotFound = '%s - not found';
 
 //Adds a new imported trigger entry. Internal data is copied.
-function TTriggerImportList.Add(const ATrigger: TRegTriggerEntry; GrayedOut: boolean): PVirtualNode;
+function TTriggerImportList.Add(const ATrigger: TRegTriggerEntry; AGrayedOut: boolean): PVirtualNode;
 var ServiceName: string;
   ChildNode: PVirtualNode;
 begin
-  if not GrayedOut then
+  if not AGrayedOut then
     ServiceName := ATrigger.ServiceName
   else
     ServiceName := Format(sServiceNotFound, [ATrigger.ServiceName]);
   Result := inherited Add(ServiceName, ATrigger.Index, ATrigger.Trigger);
-  GetTriggerImportData(Result).GrayedOut := GrayedOut;
+  with GetTriggerImportData(Result)^ do begin
+    GrayedOut := AGrayedOut;
+    Entry := @ATrigger;
+  end;
   for ChildNode in Tree.ChildNodes(Result) do //multi-entry triggers may spawn child nodes
-    GetTriggerImportData(ChildNode).GrayedOut := GrayedOut;
+    with GetTriggerImportData(ChildNode)^ do begin
+      GrayedOut := AGrayedOut;
+      Entry := @ATrigger;
+    end;
   Tree.CheckType[Result] := ctCheckBox;
-  if GrayedOut then
+  if AGrayedOut then
     Tree.CheckState[Result] := csUncheckedNormal
   else
     Tree.CheckState[Result] := csCheckedNormal;
+  Tree.IsDisabled[Result] := true;
 end;
 
 

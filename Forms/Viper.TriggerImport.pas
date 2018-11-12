@@ -31,7 +31,10 @@ type
     procedure SetServiceName(const Value: string);
     procedure SetTriggers(Value: TArray<TRegTriggerEntry>);
     procedure ReloadTriggerList;
+    procedure GetFilteredTriggers_Callback(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   public
+    function GetFilteredTriggers: TArray<TRegTriggerEntry>;
     property ServiceName: string read FServiceName write SetServiceName;
     property Triggers: TArray<TRegTriggerEntry> read FTriggers write SetTriggers;
   end;
@@ -39,28 +42,91 @@ type
 var
   TriggerImportForm: TTriggerImportForm;
 
+function ImportTriggers(AOwner: TWinControl; const AServiceName: string;
+  const AFilename: string): TModalResult; overload;
 function ImportTriggers(AOwner: TComponent; const AServiceName: string;
-  const ATriggers: TArray<TRegTriggerEntry>): TModalResult;
+  const ATriggers: TArray<TRegTriggerEntry>): TModalResult; overload;
 
 
 implementation
-uses ServiceHelper;
+uses UITypes, WinSvc, ServiceHelper, TriggerUtils;
 
 {$R *.dfm}
+
+procedure ProcessTriggers(const ATriggers: TArray<TRegTriggerEntry>; const AServiceName: string); forward;
+
+resourcestring
+  sNoTriggersToImport = 'No triggers found in this file.';
+
+//Reads the triggers from the specified file and imports them
+function ImportTriggers(AOwner: TWinControl; const AServiceName: string;
+  const AFilename: string): TModalResult;
+var Triggers: TArray<TRegTriggerEntry>;
+  Status: TTriggerImportStatus;
+  i: integer;
+begin
+  SetLength(Triggers, 0);
+  try
+    TriggerExport.ImportTriggers(AFilename, Triggers, Status);
+
+    if Length(Triggers) <= 0 then begin
+      MessageBox(AOwner.Handle, PChar(sNoTriggersToImport), PChar('Import triggers'),
+        MB_OK + MB_ICONINFORMATION);
+      Result := mrCancel;
+      exit;
+    end;
+
+    Result := ImportTriggers(AOwner, AServiceName, Triggers);
+  finally
+    for i := 0 to Length(Triggers)-1 do
+      Triggers[i].ReleaseTriggerData;
+  end;
+end;
 
 function ImportTriggers(AOwner: TComponent; const AServiceName: string;
   const ATriggers: TArray<TRegTriggerEntry>): TModalResult;
 var Form: TTriggerImportForm;
+  AFilteredTriggers: TArray<TRegTriggerEntry>;
 begin
   Form := TTriggerImportForm.Create(AOwner);
   try
     Form.SetServiceName(AServiceName);
     Form.SetTriggers(ATriggers);
     Result := Form.ShowModal;
+    if not IsPositiveResult(Result) then
+      exit;
+    AFilteredTriggers := Form.GetFilteredTriggers;
   finally
     FreeAndNil(Form);
   end;
+
+  ProcessTriggers(AFilteredTriggers, AServiceName);
 end;
+
+//Adds given triggers to the local machine
+//If AServiceName is given, that service recieves all the triggers, otherwise
+//each trigger goes to its appropriate service.
+procedure ProcessTriggers(const ATriggers: TArray<TRegTriggerEntry>; const AServiceName: string);
+var i: integer;
+  AThisServiceName: string;
+begin
+  for i := 0 to Length(ATriggers)-1 do begin
+    if AServiceName <> '' then
+      AThisServiceName := AServiceName
+    else
+      AThisServiceName := ATriggers[i].ServiceName;
+
+    with OpenService2(AThisServiceName,
+      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+    begin
+      AddServiceTriggers(SvcHandle, [ATriggers[i].Trigger^], {UniqueOnly=}false);
+    end;
+  end;
+
+  TriggerUtils.TriggerListChanged(nil, AServiceName);
+end;
+
 
 resourcestring
   sMultiTriggerPrompt = 'Choose triggers to import into respective services:';
@@ -105,6 +171,24 @@ begin
   finally
     TriggerList.Tree.EndUpdate;
   end;
+end;
+
+//Returns the list of all triggers which are checked
+function TTriggerImportForm.GetFilteredTriggers: TArray<TRegTriggerEntry>;
+begin
+  SetLength(Result, 0);
+  TriggerList.Tree.IterateSubtree(nil, GetFilteredTriggers_Callback, @Result);
+end;
+
+procedure TTriggerImportForm.GetFilteredTriggers_Callback(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var List: ^TArray<TRegTriggerEntry> absolute Data;
+  NodeData: PNdTriggerImportData;
+begin
+  if Sender.CheckState[Node] <> csCheckedNormal then exit;
+  NodeData := TriggerList.GetTriggerImportData(Node);
+  SetLength(List^, Length(List^)-1);
+  List^[Length(List^)-1] := NodeData.Entry^;
 end;
 
 end.

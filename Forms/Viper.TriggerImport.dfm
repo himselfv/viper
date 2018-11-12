@@ -88,6 +88,7 @@ object TriggerImportForm: TTriggerImportForm
     inherited Tree: TVirtualStringTree
       Width = 507
       Height = 273
+      ExplicitTop = 3
       ExplicitWidth = 507
       ExplicitHeight = 273
     end

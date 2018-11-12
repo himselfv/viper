@@ -35,6 +35,7 @@ type
     Trigger: PSERVICE_TRIGGER;
     procedure ReleaseTriggerData;
   end;
+  PRegTriggerEntry = ^TRegTriggerEntry;
 
 
 // Export

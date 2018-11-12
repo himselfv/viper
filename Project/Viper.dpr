@@ -29,7 +29,8 @@ uses
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   TriggerExport in 'TriggerExport.pas',
   RegFile in 'RegFile.pas',
-  RegExport in 'RegExport.pas';
+  RegExport in 'RegExport.pas',
+  Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm};
 
 {$R *.res}
 
@@ -43,5 +44,6 @@ begin
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
   Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
   Application.CreateForm(TTriggerDataItemEditor, TriggerDataItemEditor);
+  Application.CreateForm(TTriggerImportForm, TriggerImportForm);
   Application.Run;
 end.

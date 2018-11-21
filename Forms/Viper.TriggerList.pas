@@ -29,6 +29,7 @@ type
     TriggerSubtype: TGUID;
     Action: DWORD;
     IsDisabled: boolean;
+    KeyPath: string;      //Source registry path for this trigger, if it was created from one
     function Summary: string;
   end;
   PNdTriggerData = ^TNdTriggerData;
@@ -79,7 +80,7 @@ type
     N2: TMenuItem;
     miImportTrigger: TMenuItem;
     aEnableTrigger: TAction;
-    Enable1: TMenuItem;
+    miEnableTrigger: TMenuItem;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -134,7 +135,9 @@ type
     destructor Destroy; override;
     procedure Clear;
     procedure Reload; virtual;
+    function AddInternal(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER; const AKeyPath: string): PVirtualNode;
     function Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+    function AddDisabled(const AServiceName: string; const AKeyPath: string; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
 
     function SelectedTriggers: TArray<PNdTriggerData>;
@@ -418,11 +421,10 @@ end;
 Adds a trigger to the list.
 Trigger data is copied. The original trigger data can be freed.
 Returns the virtual node added. In single-trigger-multi-node mode returns the first of such nodes.
-
 AIndex:
-  Trigger index in the parent Service's trigger list. <0 if the trigger is disabled.
+  Trigger index in the parent Service's trigger list.
 }
-function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+function TTriggerList.AddInternal(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER; const AKeyPath: string): PVirtualNode;
 var Node: PVirtualNode;
   NodeData: PNdTriggerData;
   TriggerData: TTriggerData;
@@ -481,10 +483,23 @@ begin
     NodeData.Params := TriggerData.ParamsToString('; ');
     NodeData.TriggerCopy := TriggerCopy;
     NodeData.IsDisabled := AIndex < 0;
+    NodeData.KeyPath := AKeyPath
   end;
 
   if Self.FEntryMode = emChildEntries then
     Self.Tree.Expanded[Result] := true; //auto-expand
+end;
+
+function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+begin
+  Result := Self.AddInternal(AServiceName, AIndex, ATrigger, '');
+end;
+
+//Adds an entry for a disable trigger stored in the registry by a given key path
+function TTriggerList.AddDisabled(const AServiceName: string; const AKeyPath: string;
+  const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+begin
+  Result := Self.AddInternal(AServiceName, -1, ATrigger, AKeyPath);
 end;
 
 procedure TTriggerList.Reload;
@@ -938,7 +953,7 @@ begin
 
       trig := CreateTriggerFromRegistryKey(reg);
       try
-        Self.Add(AServiceName, -1, trig); //copies the data
+        Self.AddDisabled(AServiceName, reg.CurrentPath, trig); //copies the data
       finally
         FreeMem(trig);
       end;
@@ -999,8 +1014,12 @@ begin
     reg.RootKey := HKEY_LOCAL_MACHINE;
 
     for Node in Sel do begin
-      if Node.IsDisabled then exit; //already disabled
+      if not Node.IsDisabled then continue;
       if not nl.UniqueAdd(Node.TriggerCopy) then continue;
+      if Node.KeyPath = '' then continue;
+
+      if not reg.OpenKeyReadOnly(Node.KeyPath) then
+        continue; //cannot read, don't complain
 
       trig := CreateTriggerFromRegistryKey(reg);
       try
@@ -1009,7 +1028,7 @@ begin
         FreeMem(trig);
       end;
 
-      //TODO: Delete key node
+      reg.DeleteKey('\'+reg.CurrentPath);
     end;
 
   finally

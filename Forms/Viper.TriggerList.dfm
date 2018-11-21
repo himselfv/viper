@@ -85,7 +85,7 @@ object TriggerList: TTriggerList
     object miExportTrigger: TMenuItem
       Action = aExportTrigger
     end
-    object Enable1: TMenuItem
+    object miEnableTrigger: TMenuItem
       Action = aEnableTrigger
     end
     object miDisableTrigger: TMenuItem

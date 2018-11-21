@@ -53,6 +53,11 @@ type
   end;
 
 {
+Export shortcuts
+}
+function ExportRegistryKey(ARegistry: TRegistry; const Recursive: boolean = true): TRegFile;
+
+{
 Import
 To filter the RegFile simply remove the unnecessary parts before importing.
 }
@@ -87,6 +92,22 @@ procedure TRegistryHelper.PutData(const Name: string; Buffer: Pointer; BufSize: 
 begin
   if not CheckResult(RegSetValueEx(CurrentKey, PChar(Name), 0, DataType, Buffer, BufSize)) then
     RaiseLastOsError(Self.LastError);
+end;
+
+function ExportRegistryKey(ARegistry: TRegistry; const Recursive: boolean = true): TRegFile;
+var exp: TRegistryExporter;
+begin
+  exp := nil;
+  Result := TRegFile.Create;
+  try
+    exp := TRegistryExporter.Create(Result, {OwnsRegFile=}false);
+    exp.ExportKey(ARegistry, Recursive);
+    FreeAndNil(exp);
+  except
+    FreeAndNil(Result);
+    FreeAndNil(exp);
+    raise;
+  end;
 end;
 
 //Processes all instructions contained in this TRegFile (adding and deleting keys)
@@ -148,7 +169,6 @@ begin
   data := entry.GetAsBytes();
   reg.PutData(entry.Name, data, Length(data), entry.DataType);
 end;
-
 
 
 

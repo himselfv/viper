@@ -30,6 +30,7 @@ object TriggerList: TTriggerList
     OnFocusChanged = TreeFocusChanged
     OnFreeNode = TreeFreeNode
     OnGetText = TreeGetText
+    OnPaintText = TreePaintText
     OnGetImageIndexEx = TreeGetImageIndexEx
     OnGetNodeDataSize = TreeGetNodeDataSize
     OnHeaderClick = TreeHeaderClick

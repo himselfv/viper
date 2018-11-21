@@ -88,6 +88,8 @@ type
     procedure TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
       var ImageList: TCustomImageList);
+    procedure TreePaintText(Sender: TBaseVirtualTree; const TargetCanvas: TCanvas;
+      Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
@@ -121,6 +123,7 @@ type
     procedure TryImportTriggers(const AServiceName: string = '');
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
+    procedure LoadDisabledTriggersForService(const AServiceName: string); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
     procedure SetEntryMode(const Value: TTriggerEntryMode);
   public
@@ -243,6 +246,19 @@ begin
   end;
 end;
 
+procedure TTriggerList.TreePaintText(Sender: TBaseVirtualTree;
+  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  TextType: TVSTTextType);
+var Data: PNdTriggerData;
+begin
+  Data := Sender.GetNodeData(Node);
+
+  if Data.IsDisabled then begin
+    TargetCanvas.Font.Color := clGray;
+    TargetCanvas.Font.Style := TargetCanvas.Font.Style + [fsStrikeOut];
+  end;
+end;
+
 procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
  //Selection changed
@@ -350,6 +366,9 @@ end;
 Adds a trigger to the list.
 Trigger data is copied. The original trigger data can be freed.
 Returns the virtual node added. In single-trigger-multi-node mode returns the first of such nodes.
+
+AIndex:
+  Trigger index in the parent Service's trigger list. <0 if the trigger is disabled.
 }
 function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
 var Node: PVirtualNode;
@@ -409,6 +428,7 @@ begin
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
     NodeData.TriggerCopy := TriggerCopy;
+    NodeData.IsDisabled := AIndex < 0;
   end;
 
   if Self.FEntryMode = emChildEntries then
@@ -460,6 +480,9 @@ begin
   finally
     FreeMem(triggers);
   end;
+
+  //Also load disabled triggers
+  LoadDisabledTriggersForService(AServiceName);
 end;
 
 //Same but automatically opens and closes the service handle
@@ -791,9 +814,9 @@ begin
   Result := sDisabledServicesKey+'\'+AServiceName;
 end;
 
-function GetDisabledServiceKeyFull(const AServiceName: string): string;
+function GetDisabledTriggersKey(const AServiceName: string): string;
 begin
-  Result := sHkeyLocalMachine + GetDisabledServiceKey(AServiceName);
+  Result := GetDisabledServiceKey(AServiceName) + '\TriggerInfo'
 end;
 
 //Generates a new, unused key name in DisabledServices\ServiceName\Triggers\
@@ -803,7 +826,47 @@ begin
   //Real SERVICES key stores triggers under integer indexes,
   //but DisabledServices is not meant to be export-compatible so we don't have to.
   CreateGuid(guid);
-  Result := GetDisabledServiceKey(AServiceName) + '\TriggerInfo\' + GuidToString(guid);
+  Result := GetDisabledTriggersKey(AServiceName) + '\' + GuidToString(guid);
+end;
+
+//Loads additional disabled triggers from the special registry key
+procedure TTriggerList.LoadDisabledTriggersForService(const AServiceName: string);
+var reg: TRegistry;
+  subkeys: TStringList;
+  subkey: string;
+  regf: TRegFile;
+  trig: PSERVICE_TRIGGER;
+begin
+  subkeys := nil;
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)) then
+      exit; //no disabled ones
+
+    subkeys := TStringList.Create;
+    reg.GetKeyNames(subkeys);
+    for subkey in subkeys do begin
+      if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)+'\'+subkey) then
+        continue; //cannot read, don't complain
+
+      //Export + parse as trigger in standard way
+      regf := ExportRegistryKey(reg);
+
+      //The trigger key itself is flat. Someone could have manually created subfolders but we don't care
+      if (regf = nil) or (regf.Count < 1) then
+        exit;
+      trig := ImportTrigger(regf[0]);
+      try
+        Self.Add(AServiceName, -1, trig); //copies the data
+      finally
+        FreeMem(trig);
+      end;
+    end;
+  finally
+    FreeAndNil(reg);
+    FreeAndNil(subkeys);
+  end;
 end;
 
 
@@ -819,7 +882,9 @@ begin
   if Length(Sel) <= 0 then exit;
 
   //Either disable all or enable all
-  Disable := Sel[0].IsDisabled;
+  Disable := not Sel[0].IsDisabled;
+
+  //TODO: Check Disable and handle Enabling too.
 
   reg := nil;
   //The list might contain multiple nodes for some of the triggers, keep track of them
@@ -843,6 +908,8 @@ begin
     FreeAndNil(nl);
     FreeAndNil(reg);
   end;
+
+  TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
 end;
 
 

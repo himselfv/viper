@@ -28,6 +28,7 @@ type
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
     Action: DWORD;
+    IsDisabled: boolean;
     function Summary: string;
   end;
   PNdTriggerData = ^TNdTriggerData;
@@ -105,6 +106,7 @@ type
     procedure aExportTriggerExecute(Sender: TObject);
     procedure aExportAllTriggersExecute(Sender: TObject);
     procedure aImportTriggerExecute(Sender: TObject);
+    procedure aDisableTriggerExecute(Sender: TObject);
   const
     colTrigger = 0;
     colAction = 1;
@@ -141,7 +143,7 @@ type
 
 implementation
 uses UITypes, Clipbrd, Generics.Collections, CommonResources, TriggerExport,
-  RegFile, Viper.TriggerEditor, Viper.TriggerImport;
+  RegFile, RegExport, Viper.TriggerEditor, Viper.TriggerImport, Registry;
 
 {$R *.dfm}
 
@@ -776,6 +778,71 @@ procedure TTriggerList.aImportTriggerExecute(Sender: TObject);
 begin
   //Multi-trigger version
   Self.TryImportTriggers('');
+end;
+
+
+{ Disable / enable triggers }
+
+const
+  sDisabledServicesKey = '\Software\Viper\DisabledServices'; //in HKLM
+
+function GetDisabledServiceKey(const AServiceName: string): string;
+begin
+  Result := sDisabledServicesKey+'\'+AServiceName;
+end;
+
+function GetDisabledServiceKeyFull(const AServiceName: string): string;
+begin
+  Result := sHkeyLocalMachine + GetDisabledServiceKey(AServiceName);
+end;
+
+//Generates a new, unused key name in DisabledServices\ServiceName\Triggers\
+function GetNewDisabledTriggerKey(const AServiceName: string): string;
+var guid: TGuid;
+begin
+  //Real SERVICES key stores triggers under integer indexes,
+  //but DisabledServices is not meant to be export-compatible so we don't have to.
+  CreateGuid(guid);
+  Result := GetDisabledServiceKey(AServiceName) + '\TriggerInfo\' + GuidToString(guid);
+end;
+
+
+procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
+var Sel: TArray<PNdTriggerData>;
+  Disable: boolean;
+  Node: PNdTriggerData;
+  nl: TList<PSERVICE_TRIGGER>;
+  key: TRegFileKey;
+  reg: TRegistry;
+begin
+  Sel := SelectedTriggers;
+  if Length(Sel) <= 0 then exit;
+
+  //Either disable all or enable all
+  Disable := Sel[0].IsDisabled;
+
+  reg := nil;
+  //The list might contain multiple nodes for some of the triggers, keep track of them
+  nl := TList<PSERVICE_TRIGGER>.Create;
+  try
+    reg := TRegistry.Create;
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+
+    for Node in Sel do begin
+      if Node.TriggerCopy = nil then continue; //what
+      if nl.Contains(Node.TriggerCopy) then continue;
+      nl.Add(Node.TriggerCopy);
+
+      key := ExportTrigger(
+          Node.TriggerCopy^,
+          sHkeyLocalMachine + GetNewDisabledTriggerKey(Node.ServiceName)
+        );
+      WriteToRegistry(reg, key);
+    end;
+  finally
+    FreeAndNil(nl);
+    FreeAndNil(reg);
+  end;
 end;
 
 

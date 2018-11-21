@@ -123,6 +123,7 @@ object TriggerList: TTriggerList
     object aDisableTrigger: TAction
       Category = 'Modify'
       Caption = 'Disable'
+      OnExecute = aDisableTriggerExecute
     end
     object aExportTrigger: TAction
       Category = 'Modify'

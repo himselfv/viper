@@ -23,7 +23,7 @@ We support:
 }
 
 interface
-uses SysUtils, Classes, Windows, Generics.Collections;
+uses SysUtils, Classes, Windows, Generics.Collections, Registry;
 
 const //Additional data types
   REG_QWORD  = 11;  //Missing in Winapi.Windows
@@ -53,6 +53,8 @@ type
     procedure SetOtherValue(const pb: PByte; cb: cardinal); inline;
     property AsDword: dword write SetDwordValue;
     property AsString: string write SetStringValue;
+    //Read any data as TBytes
+    function GetAsBytes: TBytes;
     //Export
     function ExportToString: string;
   end;
@@ -90,7 +92,8 @@ type
 //Convert binary data to hex string and back
 function RegBinToHex(pb: PByte; cb: cardinal): AnsiString;
 procedure RegHexToBin(const hex: AnsiString; pb: PByte; cb: cardinal); overload;
-function RegHexToBin(const hex: AnsiString; cb: PCardinal = nil): PByte; overload;
+function RegHexToBin(const hex: AnsiString; cb: PCardinal): PByte; overload;
+function RegHexToBin(const hex: AnsiString): TBytes; overload;
 
 //Escape - do not apply to values manually
 function RegEscapeString(const val: string): string;
@@ -98,6 +101,7 @@ function RegUnescapeString(const val: string): string;
 
 
 // Root keys
+// Need to be uppercase
 
 const
   RootKeyNames: array[HKEY_CLASSES_ROOT..HKEY_DYN_DATA] of string = (
@@ -115,6 +119,8 @@ const
 
 function RootKeyToStr(const AKey: HKEY): string;
 function RootKeyToShortStr(const AKey: HKEY): string;
+function ExtractRootKey(var KeyPath: string): HKEY;
+procedure GetAbsoluteKeyPath(const KeyPath: string; out AbsolutePath: string; out RootKey: HKEY);
 
 
 implementation
@@ -176,6 +182,67 @@ begin
     Result := 'HKEY('+IntToStr(AKey)+')';
 end;
 
+//Extracts one of HKEY_* constants from the beginning of the string and returns the constant
+//The string is modified to start with first \ after the HKEY_*
+//Returns 0 if the string does not start with any of these constants
+function ExtractRootKey(var KeyPath: string): HKEY;
+var KeyPathUpcase: string;
+  key: integer;
+begin
+  KeyPathUpcase := KeyPath.ToUpper;
+
+  for key := Low(RootKeyNames) to High(RootKeyNames) do
+    if KeyPathUpcase.StartsWith(RootKeyNames[key]) then begin
+      Delete(KeyPath, 1, Length(RootKeynames[key]));
+      Result := key;
+      exit;
+    end;
+
+  for key := Low(RootShortKeyNames) to High(RootShortKeyNames) do
+    if KeyPathUpcase.StartsWith(RootShortKeyNames[key]) then begin
+      Delete(KeyPath, 1, Length(RootShortKeyNames[key]));
+      Result := key;
+      exit;
+    end;
+
+  Result := 0;
+end;
+
+//Extracts the HKEY_* from the beginning of the string, if present, or otherwise
+//transforms the path into a pair of root HKEY + absolute path starting with \
+procedure GetAbsoluteKeyPath(const KeyPath: string; out AbsolutePath: string; out RootKey: HKEY);
+begin
+  AbsolutePath := KeyPath;
+  RootKey := ExtractRootKey(AbsolutePath);
+  if RootKey <> 0 then exit; //successs
+
+  //By default we have no clue and assume the HKEY_ part is missing
+  RootKey := HKEY_CURRENT_USER;
+  if (AbsolutePath = '') or (AbsolutePath[1] <> '\') then
+    AbsolutePath := '\' + AbsolutePath; //we promised to return something starting with \
+end;
+
+
+function TRegFileEntry.GetAsBytes: TBytes;
+begin
+  case Self.DataType of
+    REG_DELETE: SetLength(Result, 0);
+    REG_SZ: begin
+      SetLength(Result, SizeOf(WideChar)*(Length(Self.Data)+1));
+      if Length(Self.Data) > 0 then
+        Move(Self.Data[1], Result[0], SizeOf(WideChar)*Length(Self.Data));
+      Result[Length(Result)-1] := 00;
+      Result[Length(Result)-0] := 00;
+    end;
+    REG_DWORD: begin
+      SetLength(Result, 4);
+      PInteger(@Result[0])^ := StrToInt(Self.Data);
+    end
+  else
+   //All the other types are stored as hex!
+    Result := RegHexToBin(AnsiString(Self.Data));
+  end;
+end;
 
 //Sets TRegFileEntry value in dword format
 procedure TRegFileEntry.SetDwordValue(const val: dword);
@@ -312,17 +379,30 @@ end;
 
 //Allocate the required amount of memory with GetMem and decode the data
 function RegHexToBin(const hex: AnsiString; cb: PCardinal): PByte;
-var tcb: cardinal;
+var tmp: AnsiString;
+  tcb: cardinal;
 begin
+  tmp := AnsiReplaceStr(hex, ',', '');
+  tmp := AnsiReplaceStr(tmp, ' ', '');
   try
-    tcb := Length(hex) div 3;
+    tcb := Length(tmp) div 2;
     GetMem(Result, tcb);
-    RegHexToBin(hex, Result, tcb);
+    RegHexToBin(tmp, Result, tcb);
     if cb <> nil then
       cb^ := tcb;
   except
     FreeMem(Result);
   end;
+end;
+
+function RegHexToBin(const hex: AnsiString): TBytes;
+var tmp: AnsiString;
+begin
+  tmp := AnsiReplaceStr(hex, ',', '');
+  tmp := AnsiReplaceStr(tmp, ' ', '');
+  SetLength(Result, Length(tmp) div 2);
+  if Length(Result) > 0 then
+    RegHexToBin(tmp, @Result[0], Length(Result));
 end;
 
 function RegEscapeString(const val: string): string;

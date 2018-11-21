@@ -1,6 +1,7 @@
 unit RegExport;
 {
 Exports a given registry key and all of its subkeys to the .reg file format.
+Imports a given .reg file / its keys.
 }
 
 interface
@@ -51,6 +52,16 @@ type
     property RegFile: TRegFile read FRegFile;
   end;
 
+{
+Import
+To filter the RegFile simply remove the unnecessary parts before importing.
+}
+procedure WriteToRegistry(const file_: TRegFile); overload;
+procedure WriteToRegistry(reg: TRegistry; const file_: TRegFile); overload;
+procedure WriteToRegistry(reg: TRegistry; const key: TRegFileKey); overload;
+procedure WriteToRegistry(reg: TRegistry; const entry: TRegFileEntry); overload;
+
+
 
 implementation
 uses Classes;
@@ -77,6 +88,67 @@ begin
   if not CheckResult(RegSetValueEx(CurrentKey, PChar(Name), 0, DataType, Buffer, BufSize)) then
     RaiseLastOsError(Self.LastError);
 end;
+
+//Processes all instructions contained in this TRegFile (adding and deleting keys)
+//and applies them to local registry
+procedure WriteToRegistry(const file_: TRegFile);
+var reg: TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    WriteToRegistry(reg, file_);
+  finally
+    FreeAndNil(reg);
+  end;
+end;
+
+//Processes all instructions contained in this TRegFile (adding and deleting keys)
+//and applies them to registry
+//The registry object needs not to be opened on any particular key
+procedure WriteToRegistry(reg: TRegistry; const file_: TRegFile);
+var key: TRegFileKey;
+begin
+  for key in file_ do
+    WriteToRegistry(reg, key);
+end;
+
+//Processes the instructions contained in this RegFileKey (adding and deleting keys)
+//and applies them to registry
+//The registry object needs not to be opened on any particular key
+procedure WriteToRegistry(reg: TRegistry; const key: TRegFileKey);
+var KeyPath: string;
+  Entry: TRegFileEntry;
+  RootKey: HKEY;
+begin
+  GetAbsoluteKeyPath(key.Name, KeyPath, RootKey);
+  reg.RootKey := RootKey;
+  if key.Delete then begin
+    reg.DeleteKey(KeyPath);
+    exit;
+  end;
+
+  if not reg.OpenKey(KeyPath, true) then
+    RaiseLastOsError(reg.LastError);
+
+  for Entry in key.Entries do
+    WriteToRegistry(reg, Entry);
+end;
+
+//Processes the instructions contained in this RegFileKey (adding and deleting keys)
+//and applies them to registry
+//The registry object must be opened on the appropriate key
+procedure WriteToRegistry(reg: TRegistry; const entry: TRegFileEntry);
+var data: TBytes;
+begin
+  if entry.DataType = REG_DELETE then begin
+    reg.DeleteValue(entry.Name);
+    exit;
+  end;
+
+  data := entry.GetAsBytes();
+  reg.PutData(entry.Name, data, Length(data), entry.DataType);
+end;
+
 
 
 

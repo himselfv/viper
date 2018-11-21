@@ -924,7 +924,7 @@ end;
 
 function GetServiceKeyFull(const AServiceName: string): string;
 begin
-  Result := sHkeyLocalMachine + GetServiceKey(AServiceName);
+  Result := sHkeyLocalMachine+GetServiceKey(AServiceName);
 end;
 
 function OpenServiceKey(const AServiceName: string): TRegistry;

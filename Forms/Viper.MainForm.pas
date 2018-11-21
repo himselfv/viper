@@ -306,6 +306,10 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
+  //Clear everyone who's using FServices
+  MainServiceList.Clear;
+  DependencySvcList.Clear;
+  DependentsSvcList.Clear;
   FreeTriggerBrowser;
   FreeAndNil(FServices);
   FreeAndNil(FServiceCat);

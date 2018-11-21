@@ -78,6 +78,8 @@ type
     aImportTrigger: TAction;
     N2: TMenuItem;
     miImportTrigger: TMenuItem;
+    aEnableTrigger: TAction;
+    Enable1: TMenuItem;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -109,6 +111,7 @@ type
     procedure aExportAllTriggersExecute(Sender: TObject);
     procedure aImportTriggerExecute(Sender: TObject);
     procedure aDisableTriggerExecute(Sender: TObject);
+    procedure aEnableTriggerExecute(Sender: TObject);
   const
     colTrigger = 0;
     colAction = 1;
@@ -133,6 +136,7 @@ type
     procedure Reload; virtual;
     function Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
+
     function SelectedTriggers: TArray<PNdTriggerData>;
     function AllTriggers: TArray<PNdTriggerData>;
     function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
@@ -161,6 +165,37 @@ begin
     Result := Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
   else
     Result := Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
+end;
+
+
+//We often need to do something only once for each PTRIGGER_DATA.
+//This structure makes it easier to keep track
+type
+  TTriggerSet = TArray<PSERVICE_TRIGGER>;
+  TTriggerSetHelper = record helper for TTriggerSet
+    function Contains(ATrigger: PSERVICE_TRIGGER): boolean;
+    function UniqueAdd(ATrigger: PSERVICE_TRIGGER): boolean;
+  end;
+
+function TTriggerSetHelper.Contains(ATrigger: PSERVICE_TRIGGER): boolean;
+var i: integer;
+begin
+  Result := false;
+  for i := Low(Self) to High(Self) do
+    if Self[i] = ATrigger then begin
+      Result := true;
+      break;
+    end;
+end;
+
+//True if uniquely added to the list, False if already present
+function TTriggerSetHelper.UniqueAdd(ATrigger: PSERVICE_TRIGGER): boolean;
+begin
+  Result := not Contains(ATrigger);
+  if Result then begin
+    SetLength(Self, Length(Self)+1);
+    Self[Length(Self)-1] := ATrigger;
+  end;
 end;
 
 
@@ -259,7 +294,21 @@ begin
   end;
 end;
 
+//Checks for disabled/enabled triggers in the list
+//ADisabled: value to check for.
+function HaveDisabledTriggers(const sel: TArray<PNdTriggerData>; const ADisabled: boolean): boolean;
+var i: integer;
+begin
+  Result := false;
+  for i := 0 to Length(sel)-1 do
+    if sel[i].IsDisabled = ADisabled then begin
+      Result := true;
+      break;
+    end;
+end;
+
 procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+var sel: TArray<PNdTriggerData>;
 begin
  //Selection changed
   aCopySummary.Visible := Tree.SelectedCount > 0;
@@ -269,11 +318,14 @@ begin
   miCopy.Visible := aCopySummary.Visible or aCopyTriggerText.Visible
     or aCopySourceData.Visible or aCopyParams.Visible;
   aEditTrigger.Visible := Tree.SelectedCount = 1;
-  aDisableTrigger.Visible := Tree.SelectedCount > 0;
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
   aDeleteTrigger.Visible := Tree.SelectedCount > 0;
   aImportTrigger.Visible := true;
+
+  sel := SelectedTriggers();
+  aDisableTrigger.Visible := HaveDisabledTriggers(sel, false);
+  aEnableTrigger.Visible := HaveDisabledTriggers(sel, true);
 end;
 
 procedure TTriggerList.TreeFocusChanged(Sender: TBaseVirtualTree;
@@ -740,7 +792,7 @@ end;
 
 //Exports triggers for all given nodes
 procedure TTriggerList.TryExportTriggers(const Sel: TArray<PNdTriggerData>);
-var nl: TList<PSERVICE_TRIGGER>;
+var nl: TTriggerSet;
   sl: TStringList;
   Node: PNdTriggerData;
 begin
@@ -750,15 +802,10 @@ begin
     if not Execute then
       exit;
 
-  sl := nil;
-  //The list might contain multiple nodes for some of the triggers, keep track of them
-  nl := TList<PSERVICE_TRIGGER>.Create;
+  sl := TStringList.Create;
   try
-    sl := TStringList.Create;
     for Node in Sel do begin
-      if Node.TriggerCopy = nil then continue; //what
-      if nl.Contains(Node.TriggerCopy) then continue;
-      nl.Add(Node.TriggerCopy);
+      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
 
       //All triggers are exported under their full registry path + their real index
       ExportTrigger(
@@ -770,7 +817,6 @@ begin
     sl.SaveToFile(SaveTriggersDialog.FileName);
   finally
     FreeAndNil(sl);
-    FreeAndNil(nl);
   end;
 end;
 
@@ -872,45 +918,59 @@ end;
 
 procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerData>;
-  Disable: boolean;
   Node: PNdTriggerData;
-  nl: TList<PSERVICE_TRIGGER>;
+  nl: TTriggerSet;
   key: TRegFileKey;
   reg: TRegistry;
 begin
   Sel := SelectedTriggers;
   if Length(Sel) <= 0 then exit;
 
-  //Either disable all or enable all
-  Disable := not Sel[0].IsDisabled;
-
-  //TODO: Check Disable and handle Enabling too.
-
   reg := nil;
-  //The list might contain multiple nodes for some of the triggers, keep track of them
-  nl := TList<PSERVICE_TRIGGER>.Create;
   try
     reg := TRegistry.Create;
     reg.RootKey := HKEY_LOCAL_MACHINE;
 
     for Node in Sel do begin
-      if Node.TriggerCopy = nil then continue; //what
-      if nl.Contains(Node.TriggerCopy) then continue;
-      nl.Add(Node.TriggerCopy);
+      if Node.IsDisabled then continue; //already disabled
+      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
 
       key := ExportTrigger(
           Node.TriggerCopy^,
           sHkeyLocalMachine + GetNewDisabledTriggerKey(Node.ServiceName)
         );
       WriteToRegistry(reg, key);
+
+      //TODO: Delete the trigger from the service
+      //TODO: Maybe aggregate changes and edit each service only once?
+
     end;
   finally
-    FreeAndNil(nl);
     FreeAndNil(reg);
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
 end;
 
+procedure TTriggerList.aEnableTriggerExecute(Sender: TObject);
+var Sel: TArray<PNdTriggerData>;
+  Node: PNdTriggerData;
+  nl: TTriggerSet;
+begin
+  Sel := SelectedTriggers;
+  if Length(Sel) <= 0 then exit;
+
+  for Node in Sel do begin
+    if Node.IsDisabled then exit; //already disabled
+    if not nl.UniqueAdd(Node.TriggerCopy) then continue;
+
+    //TODO: Export key node
+    //TODO: Parse and import as trigger
+    //TODO: Delete key node
+
+  end;
+
+  TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
+end;
 
 end.

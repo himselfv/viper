@@ -246,7 +246,7 @@ type
     procedure InitTriggerBrowser;
     procedure FreeTriggerBrowser;
     function TriggerBrowserGetFocusedService: TExtServiceEntry;
-    procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
+    procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerFacet);
     procedure ShowServiceBrowser;
     procedure ShowTriggerBrowser;
 
@@ -607,7 +607,7 @@ begin
 end;
 
 procedure TMainForm.FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var triggerData: PNdTriggerData;
+var triggerData: PNdTriggerFacet;
   svc: TExtServiceEntry;
   isService: boolean;
   isVisible: boolean;
@@ -615,7 +615,7 @@ var triggerData: PNdTriggerData;
 begin
   triggerData := Sender.GetNodeData(Node);
 
-  svc := TExtServiceEntry(Self.FServices.Find(triggerData.ServiceName));
+  svc := TExtServiceEntry(Self.FServices.Find(triggerData.Trigger.ServiceName));
   if svc = nil then begin
     //Maybe someone created a service while we weren't reloading? Show for now.
     Sender.IsVisible[Node] := true;
@@ -1217,23 +1217,23 @@ end;
 //Returns Nil if a matching service cannot be found which is a valid corner
 //case so handle gracefully.
 function TMainForm.TriggerBrowserGetFocusedService: TExtServiceEntry;
-var TriggerData: PNdTriggerData;
+var TriggerData: PNdTriggerFacet;
 begin
   if FTriggerBrowser = nil then begin
     Result := nil;
     exit;
   end;
-  TriggerData := FTriggerBrowser.FocusedTrigger;
+  TriggerData := FTriggerBrowser.FocusedFacet;
   if TriggerData = nil then
     Result := nil
   else
     //There can be some corner cases where the trigger has already been detected
     //by the TriggerBrowser but the matching new services is not yet in our local list.
     //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
-    Result := TExtServiceEntry(FServices.Find(TriggerData.ServiceName))
+    Result := TExtServiceEntry(FServices.Find(TriggerData.Trigger.ServiceName))
 end;
 
-procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerData);
+procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerFacet);
 begin
   if (FTriggerBrowser = nil) or not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
   //Show details for this service in details pane.

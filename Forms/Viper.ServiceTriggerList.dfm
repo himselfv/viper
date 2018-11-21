@@ -12,12 +12,12 @@ inherited ServiceTriggerList: TServiceTriggerList
     end
     inherited miEditTrigger: TMenuItem [4]
     end
-    inherited miExportTrigger: TMenuItem [5]
+    inherited miEnableTrigger: TMenuItem [5]
     end
-    object miExportAllTriggers: TMenuItem [6]
+    inherited miExportTrigger: TMenuItem [6]
+    end
+    object miExportAllTriggers: TMenuItem [7]
       Action = aExportAllTriggers
-    end
-    inherited miEnableTrigger: TMenuItem [7]
     end
     inherited miDisableTrigger: TMenuItem [8]
     end

@@ -11,30 +11,54 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
-  TriggerUtils;
+  Generics.Collections, TriggerUtils;
 
 type
-  TNdTriggerData = record
-    ServiceName: string;   //The service which stores this trigger
-    TriggerIndex: integer; //The index of this trigger in the service's trigger list. 0-based
-                           //WARNING: Will change if we delete/add triggers.
-    //Our own trigger copy, stored in the main form.
+  {
+  Our own copy of PSERVICE_TRIGGER + any additional Trigger-wide properties.
+  Each copy must have Data assigned.
+  }
+  TNdTrigger = class
+  protected
+    FData: PSERVICE_TRIGGER;
+    FOwnsData: boolean;
+  public
+    ServiceName: string;      //The service which stores this trigger
+    Index: integer;           //The index of this trigger in the service's trigger list. 0-based
+                              //WARNING: Will change if we delete/add triggers.
+    RegistryPath: string;     //Registry source for this trigger, if created from one
+    IsDisabled: boolean;      //True if the trigger is disabled
+    constructor Create(AData: PSERVICE_TRIGGER; AOwnsData: boolean = true);
+    destructor Destroy; override;
+    property Data: PSERVICE_TRIGGER read FData;
+  end;
+
+  TNdTriggerList = class(TObjectList<TNdTrigger>)
+  public
+    constructor Create;
+  end;
+
+  {
+  Triggers are split into trigger facets, e.g. multiple ports in the same trigger.
+  They are listed separately but you can only edit or delete them together.
+  }
+  TNdTriggerFacet = record
+    //Parent trigger for this Facet. Required.
     //List entries which spawn from the same trigger will have the same pointer.
-    TriggerCopy: PSERVICE_TRIGGER;
-    //Cached details of this particular entry
+    Trigger: TNdTrigger;
+    //Cached details of this particular facet
     Description: string;
     Source: TTriggerSource;
     Params: string;
     TriggerType: DWORD;
     TriggerSubtype: TGUID;
     Action: DWORD;
-    IsDisabled: boolean;
-    KeyPath: string;      //Source registry path for this trigger, if it was created from one
     function Summary: string;
   end;
-  PNdTriggerData = ^TNdTriggerData;
+  PNdTriggerFacet = ^TNdTriggerFacet;
 
-  TTriggerEvent = procedure(Sender: TObject; const TriggerData: PNdTriggerData) of object;
+  TTriggerEvent = procedure(Sender: TObject; const TriggerData: PNdTriggerFacet) of object;
+
 
   {
   Enables or disables splitting some triggers into multiple trigger entries for clarity,
@@ -119,11 +143,11 @@ type
     colService = 2;
     colParams = 3;
   protected
-    FOwnTriggerCopies: TArray<PSERVICE_TRIGGER>;
+    FTriggers: TNdTriggerList;
     FEntryMode: TTriggerEntryMode;
     FOnFocusChanged: TTriggerEvent;
-    function NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
-    procedure TryExportTriggers(const Sel: TArray<PNdTriggerData>);
+    function NodesToTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<TNdTrigger>;
+    procedure TryExportTriggers(const Sel: TArray<TNdTrigger>);
     procedure TryImportTriggers(const AServiceName: string = '');
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
@@ -135,16 +159,17 @@ type
     destructor Destroy; override;
     procedure Clear;
     procedure Reload; virtual;
-    function AddInternal(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER; const AKeyPath: string): PVirtualNode;
-    function Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
-    function AddDisabled(const AServiceName: string; const AKeyPath: string; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+    function Add(const ATrigger: TNdTrigger): PVirtualNode;
+    function AddFromScm(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+    function AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
 
-    function SelectedTriggers: TArray<PNdTriggerData>;
-    function AllTriggers: TArray<PNdTriggerData>;
-    function SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
-    function AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
-    function FocusedTrigger: PNdTriggerData;
+    function FocusedFacet: PNdTriggerFacet;
+    function SelectedFacets: TArray<PNdTriggerFacet>;
+    function AllFacets: TArray<PNdTriggerFacet>;
+    function SelectedTriggers: TArray<TNdTrigger>;
+    function AllTriggers: TArray<TNdTrigger>;
+
     property EntryMode: TTriggerEntryMode read FEntryMode write SetEntryMode;
     property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
 
@@ -152,59 +177,59 @@ type
 
 
 implementation
-uses UITypes, Clipbrd, Generics.Collections, CommonResources, TriggerExport,
+uses UITypes, Clipbrd, CommonResources, TriggerExport,
   RegFile, RegExport, Viper.TriggerEditor, Viper.TriggerImport, Registry;
 
 {$R *.dfm}
 
+{ Triggers }
+
+constructor TNdTrigger.Create(AData: PSERVICE_TRIGGER; AOwnsData: boolean = true);
+begin
+  inherited Create;
+  Self.FData := AData;
+  Self.FOwnsData := AOwnsData;
+end;
+
+destructor TNdTrigger.Destroy;
+begin
+  if FOwnsData and (FData <> nil) then begin
+    FreeMem(FData);
+    FData := nil;
+  end;
+  inherited;
+end;
+
+constructor TNdTriggerList.Create;
+begin
+  //Strictly owns-objects=true, the TNdTriggers themselves are wrappers
+  //and can choose if they need to destroy the underlying data.
+  inherited Create({OwnsObjects=}true);
+end;
+
+
+{ Trigger facets }
+
 const
-  sTriggerSummary = '%s %s on %s';
-  sTriggerSummaryParams = '%s %s on %s (%s)';
+  sTriggerFacetSummary = '%s %s on %s';
+  sTriggerFacetSummaryParams = '%s %s on %s (%s)';
 
 //Contains all important parts of the trigger, used to compactly refer to it like in confirmation dialogs
-function TNdTriggerData.Summary: string;
+function TNdTriggerFacet.Summary: string;
 begin
   if Self.Params = '' then
-    Result := Format(sTriggerSummary, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description])
+    Result := Format(sTriggerFacetSummary, [TriggerActionToString(Self.Action), Self.Trigger.ServiceName, Self.Description])
   else
-    Result := Format(sTriggerSummaryParams, [TriggerActionToString(Self.Action), Self.ServiceName, Self.Description, Self.Params]);
+    Result := Format(sTriggerFacetSummaryParams, [TriggerActionToString(Self.Action), Self.Trigger.ServiceName, Self.Description, Self.Params]);
 end;
 
 
-//We often need to do something only once for each PTRIGGER_DATA.
-//This structure makes it easier to keep track
-type
-  TTriggerSet = TArray<PSERVICE_TRIGGER>;
-  TTriggerSetHelper = record helper for TTriggerSet
-    function Contains(ATrigger: PSERVICE_TRIGGER): boolean;
-    function UniqueAdd(ATrigger: PSERVICE_TRIGGER): boolean;
-  end;
-
-function TTriggerSetHelper.Contains(ATrigger: PSERVICE_TRIGGER): boolean;
-var i: integer;
-begin
-  Result := false;
-  for i := Low(Self) to High(Self) do
-    if Self[i] = ATrigger then begin
-      Result := true;
-      break;
-    end;
-end;
-
-//True if uniquely added to the list, False if already present
-function TTriggerSetHelper.UniqueAdd(ATrigger: PSERVICE_TRIGGER): boolean;
-begin
-  Result := not Contains(ATrigger);
-  if Result then begin
-    SetLength(Self, Length(Self)+1);
-    Self[Length(Self)-1] := ATrigger;
-  end;
-end;
-
+{ The form }
 
 constructor TTriggerList.Create(AOwner: TComponent);
 begin
   inherited;
+  FTriggers := TNdTriggerList.Create;
   OnTriggerListChanged.Add(Self.HandleTriggerListChanged);
   FEntryMode := emMultiEntries; //by default
 end;
@@ -213,24 +238,25 @@ destructor TTriggerList.Destroy;
 begin
   if OnTriggerListChanged <> nil then
     OnTriggerListChanged.Remove(Self.HandleTriggerListChanged);
+  FreeAndNil(FTriggers);
   inherited;
 end;
 
 procedure TTriggerList.TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
 begin
-  NodeDataSize := SizeOf(TNdTriggerData);
+  NodeDataSize := SizeOf(TNdTriggerFacet);
 end;
 
 procedure TTriggerList.TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
   var InitialStates: TVirtualNodeInitStates);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   Data := Sender.GetNodeData(Node);
   Initialize(Data^);
 end;
 
 procedure TTriggerList.TreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   Data := Sender.GetNodeData(Node);
   Finalize(Data^);
@@ -238,7 +264,7 @@ end;
 
 procedure TTriggerList.TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   if TextType <> ttNormal then exit;
 
@@ -251,7 +277,7 @@ begin
     colAction:
       CellText := TriggerActionToString(Data.Action);
     colService:
-      CellText := Data.ServiceName;
+      CellText := Data.Trigger.ServiceName;
     colParams:
       CellText := Data.Params;
   end;
@@ -260,7 +286,7 @@ end;
 procedure TTriggerList.TreeGetImageIndexEx(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer;
   var ImageList: TCustomImageList);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   if not (Kind in [ikNormal, ikSelected]) then exit;
 
@@ -287,11 +313,11 @@ end;
 procedure TTriggerList.TreePaintText(Sender: TBaseVirtualTree;
   const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   TextType: TVSTTextType);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   Data := Sender.GetNodeData(Node);
 
-  if Data.IsDisabled then begin
+  if Data.Trigger.IsDisabled then begin
     TargetCanvas.Font.Color := clGray;
     TargetCanvas.Font.Style := TargetCanvas.Font.Style + [fsStrikeOut];
   end;
@@ -299,41 +325,46 @@ end;
 
 //Checks for disabled/enabled triggers in the list
 //ADisabled: value to check for.
-function HaveDisabledTriggers(const sel: TArray<PNdTriggerData>; const ADisabled: boolean): boolean;
+function HaveDisabledTriggers(const sel: TArray<PNdTriggerFacet>; const ADisabled: boolean): boolean;
 var i: integer;
 begin
   Result := false;
   for i := 0 to Length(sel)-1 do
-    if sel[i].IsDisabled = ADisabled then begin
+    if sel[i].Trigger.IsDisabled = ADisabled then begin
       Result := true;
       break;
     end;
 end;
 
 procedure TTriggerList.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-var sel: TArray<PNdTriggerData>;
+var sel: TArray<PNdTriggerFacet>;
+  HaveSCM, HaveDisabled: boolean;
 begin
  //Selection changed
+  sel := SelectedFacets();
+  HaveSCM := HaveDisabledTriggers(sel, false);
+  HaveDisabled := HaveDisabledTriggers(sel, true);
+
   aCopySummary.Visible := Tree.SelectedCount > 0;
   aCopyTriggerText.Visible := Tree.SelectedCount > 0;
   aCopySourceData.Visible := Tree.SelectedCount > 0;
   aCopyParams.Visible := Tree.SelectedCount > 0;
   miCopy.Visible := aCopySummary.Visible or aCopyTriggerText.Visible
     or aCopySourceData.Visible or aCopyParams.Visible;
-  aEditTrigger.Visible := Tree.SelectedCount = 1;
+
+  aEditTrigger.Visible := (Tree.SelectedCount = 1) and HaveSCM; //"Edit" only works on live triggers
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
-  aDeleteTrigger.Visible := Tree.SelectedCount > 0;
+  aDeleteTrigger.Visible := (Tree.SelectedCount > 0) and HaveSCM; //"Delete" only works on live triggers
   aImportTrigger.Visible := true;
 
-  sel := SelectedTriggers();
-  aDisableTrigger.Visible := HaveDisabledTriggers(sel, false);
-  aEnableTrigger.Visible := HaveDisabledTriggers(sel, true);
+  aDisableTrigger.Visible := HaveSCM;
+  aEnableTrigger.Visible := HaveDisabled;
 end;
 
 procedure TTriggerList.TreeFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
 begin
   if Node = nil then
     Data := nil
@@ -358,7 +389,7 @@ end;
 
 procedure TTriggerList.TreeCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-var Data1, Data2: PNdTriggerData;
+var Data1, Data2: PNdTriggerFacet;
 begin
   Data1 := Sender.GetNodeData(Node1);
   Data2 := Sender.GetNodeData(Node2);
@@ -383,7 +414,7 @@ begin
     colAction:
       Result := Data1.Action - Data2.Action;
     colService:
-      Result := CompareText(Data1.ServiceName, Data2.ServiceName);
+      Result := CompareText(Data1.Trigger.ServiceName, Data2.Trigger.ServiceName);
     colParams:
       Result := CompareText(Data1.Params, Data2.Params);
   end;
@@ -406,43 +437,33 @@ end;
 
 
 procedure TTriggerList.Clear;
-var i: integer;
 begin
   Tree.Clear;
-  for i := 0 to Length(FOwnTriggerCopies)-1 do
-    FreeMem(FOwnTriggerCopies[i]);
-  SetLength(FOwnTriggerCopies, 0);
+  FTriggers.Clear;
   //Reset the popup menu
   //We'd like to put this into FormCreate, but there's no FormCreates for TFrames.
   TreeChange(Tree, nil);
 end;
 
 {
-Adds a trigger to the list.
-Trigger data is copied. The original trigger data can be freed.
-Returns the virtual node added. In single-trigger-multi-node mode returns the first of such nodes.
-AIndex:
-  Trigger index in the parent Service's trigger list.
+Adds all trigger facet nodes for the given TNdTrigger.
+This is the lowest level Add(). TNdTrigger must be kept alive until Clear().
+Returns the virtual node added. In multi-facet mode returns the first of such nodes.
 }
-function TTriggerList.AddInternal(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER; const AKeyPath: string): PVirtualNode;
+function TTriggerList.Add(const ATrigger: TNdTrigger): PVirtualNode;
 var Node: PVirtualNode;
-  NodeData: PNdTriggerData;
+  NodeData: PNdTriggerFacet;
   TriggerData: TTriggerData;
   Sources: TArray<TTriggerSource>;
   Source, NewSource: TTriggerSource;
-  TriggerCopy: PSERVICE_TRIGGER;
 begin
-  TriggerData := ParseTrigger(ATrigger);
+  TriggerData := ParseTrigger(ATrigger.Data);
   Sources := TriggerData.Sources;
   if Length(Sources) <= 0 then begin
     SetLength(Sources, 1);
     Sources[0].DisplayText := '';
     Sources[0].Data := '';
   end;
-
-  TriggerCopy := CopyTrigger(ATrigger^);
-  SetLength(FOwnTriggerCopies, Length(FOwnTriggerCopies)+1);
-  FOwnTriggerCopies[Length(FOwnTriggerCopies)-1] := TriggerCopy;
 
   if (Self.FEntryMode = emSingleEntry) and (Length(Sources) > 0) then begin
     //Ugly. Squash all sources together into a single source if in multi-mode
@@ -470,37 +491,52 @@ begin
     end;
     Tree.ReinitNode(Node, false);
     NodeData := Tree.GetNodeData(Node);
-    NodeData.ServiceName := AServiceName;
-    NodeData.TriggerIndex := AIndex;
-    NodeData.TriggerType := ATrigger^.dwTriggerType;
-    NodeData.Action := ATrigger^.dwAction;
-    NodeData.TriggerSubtype := ATrigger.pTriggerSubtype^;
+    NodeData.Trigger := ATrigger;
+    NodeData.TriggerType := ATrigger.Data^.dwTriggerType;
+    NodeData.Action := ATrigger.Data^.dwAction;
+    NodeData.TriggerSubtype := ATrigger.Data^.pTriggerSubtype^;
     NodeData.Source := Source;
     if Source.Data <> '' then
       NodeData.Description := TriggerData.Event + ' ('+Source.DisplayText+')'
     else
       NodeData.Description := TriggerData.Event;
     NodeData.Params := TriggerData.ParamsToString('; ');
-    NodeData.TriggerCopy := TriggerCopy;
-    NodeData.IsDisabled := AIndex < 0;
-    NodeData.KeyPath := AKeyPath
   end;
 
   if Self.FEntryMode = emChildEntries then
     Self.Tree.Expanded[Result] := true; //auto-expand
 end;
 
-function TTriggerList.Add(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+{
+Adds the trigger object and all its facet nodes for a PSERVICE_TRIGGER from the
+local PC's SCM.
+Trigger data is copied. The original trigger data can be freed.
+AIndex:
+  Trigger index in the parent Service's trigger list.
+}
+function TTriggerList.AddFromScm(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+var Trigger: TNdTrigger;
 begin
-  Result := Self.AddInternal(AServiceName, AIndex, ATrigger, '');
+  Trigger := TNdTrigger.Create(CopyTrigger(ATrigger^), {OwnsData=}true);
+  Trigger.ServiceName := AServiceName;
+  Trigger.Index := AIndex;
+  FTriggers.Add(Trigger);
+  Result := Self.Add(Trigger);
 end;
 
-//Adds an entry for a disable trigger stored in the registry by a given key path
-function TTriggerList.AddDisabled(const AServiceName: string; const AKeyPath: string;
-  const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+//Adds an entry for a disabled trigger stored in the registry by a given key path
+//Trigger data ownership is transferred. The caller must not use ATrigger anymore.
+function TTriggerList.AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+var Trigger: TNdTrigger;
 begin
-  Result := Self.AddInternal(AServiceName, -1, ATrigger, AKeyPath);
+  Trigger := TNdTrigger.Create(ATrigger, {OwnsData=}true);
+  Trigger.ServiceName := AServiceName;
+  Trigger.RegistryPath := AKeyPath;
+  Trigger.IsDisabled := true;
+  FTriggers.Add(Trigger);
+  Result := Self.Add(Trigger);
 end;
+
 
 procedure TTriggerList.Reload;
 var Services, S: PEnumServiceStatusProcess;
@@ -539,7 +575,7 @@ begin
   try
     i := 0;
     while triggers.cTriggers > 0 do begin
-      Self.Add(AServiceName, i, triggers.pTriggers);
+      Self.AddFromScm(AServiceName, i, triggers.pTriggers);
       Inc(triggers.pTriggers);
       Dec(triggers.cTriggers);
       Inc(i);
@@ -585,7 +621,7 @@ begin
 end;
 
 
-function TTriggerList.FocusedTrigger: PNdTriggerData;
+function TTriggerList.FocusedFacet: PNdTriggerFacet;
 begin
   if Tree.FocusedNode = nil then
     Result := nil
@@ -594,7 +630,7 @@ begin
 end;
 
 //Returns selected trigger node list as a TArray<>
-function TTriggerList.SelectedTriggers: TArray<PNdTriggerData>;
+function TTriggerList.SelectedFacets: TArray<PNdTriggerFacet>;
 var ANode: PVirtualNode;
 begin
   SetLength(Result, 0);
@@ -604,7 +640,7 @@ begin
   end;
 end;
 
-function TTriggerList.AllTriggers: TArray<PNdTriggerData>;
+function TTriggerList.AllFacets: TArray<PNdTriggerFacet>;
 var ANode: PVirtualNode;
 begin
   SetLength(Result, 0);
@@ -616,9 +652,9 @@ end;
 
 //A single trigger can result in multiple list entries (e.g. if it lists several ports)
 //This returns a list of unique triggers for the selected nodes.
-function TTriggerList.NodesToUniqueTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<PSERVICE_TRIGGER>;
+function TTriggerList.NodesToTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<TNdTrigger>;
 var ANode: PVirtualNode;
-  AData: PNdTriggerData;
+  AData: PNdTriggerFacet;
   i: integer;
   found: boolean;
 begin
@@ -628,7 +664,7 @@ begin
 
     found := false;
     for i := 0 to Length(Result)-1 do
-      if Result[i]=AData.TriggerCopy then begin
+      if Result[i]=AData.Trigger then begin
         found := true;
         break;
       end;
@@ -636,26 +672,26 @@ begin
       continue;
 
     SetLength(Result, Length(Result)+1);
-    Result[Length(Result)-1] := AData.TriggerCopy;
+    Result[Length(Result)-1] := AData.Trigger;
   end;
 end;
 
-function TTriggerList.SelectedUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+function TTriggerList.SelectedTriggers: TArray<TNdTrigger>;
 begin
-  Result := Self.NodesToUniqueTriggers(Tree.SelectedNodes());
+  Result := Self.NodesToTriggers(Tree.SelectedNodes());
 end;
 
-function TTriggerList.AllUniqueTriggers: TArray<PSERVICE_TRIGGER>;
+function TTriggerList.AllTriggers: TArray<TNdTrigger>;
 begin
-  Result := Self.NodesToUniqueTriggers(Tree.ChildNodes(Tree.RootNode));
+  Result := Self.NodesToTriggers(Tree.ChildNodes(Tree.RootNode));
 end;
 
 procedure TTriggerList.aCopySummaryExecute(Sender: TObject);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
   Result: string;
 begin
   Result := '';
-  for Data in SelectedTriggers do
+  for Data in SelectedFacets do
     Result := Result + Data.Summary + #13#10;
 
   if Length(Result) >= 2 then
@@ -664,12 +700,12 @@ begin
 end;
 
 procedure TTriggerList.aCopyTriggerTextExecute(Sender: TObject);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
   Result: string;
 begin
   Result := '';
 
-  for Data in SelectedTriggers do
+  for Data in SelectedFacets do
     Result := Result + Data.Description + #13#10;
 
   if Length(Result) >= 2 then
@@ -678,12 +714,12 @@ begin
 end;
 
 procedure TTriggerList.aCopySourceDataExecute(Sender: TObject);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
   Result: string;
 begin
   Result := '';
 
-  for Data in SelectedTriggers do
+  for Data in SelectedFacets do
     Result := Result + Data.Source.Data + #13#10;
 
   if Length(Result) >= 2 then
@@ -692,12 +728,12 @@ begin
 end;
 
 procedure TTriggerList.aCopyParamsExecute(Sender: TObject);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
   Result: string;
 begin
   Result := '';
 
-  for Data in SelectedTriggers do
+  for Data in SelectedFacets do
     Result := Result + Data.Params + #13#10;
 
   if Length(Result) >= 2 then
@@ -706,16 +742,16 @@ begin
 end;
 
 procedure TTriggerList.aCopyTriggerRegDefinitionExecute(Sender: TObject);
-var Data: PNdTriggerData;
+var Data: PNdTriggerFacet;
   Result: string;
   i: integer;
 begin
   Result := '';
 
   i := 0;
-  for Data in SelectedTriggers do begin
+  for Data in SelectedFacets do begin
     Result := Result
-      + ExportTrigger(Data.TriggerCopy^, IntToStr(i)).ExportToString + #13#10;
+      + ExportTrigger(Data.Trigger.Data^, IntToStr(i)).ExportToString + #13#10;
     Inc(i);
   end;
 
@@ -725,29 +761,32 @@ begin
 end;
 
 procedure TTriggerList.aEditTriggerExecute(Sender: TObject);
-var Sel: TArray<PNdTriggerData>;
+var Sel: TArray<PNdTriggerFacet>;
   EditForm: TTriggerEditorForm;
   TriggerData: PSERVICE_TRIGGER;
 begin
-  Sel := Self.SelectedTriggers;
+  Sel := Self.SelectedFacets;
   if Length(Sel) <> 1 then exit;
+
+  //"Edit" only works on live triggers
+  if Sel[0].Trigger.IsDisabled then exit;
 
   TriggerData := nil;
 
   EditForm := TTriggerEditorForm.Create(Self);
   try
    //Make our own copy so as not to edit Node copy directly
-    TriggerData := CopyTrigger(Sel[0].TriggerCopy^);
+    TriggerData := CopyTrigger(Sel[0].Trigger.Data^);
     if not IsPositiveResult(EditForm.EditTrigger(TriggerData)) then
       exit; //TriggerData is freed in Finally
 
    //Store the edited trigger in the service config
-    with OpenService2(Sel[0].ServiceName,
+    with OpenService2(Sel[0].Trigger.ServiceName,
       STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
       SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
     begin
-      ChangeServiceTrigger(SvcHandle, Sel[0].TriggerCopy^, TriggerData^);
-      TriggerUtils.TriggerListChanged(Self, Sel[0].ServiceName);
+      ChangeServiceTrigger(SvcHandle, Sel[0].Trigger.Data^, TriggerData^);
+      TriggerUtils.TriggerListChanged(Self, Sel[0].Trigger.ServiceName);
     end;
 
   finally
@@ -775,13 +814,23 @@ resourcestring
 
 
 procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
-var Sel: TArray<PNdTriggerData>;
+var Sel: TArray<PNdTriggerFacet>;
   SelData: array of SERVICE_TRIGGER;
   i: integer;
   ConfirmationText: string;
 begin
-  Sel := SelectedTriggers;
+  Sel := SelectedFacets;
   if Length(Sel) <= 0 then exit;
+
+  //"Delete" only works on live triggers
+  i := Length(Sel)-1;
+  while i >= 0 do begin
+    if Sel[i].Trigger.IsDisabled then begin
+      Move(Sel[i+1], Sel[i], SizeOf(Sel[i])*(Length(Sel)-i-1));
+      SetLength(Sel, Length(Sel)-1);
+    end;
+    Dec(i);
+  end;
 
   ConfirmationText := sConfirmTriggerDeletion;
   for i := 0 to Length(Sel)-1 do
@@ -791,10 +840,11 @@ begin
     MB_ICONQUESTION or MB_YESNO) <> ID_YES then
     exit;
 
-  SetLength(SelData, Length(Sel));
+  SetLength(SelData, 0);
   for i := 0 to Length(Sel)-1 do
-    SelData[i] := Sel[i].TriggerCopy^;
-  with OpenService2(Sel[0].ServiceName,
+    SelData[i] := Sel[i].Trigger.Data^;
+
+  with OpenService2(Sel[0].Trigger.ServiceName,
     STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
     SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
   begin
@@ -806,10 +856,9 @@ end;
 
 
 //Exports triggers for all given nodes
-procedure TTriggerList.TryExportTriggers(const Sel: TArray<PNdTriggerData>);
-var nl: TTriggerSet;
-  sl: TStringList;
-  Node: PNdTriggerData;
+procedure TTriggerList.TryExportTriggers(const Sel: TArray<TNdTrigger>);
+var sl: TStringList;
+  Trigger: TNdTrigger;
 begin
   if Length(Sel) <= 0 then exit;
 
@@ -819,15 +868,12 @@ begin
 
   sl := TStringList.Create;
   try
-    for Node in Sel do begin
-      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
-
+    for Trigger in Sel do
       //All triggers are exported under their full registry path + their real index
       ExportTrigger(
-        Node.TriggerCopy^,
-        GetTriggerKeyFull(Node.ServiceName) + '\' + IntToStr(Node.TriggerIndex)
+        Trigger.Data^,
+        GetTriggerKeyFull(Trigger.ServiceName) + '\' + IntToStr(Trigger.Index)
       ).ExportToStrings(sl);
-    end;
 
     sl.SaveToFile(SaveTriggersDialog.FileName);
   finally
@@ -950,13 +996,8 @@ begin
     for subkey in subkeys do begin
       if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)+'\'+subkey) then
         continue; //cannot read, don't complain
-
       trig := CreateTriggerFromRegistryKey(reg);
-      try
-        Self.AddDisabled(AServiceName, reg.CurrentPath, trig); //copies the data
-      finally
-        FreeMem(trig);
-      end;
+      Self.AddFromRegistry(AServiceName, reg.CurrentPath, trig); //takes over the data
     end;
   finally
     FreeAndNil(reg);
@@ -965,9 +1006,8 @@ begin
 end;
 
 procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
-var Sel: TArray<PNdTriggerData>;
-  Node: PNdTriggerData;
-  nl: TTriggerSet;
+var Sel: TArray<TNdTrigger>;
+  Trigger: TNdTrigger;
   reg: TRegistry;
 begin
   Sel := SelectedTriggers;
@@ -978,14 +1018,12 @@ begin
     reg := TRegistry.Create;
     reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    for Node in Sel do begin
-      if Node.IsDisabled then continue; //already disabled
-      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
-
+    for Trigger in Sel do begin
+      if Trigger.IsDisabled then continue; //already disabled
       WriteTriggerToRegistryKey(
         reg,
-        Node.TriggerCopy,
-        sHkeyLocalMachine + GetNewDisabledTriggerKey(Node.ServiceName)
+        Trigger.Data,
+        sHkeyLocalMachine + GetNewDisabledTriggerKey(Trigger.ServiceName)
       );
 
       //TODO: Delete the trigger from the service
@@ -1000,9 +1038,8 @@ begin
 end;
 
 procedure TTriggerList.aEnableTriggerExecute(Sender: TObject);
-var Sel: TArray<PNdTriggerData>;
-  Node: PNdTriggerData;
-  nl: TTriggerSet;
+var Sel: TArray<TNdTrigger>;
+  Trigger: TNdTrigger;
   reg: TRegistry;
   trig: PSERVICE_TRIGGER;
 begin
@@ -1013,12 +1050,11 @@ begin
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    for Node in Sel do begin
-      if not Node.IsDisabled then continue;
-      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
-      if Node.KeyPath = '' then continue;
+    for Trigger in Sel do begin
+      if not Trigger.IsDisabled then continue;
+      if Trigger.RegistryPath = '' then continue;
 
-      if not reg.OpenKeyReadOnly(Node.KeyPath) then
+      if not reg.OpenKeyReadOnly(Trigger.RegistryPath) then
         continue; //cannot read, don't complain
 
       trig := CreateTriggerFromRegistryKey(reg);

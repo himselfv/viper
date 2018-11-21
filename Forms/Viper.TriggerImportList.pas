@@ -79,7 +79,7 @@ begin
     ServiceName := ATrigger.ServiceName
   else
     ServiceName := Format(sServiceNotFound, [ATrigger.ServiceName]);
-  Result := inherited Add(ServiceName, ATrigger.Index, ATrigger.Trigger);
+  Result := inherited AddFromScm(ServiceName, ATrigger.Index, ATrigger.Trigger);
   with GetTriggerImportData(Result)^ do begin
     GrayedOut := AGrayedOut;
     Entry := @ATrigger;

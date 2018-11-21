@@ -31,8 +31,5 @@ inherited ServiceTriggerList: TServiceTriggerList
       Caption = 'Add...'
       OnExecute = aAddTriggerExecute
     end
-    inherited aImportTrigger: TAction
-      OnExecute = aImportTriggerExecute
-    end
   end
 end

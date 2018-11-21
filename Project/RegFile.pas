@@ -392,6 +392,7 @@ begin
       cb^ := tcb;
   except
     FreeMem(Result);
+    raise;
   end;
 end;
 

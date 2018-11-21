@@ -875,12 +875,52 @@ begin
   Result := GetDisabledTriggersKey(AServiceName) + '\' + GuidToString(guid);
 end;
 
+{
+Writes a given trigger to the given registry key (possibly unrelated).
+Trigger is written in a format identical to the one used by the SCM.
+FullKeyPath must include HKEY_* root key.
+}
+procedure WriteTriggerToRegistryKey(reg: TRegistry; Trigger: PSERVICE_TRIGGER;
+  const FullKeyPath: string);
+var key: TRegFileKey;
+begin
+  //Export the trigger to Reg file format structure + import the structure
+  key := ExportTrigger(Trigger^, FullKeyPath);
+  WriteToRegistry(reg, key);
+end;
+
+{
+Reads a SCM compatible trigger definition from a currently open registry key
+and creates a new PSERVICE_TRIGGER out of it.
+Returns
+  PSERVICE_TRIGGER which has to be freed by the caller.
+  nil if the key does not contain a valid trigger registry definition
+}
+function CreateTriggerFromRegistryKey(reg: TRegistry): PSERVICE_TRIGGER;
+var regf: TRegFile;
+begin
+  //Export + parse as trigger in standard way
+  Result := nil;
+  regf := ExportRegistryKey(reg);
+  if regf = nil then
+    exit;
+  try
+    //The trigger key itself is flat. Someone could have manually created subfolders,
+    //but we are going to ignore them
+    if regf.Count < 1 then
+      exit;
+    Result := ImportTrigger(regf[0]);
+  finally
+    FreeAndNil(regf);
+  end;
+end;
+
+
 //Loads additional disabled triggers from the special registry key
 procedure TTriggerList.LoadDisabledTriggersForService(const AServiceName: string);
 var reg: TRegistry;
   subkeys: TStringList;
   subkey: string;
-  regf: TRegFile;
   trig: PSERVICE_TRIGGER;
 begin
   subkeys := nil;
@@ -896,13 +936,7 @@ begin
       if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)+'\'+subkey) then
         continue; //cannot read, don't complain
 
-      //Export + parse as trigger in standard way
-      regf := ExportRegistryKey(reg);
-
-      //The trigger key itself is flat. Someone could have manually created subfolders but we don't care
-      if (regf = nil) or (regf.Count < 1) then
-        exit;
-      trig := ImportTrigger(regf[0]);
+      trig := CreateTriggerFromRegistryKey(reg);
       try
         Self.Add(AServiceName, -1, trig); //copies the data
       finally
@@ -915,12 +949,10 @@ begin
   end;
 end;
 
-
 procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerData>;
   Node: PNdTriggerData;
   nl: TTriggerSet;
-  key: TRegFileKey;
   reg: TRegistry;
 begin
   Sel := SelectedTriggers;
@@ -935,11 +967,11 @@ begin
       if Node.IsDisabled then continue; //already disabled
       if not nl.UniqueAdd(Node.TriggerCopy) then continue;
 
-      key := ExportTrigger(
-          Node.TriggerCopy^,
-          sHkeyLocalMachine + GetNewDisabledTriggerKey(Node.ServiceName)
-        );
-      WriteToRegistry(reg, key);
+      WriteTriggerToRegistryKey(
+        reg,
+        Node.TriggerCopy,
+        sHkeyLocalMachine + GetNewDisabledTriggerKey(Node.ServiceName)
+      );
 
       //TODO: Delete the trigger from the service
       //TODO: Maybe aggregate changes and edit each service only once?
@@ -956,18 +988,32 @@ procedure TTriggerList.aEnableTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerData>;
   Node: PNdTriggerData;
   nl: TTriggerSet;
+  reg: TRegistry;
+  trig: PSERVICE_TRIGGER;
 begin
   Sel := SelectedTriggers;
   if Length(Sel) <= 0 then exit;
 
-  for Node in Sel do begin
-    if Node.IsDisabled then exit; //already disabled
-    if not nl.UniqueAdd(Node.TriggerCopy) then continue;
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    //TODO: Export key node
-    //TODO: Parse and import as trigger
-    //TODO: Delete key node
+    for Node in Sel do begin
+      if Node.IsDisabled then exit; //already disabled
+      if not nl.UniqueAdd(Node.TriggerCopy) then continue;
 
+      trig := CreateTriggerFromRegistryKey(reg);
+      try
+        //TODO: Import as trigger
+      finally
+        FreeMem(trig);
+      end;
+
+      //TODO: Delete key node
+    end;
+
+  finally
+    FreeAndNil(reg);
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload

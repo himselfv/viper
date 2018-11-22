@@ -355,7 +355,7 @@ begin
   aEditTrigger.Visible := (Tree.SelectedCount = 1) and HaveSCM; //"Edit" only works on live triggers
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
-  aDeleteTrigger.Visible := (Tree.SelectedCount > 0) and HaveSCM; //"Delete" only works on live triggers
+  aDeleteTrigger.Visible := (Tree.SelectedCount > 0);
   aImportTrigger.Visible := true;
 
   aDisableTrigger.Visible := HaveSCM;
@@ -808,29 +808,36 @@ begin
   Self.Reload;
 end;
 
+
+
+procedure DeleteRegistryTriggers(const ATriggerKeys: array of string);
+var reg: TRegistry;
+  key: string;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    for key in ATriggerKeys do
+      reg.DeleteKey(key);
+  finally
+    FreeAndNil(reg);
+  end;
+end;
+
+
 resourcestring
   sConfirmTriggerDeletionCaption = 'Confirm deletion';
   sConfirmTriggerDeletion = 'Do you really want to delete these triggers?';
 
-
 procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerFacet>;
-  SelData: array of SERVICE_TRIGGER;
-  i: integer;
   ConfirmationText: string;
+  ScmTriggers: array of PSERVICE_TRIGGER;
+  RegTriggers: array of string;
+  i: integer;
 begin
   Sel := SelectedFacets;
   if Length(Sel) <= 0 then exit;
-
-  //"Delete" only works on live triggers
-  i := Length(Sel)-1;
-  while i >= 0 do begin
-    if Sel[i].Trigger.IsDisabled then begin
-      Move(Sel[i+1], Sel[i], SizeOf(Sel[i])*(Length(Sel)-i-1));
-      SetLength(Sel, Length(Sel)-1);
-    end;
-    Dec(i);
-  end;
 
   ConfirmationText := sConfirmTriggerDeletion;
   for i := 0 to Length(Sel)-1 do
@@ -840,17 +847,32 @@ begin
     MB_ICONQUESTION or MB_YESNO) <> ID_YES then
     exit;
 
-  SetLength(SelData, 0);
-  for i := 0 to Length(Sel)-1 do
-    SelData[i] := Sel[i].Trigger.Data^;
+  //We delete both live and registry-key triggers, but by different means
 
+  //Split into arrays by type:
+  SetLength(ScmTriggers, 0);
+  SetLength(RegTriggers, 0);
+  for i := 0 to Length(Sel)-1 do
+    if Sel[i].Trigger.IsDisabled then begin
+      SetLength(RegTriggers, Length(RegTriggers)+1);
+      RegTriggers[Length(RegTriggers)-1] := Sel[i].Trigger.RegistryPath;
+    end else begin
+      SetLength(ScmTriggers, Length(ScmTriggers)+1);
+      ScmTriggers[Length(ScmTriggers)-1] := Sel[i].Trigger.Data;
+    end;
+
+  //Delete SCM triggers
   with OpenService2(Sel[0].Trigger.ServiceName,
     STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
     SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
   begin
-    DeleteServiceTriggers(SvcHandle, SelData);
-    TriggerUtils.TriggerListChanged(Self, '');
+    DeleteServiceTriggers(SvcHandle, ScmTriggers);
   end;
+
+  //Delete registry triggers
+  DeleteRegistryTriggers(RegTriggers);
+
+  TriggerUtils.TriggerListChanged(Self, '');
   Reload;
 end;
 
@@ -1059,11 +1081,15 @@ begin
 
       trig := CreateTriggerFromRegistryKey(reg);
       try
-        //TODO: Import as trigger
+        with OpenService2(Trigger.ServiceName, SC_MANAGER_CONNECT,
+          SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG)
+        do
+          AddServiceTriggers(SvcHandle, [Trigger.Data^]);
       finally
         FreeMem(trig);
       end;
 
+      //If the above worked, delete the disabled instance
       reg.DeleteKey('\'+reg.CurrentPath);
     end;
 

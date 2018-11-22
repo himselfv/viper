@@ -206,7 +206,7 @@ function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
 //The following functions read, modify and store the trigger list.
 procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER;
   UniqueOnly: boolean = false);
-procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER); overload;
+procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of PSERVICE_TRIGGER); overload;
 procedure ChangeServiceTrigger(hSvc: SC_HANDLE; const OldTrigger: SERVICE_TRIGGER; const NewTrigger: SERVICE_TRIGGER); overload;
 
 function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED; overload;
@@ -831,7 +831,7 @@ begin
 end;
 
 //Deletes one or more triggers from a set of all triggers for the service
-procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER);
+procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of PSERVICE_TRIGGER);
 var trigHead: PSERVICE_TRIGGER_INFO;
   ptrFrom, ptrTo: PSERVICE_TRIGGER;
   i: integer;
@@ -856,7 +856,7 @@ begin
     ptrTo := trigHead.pTriggers;
     while ptrFrom < trigHead.pTriggers + trigHead.cTriggers do begin
       for i := 0 to Length(Triggers)-1 do
-        if IsSameServiceTrigger(ptrFrom^, Triggers[i]) then begin
+        if IsSameServiceTrigger(ptrFrom^, Triggers[i]^) then begin
           //Skip this one
           Inc(ptrFrom);
           Dec(trigHead.cTriggers);

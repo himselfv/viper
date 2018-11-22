@@ -718,6 +718,9 @@ begin
       Inc(pToItem);
       Inc(pFromItem);
     end;
+  end else begin
+    Result.pDataItems := nil;
+    Result.cDataItems := 0; //even if Tr said something else
   end;
 end;
 

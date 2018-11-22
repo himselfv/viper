@@ -83,6 +83,7 @@ begin
   end;
 end;
 
+//Lets the user choose any triggers from the list and imports them
 function ImportTriggers(AOwner: TComponent; const AServiceName: string;
   const ATriggers: TArray<TRegTriggerEntry>): TModalResult;
 var Form: TTriggerImportForm;
@@ -149,7 +150,7 @@ begin
 end;
 
 //Copies the array of service triggers.
-//Trigger data is copied by reference and must remain valid while this window is active.
+//Trigger data is used by reference and must remain valid while this window is active.
 procedure TTriggerImportForm.SetTriggers(Value: TArray<TRegTriggerEntry>);
 begin
   FTriggers := Value;
@@ -174,7 +175,8 @@ begin
   btnOk.Enabled := (TriggerList.Tree.ChildCount[nil] > 0);
 end;
 
-//Returns the list of all triggers which are checked
+//Returns the list of all triggers which are checked.
+//Uses the same PSERVICE_TRIGGER pointers given to SetTriggers()
 function TTriggerImportForm.GetFilteredTriggers: TArray<TRegTriggerEntry>;
 begin
   SetLength(Result, 0);
@@ -184,12 +186,16 @@ end;
 procedure TTriggerImportForm.GetFilteredTriggers_Callback(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var List: ^TArray<TRegTriggerEntry> absolute Data;
-  NodeData: PNdTriggerImportData;
+  Trigger: TNdTrigger;
+  Entry: PRegTriggerEntry;
 begin
   if Sender.CheckState[Node] <> csCheckedNormal then exit;
-  NodeData := TriggerList.GetTriggerImportData(Node);
+  Trigger := TriggerList.GetTriggerData(Node);
   SetLength(List^, Length(List^)+1);
-  List^[Length(List^)-1] := NodeData.Entry^;
+  Entry := @List^[Length(List^)-1];
+  Entry^.ServiceName := Trigger.ServiceName;
+  Entry^.Index := Trigger.Index;
+  Entry^.Trigger := Trigger.Data; //TriggerImportList uses the same pointers we've given to it
 end;
 
 end.

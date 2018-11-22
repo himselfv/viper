@@ -497,8 +497,11 @@ begin
 
     //Fill all SERVICE_TRIGGER fields
     dataPtrs := data.AsList;
-    st.pDataItems := @dataPtrs[0];
     st.cDataItems := Length(dataPtrs);
+    if st.cDataItems <> 0 then
+      st.pDataItems := @dataPtrs[0]
+    else
+      st.pDataItems := nil;
 
     //Now copy the structure to a single flat one which the caller should free
     Result := CopyTrigger(st);

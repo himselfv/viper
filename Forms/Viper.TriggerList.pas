@@ -164,6 +164,9 @@ type
     function AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
 
+    function GetFacetData(ANode: PVirtualNode): PNdTriggerFacet; inline;
+    function GetTriggerData(ANode: PVirtualNode): TNdTrigger; inline;
+
     function FocusedFacet: PNdTriggerFacet;
     function SelectedFacets: TArray<PNdTriggerFacet>;
     function AllFacets: TArray<PNdTriggerFacet>;
@@ -447,7 +450,7 @@ end;
 
 {
 Adds all trigger facet nodes for the given TNdTrigger.
-This is the lowest level Add(). TNdTrigger must be kept alive until Clear().
+This is the lowest level Add(). TNdTrigger will be automatically destroyed on Clear().
 Returns the virtual node added. In multi-facet mode returns the first of such nodes.
 }
 function TTriggerList.Add(const ATrigger: TNdTrigger): PVirtualNode;
@@ -457,6 +460,8 @@ var Node: PVirtualNode;
   Sources: TArray<TTriggerSource>;
   Source, NewSource: TTriggerSource;
 begin
+  FTriggers.Add(ATrigger);
+
   TriggerData := ParseTrigger(ATrigger.Data);
   Sources := TriggerData.Sources;
   if Length(Sources) <= 0 then begin
@@ -520,7 +525,6 @@ begin
   Trigger := TNdTrigger.Create(CopyTrigger(ATrigger^), {OwnsData=}true);
   Trigger.ServiceName := AServiceName;
   Trigger.Index := AIndex;
-  FTriggers.Add(Trigger);
   Result := Self.Add(Trigger);
 end;
 
@@ -533,7 +537,6 @@ begin
   Trigger.ServiceName := AServiceName;
   Trigger.RegistryPath := AKeyPath;
   Trigger.IsDisabled := true;
-  FTriggers.Add(Trigger);
   Result := Self.Add(Trigger);
 end;
 
@@ -620,6 +623,16 @@ begin
   Self.Reload;
 end;
 
+
+function TTriggerList.GetFacetData(ANode: PVirtualNode): PNdTriggerFacet;
+begin
+  Result := Tree.GetNodeData(ANode);
+end;
+
+function TTriggerList.GetTriggerData(ANode: PVirtualNode): TNdTrigger;
+begin
+  Result := Self.GetFacetData(ANode).Trigger;
+end;
 
 function TTriggerList.FocusedFacet: PNdTriggerFacet;
 begin
@@ -809,21 +822,7 @@ begin
 end;
 
 
-
-procedure DeleteRegistryTriggers(const ATriggerKeys: array of string);
-var reg: TRegistry;
-  key: string;
-begin
-  reg := TRegistry.Create;
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    for key in ATriggerKeys do
-      reg.DeleteKey(key);
-  finally
-    FreeAndNil(reg);
-  end;
-end;
-
+procedure DeleteTriggerRegistryKeys(const ATriggerKeys: array of string); forward;
 
 resourcestring
   sConfirmTriggerDeletionCaption = 'Confirm deletion';
@@ -870,7 +869,7 @@ begin
   end;
 
   //Delete registry triggers
-  DeleteRegistryTriggers(RegTriggers);
+  DeleteTriggerRegistryKeys(RegTriggers);
 
   TriggerUtils.TriggerListChanged(Self, '');
   Reload;
@@ -998,6 +997,20 @@ begin
   end;
 end;
 
+//Each key: a registry path without HKEY
+procedure DeleteTriggerRegistryKeys(const ATriggerKeys: array of string);
+var reg: TRegistry;
+  key: string;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    for key in ATriggerKeys do
+      reg.DeleteKey(key);
+  finally
+    FreeAndNil(reg);
+  end;
+end;
 
 //Loads additional disabled triggers from the special registry key
 procedure TTriggerList.LoadDisabledTriggersForService(const AServiceName: string);
@@ -1042,15 +1055,19 @@ begin
 
     for Trigger in Sel do begin
       if Trigger.IsDisabled then continue; //already disabled
+
+      //Create the disabled version
       WriteTriggerToRegistryKey(
         reg,
         Trigger.Data,
         sHkeyLocalMachine + GetNewDisabledTriggerKey(Trigger.ServiceName)
       );
 
-      //TODO: Delete the trigger from the service
-      //TODO: Maybe aggregate changes and edit each service only once?
+      //Delete the live version
+      with OpenService2(Trigger.ServiceName, SC_MANAGER_CONNECT, SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+        DeleteServiceTriggers(SvcHandle, [Trigger.Data]);
 
+      //TODO: Maybe aggregate changes and edit each service only once?
     end;
   finally
     FreeAndNil(reg);

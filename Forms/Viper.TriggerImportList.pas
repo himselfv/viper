@@ -15,8 +15,7 @@ uses
 type
   //Additional data associated with the nodes. Goes after the inherited node data.
   TNdTriggerImportData = record
-    GrayedOut: boolean;
-    Entry: PRegTriggerEntry;
+    //Turns out we don't need anything special
   end;
   PNdTriggerImportData = ^TNdTriggerImportData;
 
@@ -70,31 +69,29 @@ end;
 resourcestring
   sServiceNotFound = '%s - not found';
 
-//Adds a new imported trigger entry. Internal data is copied.
+//Adds a new imported trigger entry. The underlying PSERVICE_TRIGGER must remain valid until Clear()
 function TTriggerImportList.Add(const ATrigger: TRegTriggerEntry; AGrayedOut: boolean): PVirtualNode;
-var ServiceName: string;
+var Trigger: TNdTrigger;
   ChildNode: PVirtualNode;
 begin
+  //Do not copy the data
+  Trigger := TNdTrigger.Create(ATrigger.Trigger, {OwnsData=}false);
   if not AGrayedOut then
-    ServiceName := ATrigger.ServiceName
+    Trigger.ServiceName := ATrigger.ServiceName
   else
-    ServiceName := Format(sServiceNotFound, [ATrigger.ServiceName]);
-  Result := inherited AddFromScm(ServiceName, ATrigger.Index, ATrigger.Trigger);
-  with GetTriggerImportData(Result)^ do begin
-    GrayedOut := AGrayedOut;
-    Entry := @ATrigger;
-  end;
-  for ChildNode in Tree.ChildNodes(Result) do //multi-entry triggers may spawn child nodes
-    with GetTriggerImportData(ChildNode)^ do begin
-      GrayedOut := AGrayedOut;
-      Entry := @ATrigger;
-    end;
+    Trigger.ServiceName := Format(sServiceNotFound, [ATrigger.ServiceName]);
+  Trigger.Index := ATrigger.Index;
+
+  Result := inherited Add(Trigger);
+
+  Tree.IsDisabled[Result] := AGrayedOut;
   Tree.CheckType[Result] := ctCheckBox;
   if AGrayedOut then
     Tree.CheckState[Result] := csUncheckedNormal
   else
     Tree.CheckState[Result] := csCheckedNormal;
-  Tree.IsDisabled[Result] := AGrayedOut;
+  for ChildNode in Tree.ChildNodes(Result) do //multi-entry triggers may spawn child nodes
+    Tree.IsDisabled[ChildNode] := AGrayedOut;
 end;
 
 

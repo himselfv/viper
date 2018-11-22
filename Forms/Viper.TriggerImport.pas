@@ -188,7 +188,7 @@ var List: ^TArray<TRegTriggerEntry> absolute Data;
 begin
   if Sender.CheckState[Node] <> csCheckedNormal then exit;
   NodeData := TriggerList.GetTriggerImportData(Node);
-  SetLength(List^, Length(List^)-1);
+  SetLength(List^, Length(List^)+1);
   List^[Length(List^)-1] := NodeData.Entry^;
 end;
 

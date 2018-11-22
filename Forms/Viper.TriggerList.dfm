@@ -179,4 +179,11 @@ object TriggerList: TTriggerList
     Left = 184
     Top = 64
   end
+  object ReloadTimer: TTimer
+    Enabled = False
+    Interval = 250
+    OnTimer = ReloadTimerTimer
+    Left = 296
+    Top = 8
+  end
 end

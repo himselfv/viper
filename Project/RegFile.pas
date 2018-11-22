@@ -236,7 +236,7 @@ begin
     end;
     REG_DWORD: begin
       SetLength(Result, 4);
-      PInteger(@Result[0])^ := StrToInt(Self.Data);
+      PInteger(@Result[0])^ := StrToInt('$'+Self.Data); //it's hex!
     end
   else
    //All the other types are stored as hex!

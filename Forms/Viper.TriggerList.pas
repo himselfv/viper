@@ -11,7 +11,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
-  Generics.Collections, TriggerUtils;
+  Generics.Collections, TriggerUtils, Vcl.ExtCtrls;
 
 type
   {
@@ -105,6 +105,7 @@ type
     miImportTrigger: TMenuItem;
     aEnableTrigger: TAction;
     miEnableTrigger: TMenuItem;
+    ReloadTimer: TTimer;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -137,47 +138,49 @@ type
     procedure aImportTriggerExecute(Sender: TObject);
     procedure aDisableTriggerExecute(Sender: TObject);
     procedure aEnableTriggerExecute(Sender: TObject);
+    procedure ReloadTimerTimer(Sender: TObject);
   const
     colTrigger = 0;
     colAction = 1;
     colService = 2;
     colParams = 3;
+
   protected
     FTriggers: TNdTriggerList;
     FEntryMode: TTriggerEntryMode;
-    FOnFocusChanged: TTriggerEvent;
-    FInvalidated: boolean;
-    function NodesToTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<TNdTrigger>;
-    procedure TryExportTriggers(const Sel: TArray<TNdTrigger>);
-    procedure TryImportTriggers(const AServiceName: string = '');
     procedure LoadTriggersForService(const AScmHandle: SC_HANDLE; const AServiceName: string); overload;
     procedure LoadTriggersForService(const AServiceName: string; const AServiceHandle: SC_HANDLE); overload;
     procedure LoadDisabledTriggersForService(const AServiceName: string); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
     procedure SetEntryMode(const Value: TTriggerEntryMode);
-    procedure PaintWindow(DC: HDC); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
-    procedure InvalidateList;
+    procedure Invalidate; reintroduce;
     procedure Reload; virtual;
     function Add(const ATrigger: TNdTrigger): PVirtualNode;
     function AddFromScm(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     function AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
+    property EntryMode: TTriggerEntryMode read FEntryMode write SetEntryMode;
 
+  protected
+    FOnFocusChanged: TTriggerEvent;
+    function NodesToTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<TNdTrigger>;
+  public
     function GetFacetData(ANode: PVirtualNode): PNdTriggerFacet; inline;
     function GetTriggerData(ANode: PVirtualNode): TNdTrigger; inline;
-
     function FocusedFacet: PNdTriggerFacet;
     function SelectedFacets: TArray<PNdTriggerFacet>;
     function AllFacets: TArray<PNdTriggerFacet>;
     function SelectedTriggers: TArray<TNdTrigger>;
     function AllTriggers: TArray<TNdTrigger>;
-
-    property EntryMode: TTriggerEntryMode read FEntryMode write SetEntryMode;
     property OnFocusChanged: TTriggerEvent read FOnFocusChanged write FOnFocusChanged;
+
+  protected
+    procedure TryExportTriggers(const Sel: TArray<TNdTrigger>);
+    procedure TryImportTriggers(const AServiceName: string = '');
 
   end;
 
@@ -544,25 +547,26 @@ begin
 end;
 
 
-procedure TTriggerList.InvalidateList;
+//Marks the list for reloading
+procedure TTriggerList.Invalidate;
 begin
-  Self.FInvalidated := true; //Reload on next repaint
-  Self.Invalidate; //inherited, to trigger repaint
+  //Unfortunately TFrame has no guaranteed Invalidate/Repaint mechanism, so
+  ReloadTimer.Enabled := true; //Reload after a while
 end;
 
-procedure TTriggerList.PaintWindow(DC: HDC);
+procedure TTriggerList.ReloadTimerTimer(Sender: TObject);
 begin
-  if Self.FInvalidated then
-    Self.Reload;
-  inherited;
+  ReloadTimer.Enabled := false;
+  Self.Reload;
 end;
 
+//Forcefully reloads the trigger list
 procedure TTriggerList.Reload;
 var Services, S: PEnumServiceStatusProcess;
   ServicesReturned: cardinal;
   i: integer;
 begin
-  FInvalidated := false;
+  ReloadTimer.Enabled := false;
   Clear;
 
   with OpenScm(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE) do try
@@ -972,6 +976,7 @@ begin
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
+  Self.Reload;
 end;
 
 procedure TTriggerList.aEnableTriggerExecute(Sender: TObject);
@@ -990,6 +995,7 @@ begin
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
+  Self.Reload;
 end;
 
 end.

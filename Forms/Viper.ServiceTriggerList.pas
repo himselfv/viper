@@ -8,7 +8,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   VirtualTrees, ImgList, WinSvc, ServiceHelper, Vcl.Menus, System.Actions, Vcl.ActnList,
-  TriggerUtils, Viper.TriggerList;
+  TriggerUtils, Viper.TriggerList, Vcl.ExtCtrls;
 
 type
   TServiceTriggerList = class(TTriggerList)

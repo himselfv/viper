@@ -10,7 +10,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Actions, ActnList, Menus, VirtualTrees, TriggerExport,
-  Viper.TriggerList;
+  Viper.TriggerList, Vcl.ExtCtrls;
 
 type
   //Additional data associated with the nodes. Goes after the inherited node data.

@@ -67,7 +67,7 @@ var Triggers: TArray<TRegTriggerEntry>;
 begin
   SetLength(Triggers, 0);
   try
-    TriggerExport.ImportTriggers(AFilename, Triggers, Status);
+    TriggerExport.LoadTriggersFromFile(AFilename, Triggers, Status);
 
     if Length(Triggers) <= 0 then begin
       MessageBox(AOwner.Handle, PChar(sNoTriggersToImport), PChar('Import triggers'),

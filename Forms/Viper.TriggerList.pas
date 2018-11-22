@@ -146,6 +146,7 @@ type
     FTriggers: TNdTriggerList;
     FEntryMode: TTriggerEntryMode;
     FOnFocusChanged: TTriggerEvent;
+    FInvalidated: boolean;
     function NodesToTriggers(const ANodes: TVTVirtualNodeEnumeration): TArray<TNdTrigger>;
     procedure TryExportTriggers(const Sel: TArray<TNdTrigger>);
     procedure TryImportTriggers(const AServiceName: string = '');
@@ -154,10 +155,12 @@ type
     procedure LoadDisabledTriggersForService(const AServiceName: string); overload;
     procedure HandleTriggerListChanged(Sender: TObject; const AService: string);
     procedure SetEntryMode(const Value: TTriggerEntryMode);
+    procedure PaintWindow(DC: HDC); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
+    procedure InvalidateList;
     procedure Reload; virtual;
     function Add(const ATrigger: TNdTrigger): PVirtualNode;
     function AddFromScm(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
@@ -541,11 +544,25 @@ begin
 end;
 
 
+procedure TTriggerList.InvalidateList;
+begin
+  Self.FInvalidated := true; //Reload on next repaint
+  Self.Invalidate; //inherited, to trigger repaint
+end;
+
+procedure TTriggerList.PaintWindow(DC: HDC);
+begin
+  if Self.FInvalidated then
+    Self.Reload;
+  inherited;
+end;
+
 procedure TTriggerList.Reload;
 var Services, S: PEnumServiceStatusProcess;
   ServicesReturned: cardinal;
   i: integer;
 begin
+  FInvalidated := false;
   Clear;
 
   with OpenScm(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE) do try
@@ -613,7 +630,7 @@ end;
 //This is not a guaranteed notification so we should be ready for changes without it
 procedure TTriggerList.HandleTriggerListChanged(Sender: TObject; const AService: string);
 begin
-  Self.Reload; //For now, reload everything
+  Self.Invalidate; //Invalidate on each change, reload once
 end;
 
 procedure TTriggerList.SetEntryMode(const Value: TTriggerEntryMode);
@@ -764,7 +781,7 @@ begin
   i := 0;
   for Data in SelectedFacets do begin
     Result := Result
-      + ExportTrigger(Data.Trigger.Data^, IntToStr(i)).ExportToString + #13#10;
+      + SectionFromTrigger(Data.Trigger.Data^, IntToStr(i)).ExportToString + #13#10;
     Inc(i);
   end;
 
@@ -822,8 +839,6 @@ begin
 end;
 
 
-procedure DeleteTriggerRegistryKeys(const ATriggerKeys: array of string); forward;
-
 resourcestring
   sConfirmTriggerDeletionCaption = 'Confirm deletion';
   sConfirmTriggerDeletion = 'Do you really want to delete these triggers?';
@@ -869,7 +884,7 @@ begin
   end;
 
   //Delete registry triggers
-  DeleteTriggerRegistryKeys(RegTriggers);
+  DeleteDisabledTriggers(RegTriggers);
 
   TriggerUtils.TriggerListChanged(Self, '');
   Reload;
@@ -891,7 +906,7 @@ begin
   try
     for Trigger in Sel do
       //All triggers are exported under their full registry path + their real index
-      ExportTrigger(
+      SectionFromTrigger(
         Trigger.Data^,
         GetTriggerKeyFull(Trigger.ServiceName) + '\' + IntToStr(Trigger.Index)
       ).ExportToStrings(sl);
@@ -934,143 +949,26 @@ end;
 
 { Disable / enable triggers }
 
-const
-  sDisabledServicesKey = '\Software\Viper\DisabledServices'; //in HKLM
-
-function GetDisabledServiceKey(const AServiceName: string): string;
-begin
-  Result := sDisabledServicesKey+'\'+AServiceName;
-end;
-
-function GetDisabledTriggersKey(const AServiceName: string): string;
-begin
-  Result := GetDisabledServiceKey(AServiceName) + '\TriggerInfo'
-end;
-
-//Generates a new, unused key name in DisabledServices\ServiceName\Triggers\
-function GetNewDisabledTriggerKey(const AServiceName: string): string;
-var guid: TGuid;
-begin
-  //Real SERVICES key stores triggers under integer indexes,
-  //but DisabledServices is not meant to be export-compatible so we don't have to.
-  CreateGuid(guid);
-  Result := GetDisabledTriggersKey(AServiceName) + '\' + GuidToString(guid);
-end;
-
-{
-Writes a given trigger to the given registry key (possibly unrelated).
-Trigger is written in a format identical to the one used by the SCM.
-FullKeyPath must include HKEY_* root key.
-}
-procedure WriteTriggerToRegistryKey(reg: TRegistry; Trigger: PSERVICE_TRIGGER;
-  const FullKeyPath: string);
-var key: TRegFileKey;
-begin
-  //Export the trigger to Reg file format structure + import the structure
-  key := ExportTrigger(Trigger^, FullKeyPath);
-  WriteToRegistry(reg, key);
-end;
-
-{
-Reads a SCM compatible trigger definition from a currently open registry key
-and creates a new PSERVICE_TRIGGER out of it.
-Returns
-  PSERVICE_TRIGGER which has to be freed by the caller.
-  nil if the key does not contain a valid trigger registry definition
-}
-function CreateTriggerFromRegistryKey(reg: TRegistry): PSERVICE_TRIGGER;
-var regf: TRegFile;
-begin
-  //Export + parse as trigger in standard way
-  Result := nil;
-  regf := ExportRegistryKey(reg);
-  if regf = nil then
-    exit;
-  try
-    //The trigger key itself is flat. Someone could have manually created subfolders,
-    //but we are going to ignore them
-    if regf.Count < 1 then
-      exit;
-    Result := ImportTrigger(regf[0]);
-  finally
-    FreeAndNil(regf);
-  end;
-end;
-
-//Each key: a registry path without HKEY
-procedure DeleteTriggerRegistryKeys(const ATriggerKeys: array of string);
-var reg: TRegistry;
-  key: string;
-begin
-  reg := TRegistry.Create;
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    for key in ATriggerKeys do
-      reg.DeleteKey(key);
-  finally
-    FreeAndNil(reg);
-  end;
-end;
-
 //Loads additional disabled triggers from the special registry key
 procedure TTriggerList.LoadDisabledTriggersForService(const AServiceName: string);
-var reg: TRegistry;
-  subkeys: TStringList;
-  subkey: string;
-  trig: PSERVICE_TRIGGER;
+var Triggers: TArray<TDisabledTrigger>;
+  i: integer;
 begin
-  subkeys := nil;
-  reg := TRegistry.Create;
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)) then
-      exit; //no disabled ones
-
-    subkeys := TStringList.Create;
-    reg.GetKeyNames(subkeys);
-    for subkey in subkeys do begin
-      if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)+'\'+subkey) then
-        continue; //cannot read, don't complain
-      trig := CreateTriggerFromRegistryKey(reg);
-      Self.AddFromRegistry(AServiceName, reg.CurrentPath, trig); //takes over the data
-    end;
-  finally
-    FreeAndNil(reg);
-    FreeAndNil(subkeys);
-  end;
+  Triggers := LoadDisabledTriggers(AServiceName);
+  for i := 0 to Length(Triggers)-1 do
+    Self.AddFromRegistry(AServiceName, Triggers[i].KeyPath, Triggers[i].Trigger); //takes over the data
 end;
 
 procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
 var Sel: TArray<TNdTrigger>;
   Trigger: TNdTrigger;
-  reg: TRegistry;
 begin
   Sel := SelectedTriggers;
   if Length(Sel) <= 0 then exit;
 
-  reg := nil;
-  try
-    reg := TRegistry.Create;
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-
-    for Trigger in Sel do begin
-      if Trigger.IsDisabled then continue; //already disabled
-
-      //Create the disabled version
-      WriteTriggerToRegistryKey(
-        reg,
-        Trigger.Data,
-        sHkeyLocalMachine + GetNewDisabledTriggerKey(Trigger.ServiceName)
-      );
-
-      //Delete the live version
-      with OpenService2(Trigger.ServiceName, SC_MANAGER_CONNECT, SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
-        DeleteServiceTriggers(SvcHandle, [Trigger.Data]);
-
-      //TODO: Maybe aggregate changes and edit each service only once?
-    end;
-  finally
-    FreeAndNil(reg);
+  for Trigger in Sel do begin
+    if Trigger.IsDisabled then continue; //already disabled
+    DisableTrigger(Trigger.ServiceName, Trigger.Data);
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload
@@ -1079,39 +977,16 @@ end;
 procedure TTriggerList.aEnableTriggerExecute(Sender: TObject);
 var Sel: TArray<TNdTrigger>;
   Trigger: TNdTrigger;
-  reg: TRegistry;
-  trig: PSERVICE_TRIGGER;
 begin
   Sel := SelectedTriggers;
   if Length(Sel) <= 0 then exit;
 
-  reg := TRegistry.Create;
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
+  for Trigger in Sel do begin
+    if not Trigger.IsDisabled then continue;
+    if Trigger.RegistryPath = '' then continue;
 
-    for Trigger in Sel do begin
-      if not Trigger.IsDisabled then continue;
-      if Trigger.RegistryPath = '' then continue;
-
-      if not reg.OpenKeyReadOnly(Trigger.RegistryPath) then
-        continue; //cannot read, don't complain
-
-      trig := CreateTriggerFromRegistryKey(reg);
-      try
-        with OpenService2(Trigger.ServiceName, SC_MANAGER_CONNECT,
-          SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG)
-        do
-          AddServiceTriggers(SvcHandle, [Trigger.Data^]);
-      finally
-        FreeMem(trig);
-      end;
-
-      //If the above worked, delete the disabled instance
-      reg.DeleteKey('\'+reg.CurrentPath);
-    end;
-
-  finally
-    FreeAndNil(reg);
+    if not EnableTrigger(Trigger.ServiceName, Trigger.RegistryPath, Trigger.Data) then
+      continue; //cannot enable, don't complain
   end;
 
   TriggerUtils.TriggerListChanged(Self, ''); //triggers reload

@@ -19,7 +19,6 @@ type
   end;
   PNdTriggerImportData = ^TNdTriggerImportData;
 
-
   TTriggerImportList = class(TTriggerList)
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);

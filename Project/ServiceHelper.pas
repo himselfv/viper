@@ -214,19 +214,18 @@ function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string)
 
 
 const
-  sBaseScmKey = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
   sHkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
-  sTriggerSubkey = 'TriggerInfo';
+  sScmHKEY = sHkeyLocalMachine;
+  sScmBasePath = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+  sTriggersSubkey = 'TriggerInfo';
 
 //Returns the base key for this service's configuration, relative to HKEY_LOCAL_MACHINE
-function GetServiceKey(const AServiceName: string): string;
-//Returns the full path to the service key, including 'HKEY_LOCAL_MACHINE'
-function GetServiceKeyFull(const AServiceName: string): string; inline;
+function GetServiceKey(const AServiceName: string): string; inline;
 //Opens a configuration key for this service in the registry. The result has to be freed.
 function OpenServiceKey(const AServiceName: string): TRegistry;
 //Returns the base key for the service's trigger configuration, relative to HKEY_LOCAL_MACHINE
-function GetTriggerKey(const AServiceName: string): string;
-function GetTriggerKeyFull(const AServiceName: string): string;
+function GetTriggersKey(const AServiceName: string): string; inline;
+function GetTriggerKey(const AServiceName: string; AIndex: integer): string; inline;
 
 //Services which have svchost as their executable support additional parameter specifying
 //the DLL to load.
@@ -922,12 +921,7 @@ end;
 
 function GetServiceKey(const AServiceName: string): string;
 begin
-  Result := sBaseScmKey+'\'+AServiceName;
-end;
-
-function GetServiceKeyFull(const AServiceName: string): string;
-begin
-  Result := sHkeyLocalMachine+GetServiceKey(AServiceName);
+  Result := sScmBasePath+'\'+AServiceName;
 end;
 
 function OpenServiceKey(const AServiceName: string): TRegistry;
@@ -944,15 +938,16 @@ begin
   end;
 end;
 
-function GetTriggerKey(const AServiceName: string): string;
+function GetTriggersKey(const AServiceName: string): string;
 begin
-  Result := GetServiceKey(AServiceName) + '\' + sTriggerSubkey;
+  Result := GetServiceKey(AServiceName) + '\' + sTriggersSubkey;
 end;
 
-function GetTriggerKeyFull(const AServiceName: string): string;
+function GetTriggerKey(const AServiceName: string; AIndex: integer): string;
 begin
-  Result := GetServiceKeyFull(AServiceName) + '\' + sTriggerSubkey;
+  Result := GetTriggersKey(AServiceName) + '\' + IntToStr(AIndex);
 end;
+
 
 //Old version, supposedly slower
 function QueryServiceServiceDll2(const AServiceName: string): string;

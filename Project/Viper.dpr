@@ -17,6 +17,7 @@ uses
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm},
+  Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',
@@ -30,8 +31,7 @@ uses
   SvcCat in 'SvcCat.pas',
   TriggerExport in 'TriggerExport.pas',
   RegFile in 'RegFile.pas',
-  RegExport in 'RegExport.pas',
-  Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame};
+  RegExport in 'RegExport.pas';
 
 {$R *.res}
 

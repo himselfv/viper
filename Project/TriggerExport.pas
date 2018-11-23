@@ -42,7 +42,7 @@ type
 Export to .reg format
 }
 function SectionFromTrigger(const tr: SERVICE_TRIGGER; const KeyName: string = ''): TRegFileKey; overload;
-function SectionFromTrigger(const tr: TRegTriggerEntry): TRegFileKey; overload; inline;
+function SectionFromTrigger(const tr: TRegTriggerEntry): TRegFileKey; overload;
 
 procedure WriteTriggersToFile(reg: TRegFile; const tri: TArray<TRegTriggerEntry>); overload;
 
@@ -84,18 +84,19 @@ registry key.
 Eventually this might need to be moved to a separate unit.
 }
 function GetDisabledServiceKey(const AServiceName: string): string;
-function GetDisabledTriggersKey(const AServiceName: string): string;
+function GetDisabledTriggersKey(const AServiceName: string): string; inline;
+function GetDisabledTriggerKey(const AServiceName: string; const AId: string): string; inline;
 function GetNewDisabledTriggerKey(const AServiceName: string): string;
 
 type
   TDisabledTrigger = record
-    KeyPath: string;
+    Id: string;
     Trigger: PSERVICE_TRIGGER;
   end;
 
 function LoadDisabledTriggers(const AServiceName: string): TArray<TDisabledTrigger>;
 procedure DisableTrigger(const AServiceName: string; ATrigger: PSERVICE_TRIGGER);
-function EnableTrigger(const AServiceName: string; AKeyPath: string; ATrigger: PSERVICE_TRIGGER = nil): boolean;
+function EnableTrigger(const AServiceName: string; AId: string; ATrigger: PSERVICE_TRIGGER = nil): boolean;
 procedure DeleteDisabledTriggers(const AKeyPaths: array of string);
 
 
@@ -144,7 +145,7 @@ end;
 //Exports a single trigger with the proper KeyName for the given service and index
 function SectionFromTrigger(const tr: TRegTriggerEntry): TRegFileKey;
 begin
-  Result := SectionFromTrigger(tr.Trigger^, GetTriggerKeyFull(tr.ServiceName) + '\' + IntToStr(tr.Index));
+  Result := SectionFromTrigger(tr.Trigger^, sScmHKEY+GetTriggerKey(tr.ServiceName, tr.Index));
 end;
 
 //Exports a number of triggers together to a given TRegFile
@@ -277,11 +278,11 @@ begin
   ServiceName := '';
   Index := -1;
 
-  if not SectionName.StartsWith(sHkeyLocalMachine+sBaseScmKey) then begin
+  if not SectionName.StartsWith(sScmHKEY+sScmBasePath) then begin
     Result := false;
     exit;
   end;
-  Delete(SectionName, 1, Length(sHkeyLocalMachine)+Length(sBaseScmKey)+1); //with the "\"
+  Delete(SectionName, 1, Length(sScmHKEY)+Length(sScmBasePath)+1); //with the "\"
 
   i_pos := pos('\', SectionName);
   if i_pos <= 0 then begin
@@ -292,11 +293,11 @@ begin
   ServiceName := Copy(SectionName, 1, i_pos-1);
   Delete(SectionName, 1, i_pos); //with the "\"
 
-  if not SectionName.StartsWith(sTriggerSubkey) then begin
+  if not SectionName.StartsWith(sTriggersSubkey) then begin
     Result := false;
     exit;
   end;
-  Delete(SectionName, 1, Length(sTriggerSubkey)+1); //with the "\"
+  Delete(SectionName, 1, Length(sTriggersSubkey)+1); //with the "\"
 
   Result := TryStrToInt(SectionName, Index); //all that should remain is the index
 end;
@@ -581,6 +582,11 @@ begin
   Result := GetDisabledServiceKey(AServiceName) + '\TriggerInfo'
 end;
 
+function GetDisabledTriggerKey(const AServiceName: string; const AId: string): string;
+begin
+  Result := GetDisabledTriggersKey(AServiceName) + '\' + AId;
+end;
+
 //Generates a new, unused key name in DisabledServices\ServiceName\Triggers\
 function GetNewDisabledTriggerKey(const AServiceName: string): string;
 var guid: TGuid;
@@ -613,12 +619,12 @@ begin
       subkeys := TStringList.Create;
       reg.GetKeyNames(subkeys);
       for subkey in subkeys do begin
-        if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)+'\'+subkey) then
+        if not reg.OpenKeyReadOnly(GetDisabledTriggerKey(AServiceName, subkey)) then
           continue; //cannot read, don't complain
         trig := CreateTriggerFromRegistryKey(reg);
         //if loaded, store
         SetLength(Result, Length(Result)+1);
-        Result[Length(Result)-1].KeyPath := reg.CurrentPath;
+        Result[Length(Result)-1].Id := subkey;
         Result[Length(Result)-1].Trigger := trig;
       end;
     finally
@@ -658,9 +664,10 @@ begin
 end;
 
 //If you pass ATrigger it'll be used, otherwise it'll be read anew from registry
-function EnableTrigger(const AServiceName: string; AKeyPath: string; ATrigger: PSERVICE_TRIGGER = nil): boolean;
+function EnableTrigger(const AServiceName: string; AId: string; ATrigger: PSERVICE_TRIGGER = nil): boolean;
 var reg: TRegistry;
   trig: PSERVICE_TRIGGER;
+  KeyPath: string;
 begin
   Result := false;
 
@@ -671,7 +678,8 @@ begin
     if ATrigger <> nil then
       trig := ATrigger
     else begin
-      if not reg.OpenKeyReadOnly('\'+AKeyPath) then
+      KeyPath := GetDisabledTriggerKey(AServiceName, AId);
+      if not reg.OpenKeyReadOnly(KeyPath) then
         exit; //cannot read source, don't continue
       trig := CreateTriggerFromRegistryKey(reg);
       if trig = nil then
@@ -689,7 +697,7 @@ begin
     end;
 
     //If the above worked, delete the disabled instance
-    reg.DeleteKey('\'+AKeyPath);
+    reg.DeleteKey(KeyPath);
   finally
     FreeAndNil(reg);
   end;

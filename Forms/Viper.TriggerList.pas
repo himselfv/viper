@@ -26,10 +26,11 @@ type
     ServiceName: string;      //The service which stores this trigger
     Index: integer;           //The index of this trigger in the service's trigger list. 0-based
                               //WARNING: Will change if we delete/add triggers.
-    RegistryPath: string;     //Registry source for this trigger, if created from one
-    IsDisabled: boolean;      //True if the trigger is disabled
+    DisabledId: string;       //Id of this trigger, if it's a disabled trigger
     constructor Create(AData: PSERVICE_TRIGGER; AOwnsData: boolean = true);
     destructor Destroy; override;
+    function IsDisabled: boolean; inline;
+    function GetRegistryKey: string;
     property Data: PSERVICE_TRIGGER read FData;
   end;
 
@@ -76,36 +77,38 @@ type
 
   TTriggerList = class(TFrame)
     Tree: TVirtualStringTree;
+    ReloadTimer: TTimer;
     PopupMenu: TPopupMenu;
     ActionList: TActionList;
+    miCopy: TMenuItem;
     aCopySummary: TAction;
     miCopySummary: TMenuItem;
     aCopyTriggerText: TAction;
-    aCopySourceData: TAction;
-    aCopyParams: TAction;
-    miCopy: TMenuItem;
     miCopyTriggerText: TMenuItem;
+    aCopySourceData: TAction;
     miCopySourceData: TMenuItem;
+    aCopyParams: TAction;
     miCopyParams: TMenuItem;
-    aDisableTrigger: TAction;
+    aCopyRegistryDefinition: TAction;
+    miCopyRegistryDefinition: TMenuItem;
+    aJumpToRegistry: TAction;
+    miJumpToRegistry: TMenuItem;
     aExportTrigger: TAction;
+    miExportTrigger: TMenuItem;
     aExportAllTriggers: TAction;
     aDeleteTrigger: TAction;
-    miExportTrigger: TMenuItem;
-    miDisableTrigger: TMenuItem;
     miDeleteTrigger: TMenuItem;
     aEditTrigger: TAction;
     miEditTrigger: TMenuItem;
-    aCopyTriggerRegDefinition: TAction;
-    Registrydefinition1: TMenuItem;
     OpenTriggersDialog: TOpenDialog;
     SaveTriggersDialog: TSaveDialog;
-    aImportTrigger: TAction;
     N2: TMenuItem;
+    aImportTrigger: TAction;
     miImportTrigger: TMenuItem;
+    aDisableTrigger: TAction;
+    miDisableTrigger: TMenuItem;
     aEnableTrigger: TAction;
     miEnableTrigger: TMenuItem;
-    ReloadTimer: TTimer;
     procedure TreeGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
     procedure TreeInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
       var InitialStates: TVirtualNodeInitStates);
@@ -127,18 +130,20 @@ type
       Column: TColumnIndex);
     procedure TreeCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var Allowed: Boolean);
+    procedure ReloadTimerTimer(Sender: TObject);
     procedure aCopyTriggerTextExecute(Sender: TObject);
     procedure aCopySourceDataExecute(Sender: TObject);
     procedure aCopyParamsExecute(Sender: TObject);
+    procedure aCopyRegistryDefinitionExecute(Sender: TObject);
+    procedure aJumpToRegistryExecute(Sender: TObject);
     procedure aDeleteTriggerExecute(Sender: TObject);
     procedure aEditTriggerExecute(Sender: TObject);
-    procedure aCopyTriggerRegDefinitionExecute(Sender: TObject);
     procedure aExportTriggerExecute(Sender: TObject);
     procedure aExportAllTriggersExecute(Sender: TObject);
     procedure aImportTriggerExecute(Sender: TObject);
     procedure aDisableTriggerExecute(Sender: TObject);
     procedure aEnableTriggerExecute(Sender: TObject);
-    procedure ReloadTimerTimer(Sender: TObject);
+
   const
     colTrigger = 0;
     colAction = 1;
@@ -161,7 +166,7 @@ type
     procedure Reload; virtual;
     function Add(const ATrigger: TNdTrigger): PVirtualNode;
     function AddFromScm(const AServiceName: string; AIndex: integer; const ATrigger: PSERVICE_TRIGGER): PVirtualNode;
-    function AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+    function AddFromDisabled(const AServiceName: string; const AId: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
     procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
     property EntryMode: TTriggerEntryMode read FEntryMode write SetEntryMode;
 
@@ -186,8 +191,8 @@ type
 
 
 implementation
-uses UITypes, Clipbrd, CommonResources, TriggerExport,
-  RegFile, RegExport, Viper.TriggerEditor, Viper.TriggerImport, Registry;
+uses UITypes, Clipbrd, ShellUtils, CommonResources, Registry, RegFile, RegExport,
+  TriggerExport, Viper.TriggerEditor, Viper.TriggerImport;
 
 {$R *.dfm}
 
@@ -207,6 +212,20 @@ begin
     FData := nil;
   end;
   inherited;
+end;
+
+function TNdTrigger.IsDisabled: boolean;
+begin
+  Result := DisabledId <> '';
+end;
+
+//Returns the registry key associated with the trigger, if any
+function TNdTrigger.GetRegistryKey: string;
+begin
+  if Self.DisabledId = '' then
+    Result := GetTriggerKey(Self.ServiceName, Self.Index)
+  else
+    Result := GetDisabledTriggerKey(Self.ServiceName, Self.DisabledId);
 end;
 
 constructor TNdTriggerList.Create;
@@ -358,8 +377,12 @@ begin
   aCopyTriggerText.Visible := Tree.SelectedCount > 0;
   aCopySourceData.Visible := Tree.SelectedCount > 0;
   aCopyParams.Visible := Tree.SelectedCount > 0;
+  aCopyRegistryDefinition.Visible := Tree.SelectedCount > 0;
   miCopy.Visible := aCopySummary.Visible or aCopyTriggerText.Visible
-    or aCopySourceData.Visible or aCopyParams.Visible;
+    or aCopySourceData.Visible or aCopyParams.Visible
+    or aCopyRegistryDefinition.Visible;
+
+  aJumpToRegistry.Visible := Length(sel) = 1;
 
   aEditTrigger.Visible := (Tree.SelectedCount = 1) and HaveSCM; //"Edit" only works on live triggers
   aExportTrigger.Visible := Tree.SelectedCount > 0;
@@ -534,15 +557,14 @@ begin
   Result := Self.Add(Trigger);
 end;
 
-//Adds an entry for a disabled trigger stored in the registry by a given key path
+//Adds an entry for a disabled trigger stored in the registry
 //Trigger data ownership is transferred. The caller must not use ATrigger anymore.
-function TTriggerList.AddFromRegistry(const AServiceName: string; const AKeyPath: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
+function TTriggerList.AddFromDisabled(const AServiceName: string; const AId: string; ATrigger: PSERVICE_TRIGGER): PVirtualNode;
 var Trigger: TNdTrigger;
 begin
   Trigger := TNdTrigger.Create(ATrigger, {OwnsData=}true);
   Trigger.ServiceName := AServiceName;
-  Trigger.RegistryPath := AKeyPath;
-  Trigger.IsDisabled := true;
+  Trigger.DisabledId := AId;
   Result := Self.Add(Trigger);
 end;
 
@@ -775,7 +797,7 @@ begin
   Clipboard.AsText := Result;
 end;
 
-procedure TTriggerList.aCopyTriggerRegDefinitionExecute(Sender: TObject);
+procedure TTriggerList.aCopyRegistryDefinitionExecute(Sender: TObject);
 var Data: PNdTriggerFacet;
   Result: string;
   i: integer;
@@ -792,6 +814,17 @@ begin
   if Length(Result) >= 2 then
     SetLength(Result, Length(Result)-2);
   Clipboard.AsText := Result;
+end;
+
+procedure TTriggerList.aJumpToRegistryExecute(Sender: TObject);
+var Data: PNdTriggerFacet;
+  KeyPath: string;
+begin
+  Data := Self.FocusedFacet;
+  if Data = nil then exit;
+
+  KeyPath := Data.Trigger.GetRegistryKey;
+  ShellUtils.RegeditAtKey(sScmHKEY+KeyPath);
 end;
 
 procedure TTriggerList.aEditTriggerExecute(Sender: TObject);
@@ -851,7 +884,7 @@ procedure TTriggerList.aDeleteTriggerExecute(Sender: TObject);
 var Sel: TArray<PNdTriggerFacet>;
   ConfirmationText: string;
   ScmTriggers: array of PSERVICE_TRIGGER;
-  RegTriggers: array of string;
+  DisabledTriggers: array of string;
   i: integer;
 begin
   Sel := SelectedFacets;
@@ -869,11 +902,11 @@ begin
 
   //Split into arrays by type:
   SetLength(ScmTriggers, 0);
-  SetLength(RegTriggers, 0);
+  SetLength(DisabledTriggers, 0);
   for i := 0 to Length(Sel)-1 do
     if Sel[i].Trigger.IsDisabled then begin
-      SetLength(RegTriggers, Length(RegTriggers)+1);
-      RegTriggers[Length(RegTriggers)-1] := Sel[i].Trigger.RegistryPath;
+      SetLength(DisabledTriggers, Length(DisabledTriggers)+1);
+      DisabledTriggers[Length(DisabledTriggers)-1] := Sel[i].Trigger.DisabledId;
     end else begin
       SetLength(ScmTriggers, Length(ScmTriggers)+1);
       ScmTriggers[Length(ScmTriggers)-1] := Sel[i].Trigger.Data;
@@ -888,7 +921,7 @@ begin
   end;
 
   //Delete registry triggers
-  DeleteDisabledTriggers(RegTriggers);
+  DeleteDisabledTriggers(DisabledTriggers);
 
   TriggerUtils.TriggerListChanged(Self, '');
   Reload;
@@ -912,7 +945,7 @@ begin
       //All triggers are exported under their full registry path + their real index
       SectionFromTrigger(
         Trigger.Data^,
-        GetTriggerKeyFull(Trigger.ServiceName) + '\' + IntToStr(Trigger.Index)
+        sScmHKEY+GetTriggerKey(Trigger.ServiceName, Trigger.Index)
       ).ExportToStrings(sl);
 
     sl.SaveToFile(SaveTriggersDialog.FileName);
@@ -960,7 +993,7 @@ var Triggers: TArray<TDisabledTrigger>;
 begin
   Triggers := LoadDisabledTriggers(AServiceName);
   for i := 0 to Length(Triggers)-1 do
-    Self.AddFromRegistry(AServiceName, Triggers[i].KeyPath, Triggers[i].Trigger); //takes over the data
+    Self.AddFromDisabled(AServiceName, Triggers[i].Id, Triggers[i].Trigger); //takes over the data
 end;
 
 procedure TTriggerList.aDisableTriggerExecute(Sender: TObject);
@@ -987,10 +1020,9 @@ begin
   if Length(Sel) <= 0 then exit;
 
   for Trigger in Sel do begin
-    if not Trigger.IsDisabled then continue;
-    if Trigger.RegistryPath = '' then continue;
+    if Trigger.DisabledId = '' then continue; //not disabled
 
-    if not EnableTrigger(Trigger.ServiceName, Trigger.RegistryPath, Trigger.Data) then
+    if not EnableTrigger(Trigger.ServiceName, Trigger.DisabledId, Trigger.Data) then
       continue; //cannot enable, don't complain
   end;
 

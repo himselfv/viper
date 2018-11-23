@@ -75,9 +75,12 @@ object TriggerList: TTriggerList
       object miCopyParams: TMenuItem
         Action = aCopyParams
       end
-      object Registrydefinition1: TMenuItem
-        Action = aCopyTriggerRegDefinition
+      object miCopyRegistryDefinition: TMenuItem
+        Action = aCopyRegistryDefinition
       end
+    end
+    object miJumpToRegistry: TMenuItem
+      Action = aJumpToRegistry
     end
     object miEditTrigger: TMenuItem
       Action = aEditTrigger
@@ -154,15 +157,20 @@ object TriggerList: TTriggerList
       Caption = 'Edit'
       OnExecute = aEditTriggerExecute
     end
-    object aCopyTriggerRegDefinition: TAction
+    object aCopyRegistryDefinition: TAction
       Category = 'Copy'
       Caption = 'Registry definition'
-      OnExecute = aCopyTriggerRegDefinitionExecute
+      OnExecute = aCopyRegistryDefinitionExecute
     end
     object aImportTrigger: TAction
       Category = 'Modify'
       Caption = 'Import...'
       OnExecute = aImportTriggerExecute
+    end
+    object aJumpToRegistry: TAction
+      Caption = 'Jump to key'
+      Hint = 'Jump to registry key associated with the trigger'
+      OnExecute = aJumpToRegistryExecute
     end
   end
   object OpenTriggersDialog: TOpenDialog

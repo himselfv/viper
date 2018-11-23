@@ -27,6 +27,7 @@ object TriggerList: TTriggerList
     OnChange = TreeChange
     OnCollapsing = TreeCollapsing
     OnCompareNodes = TreeCompareNodes
+    OnDblClick = TreeDblClick
     OnFocusChanged = TreeFocusChanged
     OnFreeNode = TreeFreeNode
     OnGetText = TreeGetText
@@ -61,6 +62,13 @@ object TriggerList: TTriggerList
   object PopupMenu: TPopupMenu
     Left = 16
     Top = 64
+    object miEditTrigger: TMenuItem
+      Action = aEditTrigger
+      Default = True
+    end
+    object miEnableTrigger: TMenuItem
+      Action = aEnableTrigger
+    end
     object miCopy: TMenuItem
       Caption = 'Copy'
       object miCopySummary: TMenuItem
@@ -81,12 +89,6 @@ object TriggerList: TTriggerList
     end
     object miJumpToRegistry: TMenuItem
       Action = aJumpToRegistry
-    end
-    object miEditTrigger: TMenuItem
-      Action = aEditTrigger
-    end
-    object miEnableTrigger: TMenuItem
-      Action = aEnableTrigger
     end
     object miExportTrigger: TMenuItem
       Action = aExportTrigger

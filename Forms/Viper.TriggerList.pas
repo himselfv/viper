@@ -143,6 +143,7 @@ type
     procedure aImportTriggerExecute(Sender: TObject);
     procedure aDisableTriggerExecute(Sender: TObject);
     procedure aEnableTriggerExecute(Sender: TObject);
+    procedure TreeDblClick(Sender: TObject);
 
   const
     colTrigger = 0;
@@ -406,12 +407,6 @@ begin
     Self.FOnFocusChanged(Self, Data);
 end;
 
-procedure TTriggerList.TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
-    aCopySummary.Execute;
-end;
-
 procedure TTriggerList.TreeCollapsing(Sender: TBaseVirtualTree;
   Node: PVirtualNode; var Allowed: Boolean);
 begin
@@ -465,6 +460,25 @@ begin
       end;
     Sender.Treeview.Sort(nil, Sender.SortColumn, Sender.SortDirection);
   end;
+end;
+
+procedure TTriggerList.TreeKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if (ssCtrl in Shift) and ((Key=Ord('C')) or (Key=Ord('c'))) then
+    aCopySummary.Execute;
+end;
+
+procedure TTriggerList.TreeDblClick(Sender: TObject);
+var Node: PVirtualNode;
+  Pos: TPoint;
+begin
+  //Only handle dbl-clicks at focused nodes
+  Pos := Tree.ScreenToClient(Mouse.CursorPos);
+  Node := Tree.GetNodeAt(Pos.X, Pos.Y);
+  if Tree.FocusedNode <> Node then
+    exit;
+
+  aEditTrigger.Execute;
 end;
 
 

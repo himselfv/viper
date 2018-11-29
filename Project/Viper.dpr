@@ -31,7 +31,8 @@ uses
   SvcCat in 'SvcCat.pas',
   TriggerExport in 'TriggerExport.pas',
   RegFile in 'RegFile.pas',
-  RegExport in 'RegExport.pas';
+  RegExport in 'RegExport.pas',
+  WnfUtils in 'WnfUtils.pas';
 
 {$R *.res}
 

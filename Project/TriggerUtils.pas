@@ -155,6 +155,7 @@ function GetEtwProviders: TGUIDDictionary;
 function TryGetEtwProviderName(const Guid: TGuid; out AName: string): boolean;
 function GetEtwProviderName(const Guid: TGuid): string; inline;
 
+function GetLocalRpcInterfaces: TGUIDDictionary;
 function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
 function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
 
@@ -867,6 +868,12 @@ begin
   __LoadLocalRpcInterfaces;
 end;
 {$ENDIF}
+
+function GetLocalRpcInterfaces: TGUIDDictionary;
+begin
+  LoadLocalRpcInterfaces;
+  Result := LocalRpcInterfaces;
+end;
 
 function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
 begin

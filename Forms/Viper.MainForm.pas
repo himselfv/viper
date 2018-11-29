@@ -121,6 +121,7 @@ type
     miSettings: TMenuItem;
     miQueryLocalRPC: TMenuItem;
     miQueryLocalCOM: TMenuItem;
+    miDumpLocalRPC: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -198,6 +199,7 @@ type
       var Allowed: Boolean);
     procedure miQueryLocalRPCClick(Sender: TObject);
     procedure miQueryLocalCOMClick(Sender: TObject);
+    procedure miDumpLocalRPCClick(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -275,7 +277,7 @@ var
 
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
-  CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
+  GuidDict, CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
   Viper.StyleSettings, Viper.Settings;
 
 {$R *.dfm}
@@ -1742,5 +1744,15 @@ begin
     IntfName := 'Interface not found';
   MessageBox(Self.Handle, PChar(IntfName), 'Query RPC Name', MB_OK);
 end;
+
+procedure TMainForm.miDumpLocalRPCClick(Sender: TObject);
+var dict: TGuidDictionary;
+  key: TGuid;
+begin
+  dict := GetLocalRpcInterfaces;
+  for key in dict.Keys do
+    Log(GuidToString(key) + '=' + dict[key]);
+end;
+
 
 end.

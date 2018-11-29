@@ -539,6 +539,10 @@ object MainForm: TMainForm
         Caption = 'Get local COM interface name'
         OnClick = miQueryLocalCOMClick
       end
+      object miDumpLocalRPC: TMenuItem
+        Caption = 'Dump local RPC'
+        OnClick = miDumpLocalRPCClick
+      end
     end
   end
   object pmFolders: TPopupMenu

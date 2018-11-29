@@ -531,9 +531,13 @@ object MainForm: TMainForm
         Caption = 'Show log'
         OnClick = miShowLogClick
       end
-      object miGetLocalRPCIntfName: TMenuItem
+      object miQueryLocalRPC: TMenuItem
         Caption = 'Get local RPC interface name'
-        OnClick = miGetLocalRPCIntfNameClick
+        OnClick = miQueryLocalRPCClick
+      end
+      object miQueryLocalCOM: TMenuItem
+        Caption = 'Get local COM interface name'
+        OnClick = miQueryLocalCOMClick
       end
     end
   end

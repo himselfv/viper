@@ -119,7 +119,8 @@ type
     N7: TMenuItem;
     aSettings: TAction;
     miSettings: TMenuItem;
-    miGetLocalRPCIntfName: TMenuItem;
+    miQueryLocalRPC: TMenuItem;
+    miQueryLocalCOM: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -195,7 +196,8 @@ type
     procedure aSettingsExecute(Sender: TObject);
     procedure vtFoldersCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var Allowed: Boolean);
-    procedure miGetLocalRPCIntfNameClick(Sender: TObject);
+    procedure miQueryLocalRPCClick(Sender: TObject);
+    procedure miQueryLocalCOMClick(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -1696,17 +1698,49 @@ begin
   end;
 end;
 
-procedure TMainForm.miGetLocalRPCIntfNameClick(Sender: TObject);
-var IntfIdStr: string;
-  IntfId: TGUID;
+function QueryGuid(const ACaption: string; const APrompt: string; out AGuid: TGuid): boolean;
+var GuidStr: string;
 begin
-  if not InputQuery('Query RPC Name', 'Enter RPC interface GUID:', IntfIdStr) then
+  Result := InputQuery(ACaption, APrompt, GuidStr);
+  if not Result then
     exit;
-  if not TryStringToGUID(IntfIdStr, IntfId) then
-    IntfId := StringToGUID('{'+IntfIdStr+'}');
-  if not TryGetLocalRpcInterfaceName(IntfId, IntfIdStr) then
-    IntfIdStr := 'Name not found';
-  MessageBox(Self.Handle, PChar(IntfIdStr), 'Query RPC Name', MB_OK);
+  Result := false;
+  if not TryStringToGUID(GuidStr, AGuid) then
+    AGuid := StringToGUID('{'+GuidStr+'}');
+  Result := true;
+end;
+
+resourcestring
+  sQueryLocalRPC = 'Query RPC Name';
+  sQueryLocalCOM = 'Query COM Name';
+  sQueryGUIDPrompt = 'Enter interface GUID:';
+
+procedure TMainForm.miQueryLocalRPCClick(Sender: TObject);
+var IntfId: TGUID;
+  IntfName: string;
+begin
+  if not QueryGuid(sQueryLocalRPC, sQueryGuidPrompt, IntfId) then
+    exit;
+  if not TryGetLocalRpcInterfaceName(IntfId, IntfName) then
+    IntfName := 'Name not found';
+  MessageBox(Self.Handle, PChar(IntfName), 'Query RPC Name', MB_OK);
+end;
+
+procedure TMainForm.miQueryLocalCOMClick(Sender: TObject);
+var IntfId: TGUID;
+  IntfName: string;
+  cls: IInterface;
+begin
+  if not QueryGuid(sQueryLocalCOM, sQueryGuidPrompt, IntfId) then
+    exit;
+  if SUCCEEDED(CoCreateInstance(IntfId, nil,
+    CLSCTX_INPROC_SERVER or CLSCTX_INPROC_HANDLER or CLSCTX_LOCAL_SERVER or
+    CLSCTX_INPROC_SERVER16 or CLSCTX_REMOTE_SERVER or CLSCTX_INPROC_HANDLER16,
+    IInterface, cls)) then
+    IntfName := 'Interface found'
+  else
+    IntfName := 'Interface not found';
+  MessageBox(Self.Handle, PChar(IntfName), 'Query RPC Name', MB_OK);
 end;
 
 end.

@@ -1,0 +1,862 @@
+# WNF State Name list
+# Taken from:
+#   http://redplait.blogspot.com/2017/08/wnf-ids-from-perfntcdll.html
+# Generated from
+#   perf_nt_c.dll
+
+# Format:
+#   StateName (ID) [tab] Name [tab] Description
+
+# WNF State Name format is really
+# 
+
+A3BC08754191012C	WNF_AOW_BOOT_PROGRESS	This state is incremented when a discrete part of the AoW boot sequence has completed. Security: WNF_STATE_SUBSCRIBE (1) by everyone (WD) and app containers (S-1-15-2-1); WNF_STATE_SUBSCRIBE | WNF_STATE_PUBLISH (3) by Local System (SY) and the Interactive User account (IU).
+7508BCA32C07C641	WNF_AI_USERTILE	AppInstallation state name to receive RAW notifications
+7508BCA32C7C8741	WNF_A2A_APPURIHANDLER_INSTALLED	An app implementing windows.AppUriHandler contract has been installed
+7508BCA32C0FC641	WNF_AA_LOCKDOWN_CHANGED	Mobile lockdown configuration has been changed
+B508BCA32C1B8202	WNF_AUDC_CPUSET_ID	This state holds the CPU Set ID for audio threads. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+7510BCA32C1B8202	WNF_AUDC_PHONECALL_ACTIVE	This state indicates an active phone call, which can be from a cellular call or active Communications category audio streams
+7518BCA32C1B8202	WNF_AUDC_TUNER_DEVICE_AVAILABILITY	This notification indicates whether or not the tuner endpoint is available.
+7520BCA32C1B8202	WNF_AUDC_HEALTH_PROBLEM	State for problems detected in the audio core.
+7528BCA32C1B8202	WNF_AUDC_CPUSET_ID_SYSTEM	This state keeps other system services apprised of the audio-reserved CPU set ID.
+7508BCA32C188741	WNF_AVA_SOUNDDETECTOR_PATTERN_MATCH	This notification is used to signal that a match has been detected for Voice Activation
+7508BCA32C188A02	WNF_AVLC_DRIVER_REQUEST	A driver requst permission for volume limit change.
+7510BCA32C188A02	WNF_AVLC_VOLUME_WARNING_ACCEPTED	This event propagates the user's choice from the warning dialog.
+7518BCA32C188A02	WNF_AVLC_SHOW_VOLUMELIMITWARNING	This event informs the system that we need to show reached volume limit warning message
+7508BCA32C0D8E0A	WNF_ACHK_SP_CORRUPTION_DETECTED	Event fired when we scan the System Partition and find corruption.
+7508BCA32F039641	WNF_BMP_BG_PLAYSTATE_CHANGED	The background media player's playstate has changed.
+7510BCA32F039641	WNF_BMP_BG_PLAYBACK_REVOKED	The following tasks aren't able to play under current policy
+7580BCA3221DC641	WNF_OS_IP_OVER_USB_AVAILABLE	IP Over USB Availability. SDDL comes from ID_CAP_EVERYONE and IpOverUsb in %SDXROOT%\src\baseos\prod\packages\MfgIpOverUsb\MfgIpOverUsb.pkg.xml
+7588BCA3221DC641	WNF_OS_IU_PROGRESS_REPORT	Update progress reporting status. SDDL comes from ID_CAP_BASEOS_UPDATEAPI in %SDXROOT%\src\baseos\prod\packages\imgupd\MainOS\ImgUpd.pkg.xml
+7508BCA32B188341	WNF_FVE_DE_SUPPORT	This event triggers when Device Encryption support status is evaluated, and receives the result of that evaluation.
+7510BCA32B188341	WNF_FVE_DE_MANAGED_VOLUMES_COUNT	This event triggers when the BitLocker service detects a change in the count of DE-managed volumes, and includes the count of such volumes.
+7518BCA32B188341	WNF_FVE_WIM_HASH_GENERATION_TRIGGER	This event triggers or signals to stop WIM hash generation task.
+7520BCA32B188341	WNF_FVE_WIM_HASH_GENERATION_COMPLETION	This event signals completion of WIM hash generation.
+7528BCA32B188341	WNF_FVE_WIM_HASH_DELETION_TRIGGER	This event triggers WIM hash deletion.
+7530BCA32B188341	WNF_FVE_BDESVC_TRIGGER_START	This event trigger-starts BdeSvc service.
+7538BCA32B188341	WNF_FVE_STATE_CHANGE	This event triggers on every BitLocker state change.
+7540BCA32B188341	WNF_FVE_MDM_POLICY_REFRESH	This event triggers where RequireDeviceEncryption policy arrives under the BitLocker area.
+7548BCA32B188341	WNF_FVE_REQUIRE_SDCARD_ENCRYPTION	This event triggers SD card encrytion policy arrival notification.
+7550BCA32B188341	WNF_FVE_SDCARD_ENCRYPTION_REQUEST	This event triggers SecTask to enable/disable SD Card encryption.
+7558BCA32B188341	WNF_FVE_SDCARD_ENCRYPTION_STATUS	This event indicates completion of SD Card encryption/decryption request.
+7508BCA32F029209	WNF_BLTH_BLUETOOTH_STATUS	State name for Bluetooth overall status notification. Flags from the BLUETOOTH_GLOBAL_STATUS enum are returned. SDDL comes from ID_CAP_EVERYONE and BTConnMgr in %SDXROOT%\src\net\Bluetooth\Packages\Product\Bluetooth\Bluetooth.pkg.xml
+7510BCA32F029209	WNF_BLTH_BLUETOOTH_AUDIO_GATEWAY_STATUS	State name for Bluetooth Audio Gateway status notification. A 32-bit bitmask of BLUETOOTH_AUDIO_GATEWAY_STATUS enum are returned. SDDL comes from ID_CAP_EVERYONE and BTAGService in %SDXROOT%\src\net\Bluetooth\Packages\Product\Bluetooth\Bluetooth.pkg.xml
+7518BCA32F029209	WNF_BLTH_BLUETOOTH_MAP_STATUS	State name for Bluetooth MAP status notification. A 32-bit bitmask of BLUETOOTH_MAP_STATUS enum are returned.
+7520BCA32F029209	WNF_BLTH_BLUETOOTH_CONNECTION_STATE_CHANGE	Indicates when a Bluetooth Device gets connected and disconnected
+7528BCA32F029209	WNF_BLTH_BLUETOOTH_GATT_CLIENT_LEGACY_REQUEST	Indicates that a legacy Gatt client request is present. The local radio and remote device BTH_ADDR are returned.
+7530BCA32F029209	WNF_BLTH_BLUETOOTH_GATT_CLIENT_LEGACY_INVALIDATE_TOKEN	Indicates that a legacy Gatt client request was no longer present. The previously granted access token to be revoked is returned.
+7508BCA32F018915	WNF_BOOT_DIRTY_SHUTDOWN	The state is published once the previous shutdown was not clean.
+7510BCA32F018915	WNF_BOOT_INVALID_TIME_SOURCE	The state is published if system time is initialized with a backup time source.
+7518BCA32F018915	WNF_BOOT_MEMORY_PARTITIONS_RESTORE	The state reflects memory partiton restoration state (nothing to restore, restore in progress, restore completed, failure)
+7508BCA32F1C8F41	WNF_BRI_ACTIVE_WINDOW	Notifies brightness classes of the active window in order to apply their brightness preferences
+7508BCA32F07C641	WNF_BI_BROKER_WAKEUP_CHANNEL	Background work execution trigger
+7510BCA32F07C641	WNF_BI_USER_LOGON_CHANNEL	BI user logon system state notification channel
+7518BCA32F07C641	WNF_BI_USER_LOGOFF_CHANNEL	BI user logoff system state notification channel
+7520BCA32F07C641	WNF_BI_SESSION_CONNECT_CHANNEL	BI session connect system state notification channel
+7528BCA32F07C641	WNF_BI_SESSION_DISCONNECT_CHANNEL	BI session disconnect system state notification channel
+7530BCA32F07C641	WNF_BI_APPLICATION_UNINSTALL_CHANNEL	BI application uninstall system state notification channel
+7538BCA32F07C641	WNF_BI_APPLICATION_SERVICING_START_CHANNEL	BI application servicing start system state notification channel
+7540BCA32F07C641	WNF_BI_APPLICATION_SERVICING_STOP_CHANNEL	BI application servicing stop system state notification channel
+7548BCA32F07C641	WNF_BI_LOCK_SCREEN_UPDATE_CHANNEL	BI lock screen update system state notification channel
+7550BCA32F07C641	WNF_BI_EVENT_DELETION	BI event deletion system state notification channel
+7558BCA32F07C641	WNF_BI_PSM_TEST_HOOK_CHANNEL	PSM policy test hook
+7560BCA32F07C641	WNF_BI_QUIET_MODE_UPDATE_CHANNEL	BI Quiet Mode update system state notification channel
+3568BCA32F07C641	WNF_BI_BI_READY	Indicates that BI is ready and also publish channels list for each session
+7570BCA32F07C641	WNF_BI_NOTIFY_NEW_SESSION	BI notify new session system state notification channel
+7578BCA32F07C641	WNF_BI_QUERY_APP_USAGE	PSM notification to clients for querying application performance usage
+B508BCA32E0D920D	WNF_CCTL_BUTTON_REQUESTS	A button press has caused a request.
+7508BCA32E0A9641	WNF_CDP_CDPSVC_READY	Indicates CDP Service is ready
+7510BCA32E0A9641	WNF_CDP_CDPSVC_STOPPING	Indicates CDP Service is stopping
+3518BCA32E0A9641	WNF_CDP_CDPUSERSVC_READY	Indicates CDP User Service is ready
+3520BCA32E0A9641	WNF_CDP_CDPUSERSVC_STOPPING	Indicates CDP User Service is stopping
+7528BCA32E0A9641	WNF_CDP_CDP_MESSAGES_QUEUED	Indicates CDP service queued the message(s) for designated applications
+7530BCA32E0A9641	WNF_CDP_CDP_ACTIVITIES_RECIEVED	Indicates CDP service received new activities
+7538BCA32E0A9641	WNF_CDP_USERAUTH_POLICY_CHANGE	Indicates that the user has changed the CDP policy
+7540BCA32E0A9641	WNF_CDP_CDP_NOTIFICATION_ACTION_FORWARD_FAILURE	Indicates failure either delivering or invoking a Notification Action on a remote device
+3548BCA32E0A9641	WNF_CDP_USER_ROME_SETTING_CHANGE	Indicates that the user has changed Rome SDK authorization setting
+3550BCA32E0A9641	WNF_CDP_USER_NEAR_SHARE_SETTING_CHANGE	Indicates that the user has changed Near Share authorization setting
+7508BCA32E0B8A0D	WNF_CELL_POWER_STATE_MODEM0	Modem power state of the first modem, values defined by MODEMPOWERSTATE. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7510BCA32E0B8A0D	WNF_CELL_SIGNAL_STRENGTH_BARS_CAN0	Number of bars (0..5) of signal strength for the first cellular can. In the case of dual registration (SVLTE or CDMA) this is the primary signal strength. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7518BCA32E0B8A0D	WNF_CELL_SYSTEM_TYPE_CAN0	System type of the first cellular Can, a bitmask of RIL_SYSTEMTYPE_ values. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7520BCA32E0B8A0D	WNF_CELL_REGISTRATION_STATUS_CAN0	Current registration status of the first cellular can, bits defined by RILREGSTAT. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7528BCA32E0B8A0D	WNF_CELL_UICC_STATUS_SLOT0	Status of the UICC in the first slot. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7530BCA32E0B8A0D	WNF_CELL_AIRPLANEMODE	The current state of airplanemode. SDDL comes from ID_CAP_CELL_WNF, WwanSvc and Airplanemode (service) in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7538BCA32E0B8A0D	WNF_CELL_OPERATOR_NAME_CAN0	Current serving operator for the first cellular can, name as a Unicode string. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7540BCA32E0B8A0D	WNF_CELL_CDMA_ACTIVATION_CAN0	Activation, PRL, and provisioning state for the first cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7548BCA32E0B8A0D	WNF_CELL_NETWORK_TIME_CAN0	NITZ information for the first cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF, WwanSvc and tzautoupdate in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7550BCA32E0B8A0D	WNF_CELL_AVAILABLE_OPERATORS_CAN0	List of available operators for the first cellular can, an array of RILOPERATORINFO. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7558BCA32E0B8A0D	WNF_CELL_DEVICE_INFO_CAN0	Device info (RIL_GetDeviceInfo) for the first cellular can, as a set of Unicode strings. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7564BCA32E0B8A0D	WNF_CELL_DATA_ENABLED_BY_USER_MODEM0	Cellular data enabled state as set by user. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7568BCA32E0B8A0D	WNF_CELL_PHONE_NUMBER_CAN0	Phone number (MSISDN) for the first cellular can, as a Unicode string. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7570BCA32E0B8A0D	WNF_CELL_VOICEMAIL_NUMBER_CAN0	Voicemail number (MBDN) for the first cellular can, as a Unicode string. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+757CBCA32E0B8A0D	WNF_CELL_REGISTRATION_PREFERENCES_CAN0	Registration preferences for the first cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7580BCA32E0B8A0D	WNF_CELL_CAN_STATE_CAN0	Can state (between CellManager and CellUX) for the first cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+758CBCA32E0B8A0D	WNF_CELL_USER_PREFERRED_POWER_STATE_MODEM0	Power state of the modem as last preferred by the user, values defined by MODEMPOWERSTATE. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7590BCA32E0B8A0D	WNF_CELL_AIRPLANEMODE_DETAILS	The current state of airplanemode details. SDDL comes from ID_CAP_CELL_WNF, WwanSvc and Airplanemode (service) in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7598BCA32E0B8A0D	WNF_CELL_POSSIBLE_DATA_ACTIVITY_CHANGE_MODEM0	This is triggered if cellcore suspects that data activity may have been affected. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75A4BCA32E0B8A0D	WNF_CELL_SYSTEM_CONFIG	Root state describing cellular system configuration (all modems and their cans). SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75A8BCA32E0B8A0D	WNF_CELL_REGISTRATION_STATUS_DETAILS_CAN0	Detailed registration status of the first cellular can, defined by WNFCELLSTATETYPE(REGISTRATION_STATUS_DETAILS). SDDL comes from ID_CAP_CAMERA, ID_CAP_CELL_WNF, ID_CAP_EVERYONE, ID_CAP_ISV_CAMERA, WwanSvc and tzautoupdate in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75B0BCA32E0B8A0D	WNF_CELL_SUPPORTED_SYSTEM_TYPES_CAN0	bitmask of supported system types by the first cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75B8BCA32E0B8A0D	WNF_CELL_PERSO_STATUS_CAN0	bitmask of supported system types by the first cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75C0BCA32E0B8A0D	WNF_CELL_HOME_OPERATOR_CAN0	MCC, MNC (or SID, NID) of the 'home' operator. SDDL comes from ID_CAP_CAMERA, ID_CAP_CELL_WNF, ID_CAP_ISV_CAMERA and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75C8BCA32E0B8A0D	WNF_CELL_HOME_PRL_ID_CAN0	PRL ID of 'home' operator. Is Valid only if there is a valid 3GPP2 line available. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75E8BCA32E0B8A0D	WNF_CELL_UTK_SETUP_MENU_SLOT0	UICC toolkit setup menu notification for slot 0. SDDL comes from ID_CAP_CELL_WNF_PII and UtkService in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75F0BCA32E0B8A0D	WNF_CELL_UTK_PROACTIVE_CMD	UICC toolkit proactive command notification for all slots. SDDL comes from ID_CAP_CELL_WNF_PII and UtkService in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75F8BCA32E0B8A0D	WNF_CELL_CSP_WWAN_PLUS_READYNESS	CM CSPWWAN+ readyness state. SDDL comes from ID_CAP_CMCSPWWAN_PLUS in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7500BDA32E0B8A0D	WNF_CELL_CALLFORWARDING_STATUS_CAN0	Call-forwarding status for the first cellular can. The same struct is used to indicate the latest state for a given callforwarding-reason. SDDL comes from ID_CAP_CELL_API_TELEPHONY, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+750CBDA32E0B8A0D	WNF_CELL_RADIO_TYPE_MODEM0	Modem radio type of the first modem, values defined by RILRADIOCONFIGURATIONRADIOTYPE. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7510BDA32E0B8A0D	WNF_CELL_SIGNAL_STRENGTH_BARS_CAN1	Number of bars (0..5) of signal strength for the second cellular can. In the case of dual registration (SVLTE or CDMA) this is the primary signal strength. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7518BDA32E0B8A0D	WNF_CELL_SYSTEM_TYPE_CAN1	System type of the second cellular Can, a bitmask of RIL_SYSTEMTYPE_ values. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7520BDA32E0B8A0D	WNF_CELL_REGISTRATION_STATUS_CAN1	Current registration status of the second cellular can, bits defined by RILREGSTAT. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7528BDA32E0B8A0D	WNF_CELL_UICC_STATUS_SLOT1	Status of the UICC in the second slot. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7540BDA32E0B8A0D	WNF_CELL_OPERATOR_NAME_CAN1	Current serving operator for the second cellular can, name as a Unicode string. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7548BDA32E0B8A0D	WNF_CELL_CDMA_ACTIVATION_CAN1	Activation, PRL, and provisioning state for the second cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7550BDA32E0B8A0D	WNF_CELL_NETWORK_TIME_CAN1	NITZ information for the second cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF, WwanSvc and tzautoupdate in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7558BDA32E0B8A0D	WNF_CELL_AVAILABLE_OPERATORS_CAN1	List of available operators for the second cellular can, an array of RILOPERATORINFO. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7560BDA32E0B8A0D	WNF_CELL_DEVICE_INFO_CAN1	Device info (RIL_GetDeviceInfo) for the second cellular can, as a set of Unicode strings. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7570BDA32E0B8A0D	WNF_CELL_PHONE_NUMBER_CAN1	Phone number (MSISDN) for the second cellular can, as a Unicode string. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+758CBDA32E0B8A0D	WNF_CELL_REGISTRATION_PREFERENCES_CAN1	Registration preferences for the second cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7590BDA32E0B8A0D	WNF_CELL_CAN_STATE_CAN1	Can state (between CellManager and CellUX) for the second cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7598BDA32E0B8A0D	WNF_CELL_REGISTRATION_STATUS_DETAILS_CAN1	Detailed registration status of the second cellular can, defined by WNFCELLSTATETYPE(REGISTRATION_STATUS_DETAILS). SDDL comes from ID_CAP_CELL_WNF, ID_CAP_EVERYONE, WwanSvc and tzautoupdate in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75A0BDA32E0B8A0D	WNF_CELL_SUPPORTED_SYSTEM_TYPES_CAN1	bitmask of supported system types by the second cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75A8BDA32E0B8A0D	WNF_CELL_HOME_OPERATOR_CAN1	MCC, MNC (or SID, NID) of the 'home' operator. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75B0BDA32E0B8A0D	WNF_CELL_HOME_PRL_ID_CAN1	PRL ID of 'home' operator. Is Valid only if there is a valid 3GPP2 line available. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75D0BDA32E0B8A0D	WNF_CELL_UTK_SETUP_MENU_SLOT1	UICC toolkit setup menu notification for slot 1. SDDL comes from ID_CAP_CELL_WNF_PII and UtkService in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75E0BDA32E0B8A0D	WNF_CELL_CALLFORWARDING_STATUS_CAN1	Call-forwarding status for the second cellular can. The same struct is used to indicate the latest state for a given callforwarding-reason. SDDL comes from ID_CAP_CELL_API_TELEPHONY, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75E8BDA32E0B8A0D	WNF_CELL_PERSO_STATUS_CAN1	bitmask of supported system types by the second cellular can. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75F4BDA32E0B8A0D	WNF_CELL_CONFIGURED_LINES_CAN0	Configured lines for the first cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75FCBDA32E0B8A0D	WNF_CELL_CONFIGURED_LINES_CAN1	Configured lines for the second cellular can. SDDL comes from ID_CAP_CELL_API_COMMON, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7500BEA32E0B8A0D	WNF_CELL_UICC_STATUS_DETAILS_SLOT0	Status details of the UICC in the first slot. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7508BEA32E0B8A0D	WNF_CELL_UICC_STATUS_DETAILS_SLOT1	Status details of the UICC in the second slot. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7510BEA32E0B8A0D	WNF_CELL_PREFERRED_LANGUAGES_SLOT0	Preferred languages in the first slot. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7518BEA32E0B8A0D	WNF_CELL_PREFERRED_LANGUAGES_SLOT1	Preferred languages in the second slot. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7520BEA32E0B8A0D	WNF_CELL_IMSI_CAN0	IMSI for the first cellular can, as a Unicode string. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7528BEA32E0B8A0D	WNF_CELL_IMSI_CAN1	IMSI for the first cellular can, as a Unicode string. SDDL comes from ID_CAP_CELL_WNF_PII and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7530BEA32E0B8A0D	WNF_CELL_LEGACY_SETTINGS_MIGRATION	Migration action for legacy cellcore settings. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7538BEA32E0B8A0D	WNF_CELL_UICC_ATR_SLOT0	Answer to reset from the UICC in the first slot. SDDL comes from ID_CAP_CELL_WNF in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7540BEA32E0B8A0D	WNF_CELL_UICC_ATR_SLOT1	Answer to reset from the UICC in the second slot. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7548BEA32E0B8A0D	WNF_CELL_UICC_SIMSEC_SLOT0	Indication for Phone subsystem to show Sim Security (PIN, Perso) related UI for Slot 0. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7550BEA32E0B8A0D	WNF_CELL_UICC_SIMSEC_SLOT1	Indication for Phone subsystem to show Sim Security (PIN, Perso) related UI for Slot 1. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7558BEA32E0B8A0D	WNF_CELL_CAN_CONFIGURATION_SET_COMPLETE_MODEM0	Indication that all executors have been configured and that there are no outstanding configurations pending in the modem. SDDL comes from WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7560BEA32E0B8A0D	WNF_CELL_REGISTRATION_CHANGED_TRIGGER_MV	This is published when cellcore needs MV to kick in. SDDL comes from ID_CAP_EVERYONE, ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7570BEA32E0B8A0D	WNF_CELL_SIGNAL_STRENGTH_DETAILS_CAN0	Signal-strength details for Can 0. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7578BEA32E0B8A0D	WNF_CELL_SIGNAL_STRENGTH_DETAILS_CAN1	Signal-strength details for Can 1. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7568BEA32E0B8A0D	WNF_CELL_EMERGENCY_CALLBACK_MODE_STATUS	Indication about the current emergency callback mode. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7580BEA32E0B8A0D	WNF_CELL_IMS_STATUS_CAN0	Current IMS registration for Can 0. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7588BEA32E0B8A0D	WNF_CELL_IMS_STATUS_CAN1	Current IMS registration for Can 1. SDDL comes from ID_CAP_EVERYONE and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7590BEA32E0B8A0D	WNF_CELL_IWLAN_AVAILABILITY_CAN0	iWLAN availability for Can 0, value is BOOLEAN. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7598BEA32E0B8A0D	WNF_CELL_IWLAN_AVAILABILITY_CAN1	iWLAN availability for Can 1, value is BOOLEAN. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75A4BEA32E0B8A0D	WNF_CELL_PS_MEDIA_PREFERENCES_CAN0	PS Media preferences for Can 0, a DWORD and an array of CellularMediaConfigration. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75ACBEA32E0B8A0D	WNF_CELL_PS_MEDIA_PREFERENCES_CAN1	PS Media preferences for Can 1, a DWORD and an array of CellularMediaConfigration. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75B0BEA32E0B8A0D	WNF_CELL_WIFI_CALL_SETTINGS_CAN0	Reports if executor is capable of Wi-fi calling. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+75B8BEA32E0B8A0D	WNF_CELL_WIFI_CALL_SETTINGS_CAN1	Reports if executor is capable of Wi-fi calling. SDDL comes from ID_CAP_CELL_WNF and WwanSvc in %SDXROOT%\src\net\Cellcore\packages\Cellcore\Cellcore.pkg.xml
+7508BCA33A19870F	WNF_WWAN_OBJECT_LIST	Table of all modems and executors under it.
+7510BCA33A19870F	WNF_WWAN_EUICC_ARRIVAL	This event is published by WwanSvc to indicate the arrival of an eUICC.
+7518BCA33A19870F	WNF_WWAN_CELLULAR_STATE_SNAPSHOT_CHANGE	This event is published by WwanSvc to indicate a change in cellular state snapshot.
+7520BCA33A19870F	WNF_WWAN_TASK_TRIGGER	State name triggering WiFiTask from WwanSvc.
+7508BCA33E039513	WNF_SMSR_READY	Sms Router Broker is ready.
+7510BCA33E039513	WNF_SMSR_WWAN_READ_DONE	Sms Router Broker is ready.
+7518BCA33E039513	WNF_SMSR_NEW_MESSAGE_RECEIVED	Sms Router received a new incoming SMS message.
+7508BCA32E0F9612	WNF_CAPS_CENTRAL_ACCESS_POLICIES_CHANGED	Central Access Policies have been updated
+7508BCA32E028F11	WNF_CLIP_CONTENT_CHANGED	This notification is triggered when contents on the clipboard change
+7508BCA32E08850D	WNF_CFCL_SC_CONFIGURATIONS_CHANGED	Triggered each time one or more flight configurations changes.
+7510BCA32E08850D	WNF_CFCL_SC_CONFIGURATIONS_DELETED	Triggered each time one or more flight configurations is deleted.
+7518BCA32E08850D	WNF_CFCL_SC_CONFIGURATIONS_ADDED	Triggered each time one or more flight configurations is added.
+3508BCA32E1D8E0D	WNF_CSHL_COMPOSER_LAUNCH_READY	Core shell has initialized, including all of its services (e.g. TLAVM), and the Product Composer can be launched. If the event has not been fired, then CoreShell is still initializing and the Composer cannot be launched. Payload is a DWORD to inidicate it has been fired.
+3510BCA32E1D8E0D	WNF_CSHL_UI_AUTOMATION	On UI Automation.
+3518BCA32E1D8E0D	WNF_CSHL_CURSOR_MANAGER_READY	Cursor Manager is initialized.
+3520BCA32E1D8E0D	WNF_CSHL_VIEWHOSTING_READY	Fired every time a Composer registers with TLAVM and inidicates that the composer is ready to host applications. If the event has not been fired, then no composer is ready to host applications. Payload is a DWORD to inidicate it has been fired.
+3528BCA32E1D8E0D	WNF_CSHL_PRODUCT_READY	Fired every time a Product Composer has finished initializing and indicates that Shell has entered normal operations (i.e. not in restricted mode or running OOBE/PostUpdateUX). If the event has not been fired, then the Product Composer is still initializing. Payload is a DWORD to inidicate it has been fired.
+7508BCA32901C641	WNF_DO_MANAGER_ACTIVE	This event triggers when the Delivery Optimization service manager is active or idle
+7508BCA3290C8741	WNF_DBA_DEVICE_ACCESS_CHANGED	This event triggers when the user changes device access for an applocation or the user
+7508BCA33E088741	WNF_SFA_AUTHENTICATION_STAGE_CHANGED	This event signals when authentication stage change.
+750CBCA3291D8B41	WNF_DSM_DSMAPPINSTALLED	Notification for when an app is installed so we can register a device background task if necessary.
+7514BCA3291D8B41	WNF_DSM_DSMAPPREMOVED	Notification for when an app is removed so we can clean up any registered device background tasks if necessary.
+7508BCA329038041	WNF_DMF_MIGRATION_STARTED	Signals that Migration started. DWORD[1] = {started flag}. SDDL comes from ID_CAP_DU_MIGRATION_WNF_EVENTS and DuMigrationManager in %SDXROOT%\src\devmgmt\du\packages\Migration\Migration.pkg.xml
+7510BCA329038041	WNF_DMF_MIGRATION_COMPLETE	Signals that Migration completed. DWORD[2] = {completed flag, status}. SDDL comes from ID_CAP_DU_MIGRATION_WNF_EVENTS and DuMigrationManager in %SDXROOT%\src\devmgmt\du\packages\Migration\Migration.pkg.xml
+7518BCA329038041	WNF_DMF_MIGRATION_PROGRESS	Current Migration state. DWORD[4] = {Phase, Total Phases, Step, Total Steps}. SDDL comes from ID_CAP_DU_MIGRATION_WNF_EVENTS and DuMigrationManager in %SDXROOT%\src\devmgmt\du\packages\Migration\Migration.pkg.xml
+7520BCA329038041	WNF_DMF_UX_COMPLETE	Signals when data migration is complete after reboot and update results need to be displayed. DWORD[1] = {completed flag}. SDDL comes from ID_CAP_DU_MIGRATION_WNF_EVENTS in %SDXROOT%\src\devmgmt\du\packages\Migration\Migration.pkg.xml and DuPostUpdateUX in %SDXROOT%\src\devmgmt\du\packages\UX\UX.pkg.xml
+750CBCA32916C641	WNF_DX_STEREO_CONFIG	State stores the current stereo cpl setting. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+3510BCA32916C641	WNF_DX_MODE_CHANGE_NOTIFICATION	Triggered by kernel when mode change happens. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+3518BCA32916C641	WNF_DX_OCCLUSION_CHANGE_NOTIFICATION	Triggered by kernel when any occlusion related OS state change happens.
+3520BCA32916C641	WNF_DX_NETWORK_DISPLAY_STATE_CHANGE_NOTIFICATION	Triggered by kernel when the state of a network display device is changed.
+3528BCA32916C641	WNF_DX_MONITOR_CHANGE_NOTIFICATION	Triggered by kernel when monitor change happens. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+B530BCA32916C641	WNF_DX_VIDMM_TRIM_NOTIFICATION	Triggered by kernel when video memory has to be trimmed. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+7538BCA32916C641	WNF_DX_VIDMM_BUDGETCHANGE_NOTIFICATION	Triggered by kernel when video memory budget for an application changes. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+7540BCA32916C641	WNF_DX_HARDWARE_CONTENT_PROTECTION_TILT_NOTIFICATION	Triggered by hardware content protection tilt detection. CAPABILITY_SID_LpacMedia - S-1-15-3-1024-1692970155-4054893335-185714091-3362601943-3526593181-1159816984-2199008581-497492991.
+7548BCA32916C641	WNF_DX_INTERNAL_PANEL_DIMENSIONS	Stores information about the physical dimensions (in mm) of the integrated panel if available, and 0's if not.
+3550BCA32916C641	WNF_DX_MODERN_OUTPUTDUPLICATION	Triggered when a lowbox application starts or stops using OutputDuplication.
+3558BCA32916C641	WNF_DX_DISPLAY_CONFIG_CHANGE_NOTIFICATION	Triggered by kernel when a change is made to the display configuration.
+B560BCA32916C641	WNF_DX_DEVICE_REMOVAL	Triggered when a device has been removed for any reason, not just adapter removal.
+3568BCA32916C641	WNF_DX_MODERN_OUTPUTDUPLICATION_CONTEXTS	Triggered when a lowbox application starts or stops using OutputDuplication and provides list of active lowbox contexts
+3570BCA32916C641	WNF_DX_COLOR_PROFILE_CHANGE	Triggered when the default color profile for any attached display changes.
+7508BCA32907950A	WNF_DISK_SCRUB_REQUIRED	This event signals when a disk that requires scrubbing is brought online
+7508BCA32916810A	WNF_DXGK_ADAPTER_TDR_NOTIFICATION	Triggered by the kernel when any adapter receives a TDR or PNP event. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7510BCA329009541	WNF_DNS_ALL_SERVER_TIMEOUT	When all the DNS Servers Timeout, this event is notified
+3508BCA329198B41	WNF_DWM_RUNNING	Triggered when the dwm starts/terminates
+3510BCA329198B41	WNF_DWM_HOLOGRAPHIC_COMPOSITOR_LOW_FRAMERATE	Triggered when exclusive mode apps are presenting at a low framerate to the holographic composoitor
+3508BCA3280A9641	WNF_EDP_TAGGED_APP_LAUNCHED	The application was launched in the specified mode under the specified Enterprise context.
+F510BCA3280A9641	WNF_EDP_IDENTITY_REVOKED	The keys associated with a data protection identity were removed.
+7518BCA3280A9641	WNF_EDP_DPL_KEYS_STATE	Current state of the Data Protection under Lock private keys
+3520BCA3280A9641	WNF_EDP_CLIPBOARD_METADATA_CHANGED	Either a copy or override operation occurred, leading to clipboard metadata changes. CAPABILITY_SID_LpacEnterprisePolicyChangeNotifications - S-1-15-3-1024-126078593-3658686728-1984883306-821399696-3684079960-564038680-3414880098-3435825201.
+3528BCA3280A9641	WNF_EDP_DIALOG_CANCEL	An EDP blocking dialog has been canceled programmatically.
+3530BCA3280A9641	WNF_EDP_APP_UI_ENTERPRISE_CONTEXT_CHANGED	Application UI EDP context has been changed for the process.
+7538BCA3280A9641	WNF_EDP_AAD_REAUTH_REQUIRED	The AAD token used by EDP has expired.
+7544BCA3280A9641	WNF_EDP_ENTERPRISE_CONTEXTS_UPDATED	The EDP enterprise contexts have been updated.
+7548BCA3280A9641	WNF_EDP_PROCESS_UI_ENFORCEMENT	EDP process UI enforcement global state
+B550BCA3280A9641	WNF_EDP_PROCESS_TLS_INDEX	EDP thread UI enforcement. CAPABILITY_SID_LpacEnterprisePolicyChangeNotifications - S-1-15-3-1024-126078593-3658686728-1984883306-821399696-3684079960-564038680-3414880098-3435825201.
+7558BCA3280A9641	WNF_EDP_DPL_KEYS_DROPPING	Data Protection under Lock private keys will be dropped from memory shortly.
+7560BCA3280A9641	WNF_EDP_MISSING_CREDENTIALS	EDP cred service cannot access credentials required
+7568BCA3280A9641	WNF_EDP_PURGE_APP_LEARNING_EVT	Purge application learning events cache
+7508BCA328089541	WNF_EFS_SERVICE_START	This event trigger-starts EFS service.
+7510BCA328089541	WNF_EFS_SOFTWARE_HIVE_AVAILABLE	EFS service needs to check GP at boot, which requires the SOFTWARE hive in HKLM. This signals its availability when EFS worker thread detects it.
+7508BCA328009213	WNF_ENTR_DEVICELOCK_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Device Lock policy area. SDDL comes from NgcctnrSvc in %SDXROOT%\src\baseos\prod\packages\ngc\ngc.pkg.xml and ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml, %sdxroot%\onecoreuap\admin\dm\wap\service\dmwappushservice.wm.xml
+7510BCA328009213	WNF_ENTR_WIFI_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Wifi policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7518BCA328009213	WNF_ENTR_SYSTEM_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the System policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xmlSDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7520BCA328009213	WNF_ENTR_CONNECTIVITY_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Connectivity policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7528BCA328009213	WNF_ENTR_EXPERIENCE_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Experience policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7530BCA328009213	WNF_ENTR_ACCOUNTS_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Accounts policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7538BCA328009213	WNF_ENTR_SECURITY_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Security policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7540BCA328009213	WNF_ENTR_BROWSER_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Browser policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7548BCA328009213	WNF_ENTR_UPDATE_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Update policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7550BCA328009213	WNF_ENTR_CAMERA_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Camera policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7558BCA328009213	WNF_ENTR_APPLICATIONMANAGEMENT_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the ApplicationManagement policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7560BCA328009213	WNF_ENTR_REQUIRE_DEVICE_ENCRYPTION_POLICY_VALUE_CHANGED	Current changed security policy RequireDeviceEncryption value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7568BCA328009213	WNF_ENTR_PUSH_NOTIFICATION_RECEIVED	An MDM Push notification has been received. SDDL comes from ID_CAP_CSP_DMCLIENT in %SDXROOT%\src\devmgmt\dm\packages\dmapps\dmapps.pkg.xml
+7570BCA328009213	WNF_ENTR_SEARCH_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the Search policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7578BCA328009213	WNF_ENTR_ABOVELOCK_POLICY_VALUE_CHANGED	Current changed policy values represented as bits for the AboveLock policy area. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7580BCA328009213	WNF_ENTR_ALLOWAPPLICATIONS_POLICY_VALUE_CHANGED	A Dataprotection AllowApplications provider policy value has changed.
+7588BCA328009213	WNF_ENTR_EDPENFORCEMENTLEVEL_POLICY_VALUE_CHANGED	A Dataprotection EDPEnforcementLevel provider policy value has changed.
+7590BCA328009213	WNF_ENTR_WAP_MESSAGE_FOR_DMWAPPUSHSVC_READY	A WAP message has been received that dmwappushsvc needs to handle.
+7598BCA328009213	WNF_ENTR_CONTEXT_STATE_CHANGE	An enterprise context has changed it's state
+75A0BCA328009213	WNF_ENTR_PUSH_RECEIVED	An enterprise WNS based push was received
+75A8BCA328009213	WNF_ENTR_ALLOWINPUTPANEL_POLICY_VALUE_CHANGED	A TextInput AllowInputPanel provider policy value has changed.
+75B0BCA328009213	WNF_ENTR_SEARCH_ALLOW_USING_DIACRITICS	Allow use of diacritics for indexing.
+75B8BCA328009213	WNF_ENTR_SEARCH_ALWAYS_USE_AUTO_LANG_DETECTION	Always use automatic language detection when indexing content and properties.
+75C0BCA328009213	WNF_ENTR_SEARCH_DISABLE_REMOVABLE_DRIVE_INDEXING	Do not allow locations on removable drives to be added to libraries.
+75C8BCA328009213	WNF_ENTR_SEARCH_PREVENT_INDEXING_LOW_DISK_SPACE_MB	Stop indexing in the event of limited hard drive space.
+75D0BCA328009213	WNF_ENTR_SEARCH_ALLOW_INDEXING_ENCRYPTED_STORES_OR_ITEMS	Allow indexing of encrypted files.
+75D8BCA328009213	WNF_ENTR_BLUETOOTH_POLICY_VALUE_CHANGED	Bluetooth policy configuration has changed. SDDL comes from ID_CAP_POLICY_MANAGER in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+75E0BCA328009213	WNF_ENTR_EDPNETWORKING_POLICY_VALUE_CHANGED	A Dataprotection networking policy value has changed.
+75E8BCA328009213	WNF_ENTR_REQUIRE_DPL_POLICY_VALUE_CHANGED	DataProtection Require Protection Under Lock Config policy change.
+75F0BCA328009213	WNF_ENTR_WINDOWS_DEFENDER_POLICY_VALUE_CHANGED	Windows Defender policy configuration has changed.
+75F8BCA328009213	WNF_ENTR_ALLOWALLTRUSTEDAPPS_POLICY_VALUE_CHANGED	ApplicationManagement AllowAllTrustedApps provider policy value has changed.
+7500BDA328009213	WNF_ENTR_ALLOWSHAREDUSERDATA_POLICY_VALUE_CHANGED	ApplicationManagement AllowSharedUserAppData provider policy value has changed.
+7508BDA328009213	WNF_ENTR_RESTRICTAPPTOSYTEMVOLUME_POLICY_VALUE_CHANGED	ApplicationManagement RestrictAppToSystemVolume provider policy value has changed.
+7510BDA328009213	WNF_ENTR_RESTRICTAPPDATATOSYTEMVOLUME_POLICY_VALUE_CHANGED	ApplicationManagement RestrictAppDataToSystemVolume provider policy value has changed.
+7518BDA328009213	WNF_ENTR_ALLOWDEVELOPERUNLOCK_POLICY_VALUE_CHANGED	ApplicationManagement AllowDeveloperUnlock provider policy value has changed.
+7520BDA328009213	WNF_ENTR_ALLOWUPDATESERVICE_POLICY_VALUE_CHANGED	Update AllowUpdateService provider policy value has changed.
+7528BDA328009213	WNF_ENTR_UPDATESERVICEURL_POLICY_VALUE_CHANGED	Update UpdateServiceUrl provider policy value has changed.
+7530BDA328009213	WNF_ENTR_ALLOWNONMICROSOFTSIGNEDUPDATE_POLICY_VALUE_CHANGED	Update AllowNonMicrosoftSignedUpdate provider policy value has changed.
+7538BDA328009213	WNF_ENTR_ALLOW_WBA_EXECUTION_POLICY_VALUE_CHANGED	DisableWBA policy value has changed.
+7540BDA328009213	WNF_ENTR_DOMAIN_NAMES_FOR_EMAIL_SYNC_POLICY_VALUE_CHANGED	The domains for which email is disabled have changed.
+7548BDA328009213	WNF_ENTR_ALLOWCELLULARDATAROAMING_POLICY_VALUE_CHANGED	The AllowCellularDataRoaming policy value has changed.
+7550BDA328009213	WNF_ENTR_ALLOWCELLULARDATA_POLICY_VALUE_CHANGED	The AllowCellularData policy value has changed.
+755CBDA328009213	WNF_ENTR_EDPENFORCEMENTLEVEL_CACHED_POLICY_VALUE_CHANGED	EDPEnforcementLevel cached policy have changed. CAPABILITY_SID_LpacEnterprisePolicyChangeNotifications - S-1-15-3-1024-126078593-3658686728-1984883306-821399696-3684079960-564038680-3414880098-3435825201.
+7564BDA328009213	WNF_ENTR_PROTECTEDDOMAINNAMES_CACHED_POLICY_VALUE_CHANGED	EnterpriseProtectedDomainNames cached policy have changed. CAPABILITY_SID_LpacEnterprisePolicyChangeNotifications - S-1-15-3-1024-126078593-3658686728-1984883306-821399696-3684079960-564038680-3414880098-3435825201.
+7568BDA328009213	WNF_ENTR_ALLOWMESSAGESYNC_POLICY_VALUE_CHANGED	The AllowMessageSync policy value has changed.
+7570BDA328009213	WNF_ENTR_DISABLEADVERTISINGID_POLICY_VALUE_CHANGED	Privacy DisableAdvertisingId policy value has changed.
+7578BDA328009213	WNF_ENTR_EVALUATE_EDP_CONFIGURATION_STATE	EnterpriseDataProtection (EDP) state has changed.
+7584BDA328009213	WNF_ENTR_APPHVSI_CACHED_POLICY_VALUE_CHANGED	AllowAppHVSI cached policy has changed.
+7588BDA328009213	WNF_ENTR_NETWORKISOLATION_POLICY_VALUE_CHANGED	A NetworkIsolation area policy value has changed.
+7590BDA328009213	WNF_ENTR_EVALUATE_APPHVSI_CONFIGURATION_STATE	AppHVSI (Hypervisor-based Virtualized Security Isolation) state has changed.
+759CBDA328009213	WNF_ENTR_EDPSHOWICONS_CACHED_POLICY_VALUE_CHANGED	EdpShowIcons policy value has changed.
+75B0BDA328009213	WNF_ENTR_ALLOWWIFI_POLICY_VALUE_CHANGED	AllowWifi policy value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+75B8BDA328009213	WNF_ENTR_ALLOWMANUALWIFICONFIGURATION_POLICY_VALUE_CHANGED	AllowManualWifiConfiguration policy value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+75C0BDA328009213	WNF_ENTR_SEARCH_ALLOW_INDEXER	Allow windows indexer.
+75C8BDA328009213	WNF_ENTR_ALLOWWIFIDIRECT_POLICY_VALUE_CHANGED	AllowWifiDirect policy value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+75D0BDA328009213	WNF_ENTR_ALLOWPROJECTIONTOPC_POLICY_VALUE_CHANGED	AllowProjectionToPC policy value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+75D8BDA328009213	WNF_ENTR_ALLOWMESSAGE_MMS_POLICY_VALUE_CHANGED	The AllowMessageMMS policy value has changed.
+75E0BDA328009213	WNF_ENTR_ALLOWMESSAGE_RCS_POLICY_VALUE_CHANGED	The AllowMessageRCS policy value has changed.
+75E8BDA328009213	WNF_ENTR_EDPSMB_POLICY_VALUE_CHANGED	SMBAutoEncryptedFileExtensions policy value has changed.
+75F0BDA328009213	WNF_ENTR_APPHVSI_POLICY_VALUE_CHANGED	Any AppHVSI policy value is changed
+75F8BDA328009213	WNF_ENTR_ALLOWSET24HOURCLOCK_POLICY_VALUE_CHANGED	The AllowSet24HourClock policy value has changed.
+7500BEA328009213	WNF_ENTR_ALLOWPROJECTIONFROMPC_POLICY_VALUE_CHANGED	AllowProjectionFromPC policy value changed. SDDL comes from ID_CAP_POLICY_MANAGER and ID_CAP_POLICY_MANAGER_READONLY in %SDXROOT%\src\devmgmt\enterprise\product\policymanager\packages\policymanager.pkg.xml
+7508BCA3281A9141	WNF_ETW_SUBSYSTEM_INITIALIZED	ETW subsystem initialized
+7508BCA328168302	WNF_EXEC_OSTASKCOMPLETION_REVOKED	This event signal when a task completion has been revoked due to memory pressure
+7518BCA328168302	WNF_EXEC_THERMAL_LIMITER_CLOSE_APPLICATION_VIEWS	This event is signaled by the thermal limiter when a power or thermal trip point has been reached that indicates all application views should be closed
+7520BCA328168302	WNF_EXEC_THERMAL_LIMITER_TERMINATE_BACKGROUND_TASKS	This event is signaled by the thermal limiter when a power or thermal trip point has been reached that indicates background tasks should be terminated
+7528BCA328168302	WNF_EXEC_THERMAL_LIMITER_DISPLAY_WARNING	This event is signaled by the thermal limiter when a power or thermal trip point has been reached that indicates a warning should be displayed to the user
+7530BCA328168302	WNF_EXEC_THERMAL_LIMITER_STOP_MRC	This event is signaled by the thermal limiter when a power or thermal trip point has been reached that indicates MRC should be stopped
+7508BCA33A089541	WNF_WFS_SETTINGS	Family Safety settings have changed
+7510BCA33A089541	WNF_WFS_TIMEREMAININGALERTS	Family Safety time remaining alerts to warn the user the allocated time is running out. The data is published as json blob with fileds U.SID for User SID as wide character and TR for time remaining in minutes as int value
+7518BCA33A089541	WNF_WFS_FAMILYMEMBERLOGIN	Family member login event
+7508BCA32B0A840A	WNF_FDBK_QUESTION_NOTIFICATION	This event contains a feedback question for the user. Payload is a JSON string specifying the feedback question.
+7508BCA33A088712	WNF_WFAS_FIREWALL_NETWORK_CHANGE_READY	Free network available or not
+7508BCA32B029F15	WNF_FLYT_IDS_CHANGED	Triggered every time there is a change in flight IDs
+7508BCA32B029241	WNF_FLT_RUNDOWN_WAIT	Wait for rundown release in Filter Manager may be blocked by a suspended Modern application
+7508BCA32B018241	WNF_FOD_STATE_CHANGE	Installation status of Features on demand
+7508BCA32B1D940D	WNF_FSRL_TIERED_VOLUME_DETECTED	This event signals when a tiered volume is mounted
+7510BCA32B1D940D	WNF_FSRL_OPLOCK_BREAK	Oplock break acknowledgement may be blocked by a suspended Modern application
+7508BCA321018541	WNF_LOC_DEVICE_BROKER_ACCESS_CHANGED	This event triggers when the user changes Geolocation access for an application or the user.
+7510BCA321018541	WNF_LOC_RESERVED_WNF_EVENT	Do not use this	WNF event, it is deprecated. Was WIN32_API_ACCESS_CHANGED.	7518BCA321018541	WNF_LOC_SHOW_SYSTRAY	This event triggers when there is an event that accesses location data -- this trigger starts LocationNotifications.exe which is a systray app.
+7508BCA321089541	WNF_LFS_STATE	This is triggered when an app is making use of the location service. It has two possible data values associated to it: BOOL TRUE: one or more applications are using location. BOOL FALSE: no application is using location.
+7510BCA321089541	WNF_LFS_RUNNING_STATE	This state is used to notify when the location service starts or stops running
+7518BCA321089541	WNF_LFS_MASTERSWITCH_STATE	This state is used to notify when the phone location master switch status changes with BOOL as payload. TRUE indicating master switch is ON and FALSE indicating master switch is OFF
+7520BCA321089541	WNF_LFS_GEOFENCETRACKING_STATE	This state is used to notify Geofence tracking state for the geofences added by the applications. TRUE if atleast one geofence is actively being tracked and FALSE if there are no geofences being tracked.
+7528BCA321089541	WNF_LFS_RESERVED_WNF_EVENT_2	Do not use this	WNF event, it is deprecated. Was WNF_LFS_BACKGROUND_PERMISSIONCHANGE_STATE	7530BCA321089541	WNF_LFS_POSITION_AVAILABLE	This state is used to notify when a new freely available position can be queried from the location framework.
+7538BCA321089541	WNF_LFS_CLIENT_RECALCULATE_PERMISSIONS	This state is published whenever the permissions of an active client have changed. Every client on the system receives it, and should run domain-specific logic to see what the impact is (e.g., reconnect location session when permission re-allowed).
+7540BCA321089541	WNF_LFS_PERMISSION_TO_SHOW_ICON_CHANGED	This event notifies when the permission regarding the ability to show the location notification icon has changed. The current state needs to be queried for as it is different for each user.
+7548BCA321089541	WNF_LFS_ACTION_DIALOG_AVAILABLE	This event notifies when a new action dialog is available
+7550BCA321089541	WNF_LFS_SIGNIFICANT_LOCATION_EVENT	This event notifies when there's a significant change in the location of the device.
+7558BCA321089541	WNF_LFS_VISITS_SIGNIFICANT_LOCATION_EVENT	This event notifies when there's a visit or a significant change in the location of the device.
+7560BCA321089541	WNF_LFS_LOCATION_MDM_AREA_POLICY_CHANGED	This event is fired when an MDM Location policy change occurs.
+7568BCA321089541	WNF_LFS_LOCATION_MDM_POLICY_ENABLELOCATION_CHANGED	This event is fired when an MDM EnableLocation policy change occurs.
+7508BCA323029541	WNF_NLS_ACP_CHANGED	This state is notified when the ANSI codepage changes - The data value is a UINT that indicates the new ANSI codepage. SDDL comes from ID_CAP_EVERYONE and ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7510BCA323029541	WNF_NLS_OEMCP_CHANGED	This state is notified when the OEM codepage changes - The data value is a UINT that indicates the new OEM codepage. SDDL comes from ID_CAP_EVERYONE and ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+3518BCA323029541	WNF_NLS_USER_DEFAULT_LOCALE_CHANGED	This state is notified when the user default locale changes - The data value is an LCID that indicates the new locale. SDDL comes from ID_CAP_EVERYONE and ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+3520BCA323029541	WNF_NLS_USER_UILANG_CHANGED	This state is notified when the user default UI language changes - The data value is a LANGID that indicates the new UI language. SDDL comes from ID_CAP_EVERYONE and ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+3528BCA323029541	WNF_NLS_LOCALE_INFO_CHANGED	This state is notified when the locale info changes by means of calling SetLocaleInfo - The data value is a DWORD that indicates the LCTYPE that changed. SDDL comes from ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+3530BCA323029541	WNF_NLS_GEOID_CHANGED	This state is notified when the user Geo ID changes by means of calling SetUserGeoID - The data value is a DWORD that indicates the new GeoID. SDDL comes from ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7538BCA323029541	WNF_NLS_LANG_UPDATE_LAUNCH	Notification indicating lang update launcher needs to be started. SDDL comes from ID_CAP_EVERYONE, ID_CAP_NTSERVICES and ID_CAP_INPUT_LOCALES in %SDXROOT%\src\uxplat\Input\Packages\InputServer\InputServer.pkg.xml
+7540BCA323029541	WNF_NLS_SETTINGS_REPLICATOR_LAUNCH	Notification indicating NLS/MUI user settings replicator needs to be started. - The data value is the replication cookie GUID (binary). SDDL comes from ID_CAP_EVERYONE and ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7548BCA323029541	WNF_NLS_SETTINGS_REPLICATION_COMPLETE	Notification indicating NLS/MUI user settings replication has completed. - The data value is an HRESULT. SDDL comes from ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7508BCA32A028903	WNF_GLOB_USERPROFILE_LANGLIST_CHANGED	This state is notified when the globalization user profile has changed via SetUserProfileLanguagesWP. There is nothing in the payload - call GetUserProfileLanguagesWP to get the updated user profile language list. SDDL comes from ID_CAP_GLOBALIZATION_SETTINGS in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7508BCA32A1E890D	WNF_GPOL_SYSTEM_CHANGES	System policy has been updated
+F510BCA32A1E890D	WNF_GPOL_USER_CHANGES	User policy has been updated
+7508BCA3250F9541	WNF_HAS_VERIFY_HEALTH_CERT	This event signals a request to get (if needed) and verify Health Certificate with HAS
+3508BCA325018A0E	WNF_HOLO_USER_DISPLAY_CONTEXT	Event raised when the display context changes (ex. from physical monitor to HMD). Data contains a DWORD equivalent to Windows::Internal::Shell::Holographic:UserDisplayContext
+3510BCA325018A0E	WNF_HOLO_USER_INPUT_CONTEXT	Event raised when the input context changes (ex. from 3D input to 2D Desktop input). Data contains a DWORD equivalent to Windows::Internal::Shell::Holographic:UserDisplayContext
+3518BCA325018A0E	WNF_HOLO_SHELL_STATE	Event raised when the Holographic Shell running state changes (ex. from Running to Suspended). Data contains a DWORD equivalent to Windows::Internal::Shell::Holographic:ShellState
+3520BCA325018A0E	WNF_HOLO_INPUT_FOCUS_CHANGE	This event signals when input focus changes to a different window. Data is a MPCInputFocusChange struct.
+3528BCA325018A0E	WNF_HOLO_FORCE_ROOM_BOUNDARY	If payload is non-zero, room boundary is forced to be visible.
+3530BCA325018A0E	WNF_HOLO_STREAMING_STATE	This event signals whether streaming is active. Data contains a bool indicating if streaming is active.
+3538BCA325018A0E	WNF_HOLO_ROOM_BOUNDARY_DATA_CHANGED	This event signals that the persisted room boundary data has changed.
+3540BCA325018A0E	WNF_HOLO_ROOM_BOUNDARY_VISIBILITY	A non-zero payload indicates the room boundary is visible to the user. Writable by DWM and System.
+3548BCA325018A0E	WNF_HOLO_SHELL_INPUT_3DSWITCH_DISABLE	This event signals when various input types should be disabled from natively working in the Windows Holographic shell, useful for apps that simulate GGV via mouse and/or gamepad. Data contains a DWORD of bitflags from Windows::Internal::Shell::Holographic::ShellInput3DSwitchDisableFlags.
+7508BCA325188A41	WNF_HVL_CPU_MGMT_PARTITION	This state signals NTOS has CPU management privileges in the current partition.
+7508BCA325179617	WNF_HYPV_HOST_WMI_OBJECT_PROVIDER_STATE	The state of Hyper-V's host-only WMI object provider.
+7510BCA325179617	WNF_HYPV_HOST_WMI_EVENT_PROVIDER_STATE	The state of Hyper-V's host-only WMI event provider.
+3508BCA32403950F	WNF_IMSN_MONITORMODECHANGED	A monitor has changed immersive modes
+3510BCA32403950F	WNF_IMSN_LAUNCHERVISIBILITY	The immersive launcher's visibility has changed
+3518BCA32403950F	WNF_IMSN_IMMERSIVEMONITORCHANGED	The monitor the immersive environment is running on has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3530BCA32403950F	WNF_IMSN_KILL_LOGICAL_FOCUS	User-perceived focus has left an edit box.
+3538BCA32403950F	WNF_IMSN_PROJECTIONDISPLAYAVAILABLE	Projection display availability has changed
+3508BCA3241B8F12	WNF_IUIS_SCALE_CHANGED	The immersive UI scale has changed for the current session.
+3508BCA3241D8B41	WNF_ISM_LAST_USER_ACTIVITY	Last recorded user activity
+7508BCA324019241	WNF_IOT_EMBEDDED_MODE_POLICY_VALUE_CHANGED	Embedded mode policy value has changed.
+7510BCA324019241	WNF_IOT_STARTUP_SETTINGS_CHANGED	settings for the foreground app and/or iot startup type background tasks have changed
+7508BCA3210F8806	WNF_LANG_FOD_INSTALLATION_STARTED	Installation of language features on demand was started (either through Settings or through installation task).
+7508BCA32103C641	WNF_LM_PACKAGE_SUSPEND_REQUIRED	A running package's license is now invalid and the package must be suspended or terminated.
+7510BCA32103C641	WNF_LM_CONTENT_LICENSE_CHANGED	A content license's state has been modified.
+7518BCA32103C641	WNF_LM_ROOT_LICENSE_CHANGED	A root license's state has been modified.
+7520BCA32103C641	WNF_LM_OPTIONAL_PACKAGE_SUSPEND_REQUIRED	A running optional package's license is lost.
+7528BCA32103C641	WNF_LM_APP_LICENSE_EVENT	Multi-purpose event for app license notifications.
+7530BCA32103C641	WNF_LM_OFFLINE_PC_CHANGED	A offline pc state has been changed.
+7538BCA32103C641	WNF_LM_LICENSE_REFRESHED	Licenses have been refreshed.
+7508BCA321078541	WNF_LIC_NO_APPLICABLE_LICENSES_FOUND	Failed to launch the modern app because no valid licenses and leases were found
+7510BCA321078541	WNF_LIC_HARDWAREID_IN_DEVICE_LICENSE_OUT_OF_TOLERANCE	The device license hardware ID is out of tolerance with the device's hardware ID
+7518BCA321078541	WNF_LIC_HARDWAREID_IN_DEVICE_LICENSE_IN_TOLERANCE	The hardware ID has changed but is still with in tolerance with the device's hardware ID
+7520BCA321078541	WNF_LIC_DEVICE_LICENSE_UPDATED	A new device license with a different device ID was installed
+7528BCA321078541	WNF_LIC_DEVICE_LICENSE_REMOVED	The device license was uninstalled
+7530BCA321078541	WNF_LIC_DEVICE_LICENSE_MISSING	The required device license was nout found
+7538BCA321078541	WNF_LIC_INT_DEVICE_LICENSE_EXPIRED	The integration device license has expired and can no longer be used to verify or decrypt modern app licenses.
+7540BCA321078541	WNF_LIC_LOCAL_MIGRATED_LICENSES_FOUND	Found a local migrated license which needs to be refereshed with a store signed license.
+7548BCA321078541	WNF_LIC_MANAGE_DEVICE_REGISTRATION_AND_REACTIVATION	The MDM Licensing Device Registration Policy has been refreshed.
+7550BCA322028F02	WNF_OLIC_OS_EDITION_CHANGE	OS Edition has changed.
+7558BCA322028F02	WNF_OLIC_OS_LICENSE_POLICY_CHANGE	OS Policy has changed.
+7560BCA322028F02	WNF_OLIC_OS_LICENSE_TERMS_ACCEPTED	The License Terms can be considered as accepted on this device.
+3508BCA32101810F	WNF_LOGN_EOA_FLYOUT_POSITION	Indicates where the ease of access flyout should appear in LogonUI and User Oobe, the data type is RECT. The sddl string grants subscribe and publish permission to both System and Authenticated user accounts
+3510BCA32101810F	WNF_LOGN_SLIDE_TO_SHUTDOWN	Indicates that a shutdown has been triggered via Slide-to-shutdown. The sddl string grants subscribe and publish permission to both System and Authenticated user accounts
+3518BCA32101810F	WNF_LOGN_RETURN_TO_LOCK	Indicates that user intends to interact with the lock screen (e.g. for Projection or Cortana) and LogonUI should return to the lock screen.
+3520BCA32101810F	WNF_LOGN_PINPAD_VISIBLE	Indicates that the mobile pinpad is visible.
+7510BCA3200F9612	WNF_MAPS_MAPLOADER_PROGRESS	Current progress of the MapLoader background engine.
+7518BCA3200F9612	WNF_MAPS_MAPLOADER_STATUS_CHANGE	The new status of ODML.
+7520BCA3200F9612	WNF_MAPS_MAPLOADER_PACKAGE_CHANGE	A map package has been added or removed or repositioned in the list.
+7508BCA33E178802	WNF_SYNC_REQUEST_PROBE	Sync sets this value to request a wifi probe due to SSL error. SDDL comes from ID_CAP_COMMS_SERVICES in %SDXROOT%\comms\Packages\CommsPlat\Comms.pkg.xml
+7508BCA3201B9441	WNF_MUR_MEDIA_UI_REQUEST_WLAN	Interface to Media-UI-request-State mapping for WLAN (802.1x) interfaces
+7510BCA3201B9441	WNF_MUR_MEDIA_UI_REQUEST_LAN	Interface to Media-UI-request-State mapping for LAN (802.3) interfaces
+3508BCA3201D8741	WNF_MSA_ACCOUNTSTATECHANGE	Notification for alerting client apps that the connected account ticketing state has changed
+7508BCA32003C641	WNF_MM_BAD_MEMORY_PENDING_REMOVAL	This notification is raised when the memory manager is unable to automatically offline a bad memory page
+7508BCA3201C9241	WNF_MRT_QUALIFIER_CONTRAST_CHANGED	This state is notified when the constrast qualifier changed its value. There is nothing in the payload. Subscribers will need to query the qualifier value provider for the latest value. SDDL comes from ID_CAP_EVERYONE and ID_CAP_PM_1ST_PARTY in %SDXMAPROOT%\src\appplat\packages\appplatform\appplatform.pkg.xml
+7510BCA3201C9241	WNF_MRT_QUALIFIER_THEME_CHANGED	This state is notified when the theme qualifier changed its value. There is nothing in the payload. Subscribers will need to query the qualifier value provider for the latest value. SDDL comes from ID_CAP_EVERYONE and ID_CAP_PM_1ST_PARTY in %SDXMAPROOT%\src\appplat\packages\appplatform\appplatform.pkg.xml
+751CBCA3201C9241	WNF_MRT_PERSISTENT_QUALIFIER_CHANGED	This state is notified when some persistent qualifier changed its value. Payload is qualifier@package_name with a max length of 512 bytes (256 WCHARs including null terminator). Subscribers will need to query the qualifier value provider for the latest value. SDDL comes from ID_CAP_EVERYONE and ID_CAP_PM_1ST_PARTY in %SDXMAPROOT%\src\appplat\packages\appplatform\appplatform.pkg.xml, plus all rights for all containers
+7520BCA3201C9241	WNF_MRT_MERGE_SYSTEM_PRI_FILES	This state is notified when system PRI files are merged. Payload has a max length of 128 bytes (64 WCHARs including null terminator) and consists of 'start [starting timestamp]' or 'done [starting timestamp] [ending timestamp]'. SDDL comes from ID_CAP_EVERYONE and ID_CAP_PM_1ST_PARTY in %SDXMAPROOT%\src\appplat\packages\appplatform\appplatform.pkg.xml, plus all rights for all containers
+7528BCA3201C9241	WNF_MRT_SYSTEM_PRI_MERGE	This state is notified when a system PRI file is merged. Payload has a max length of 512 bytes (256 WCHARs including null terminator) and consists of either 'start [path] [starting timestamp]' or '{done,skipped} [path] [starting timestamp] [ending timestamp]'. SDDL comes from ID_CAP_EVERYONE and ID_CAP_PM_1ST_PARTY in %SDXMAPROOT%\src\appplat\packages\appplatform\appplatform.pkg.xml, plus all rights for all containers. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3508BCA3230F9517	WNF_NASV_USER_PRESENT	NaAuth User Presence Status
+7510BCA3230F9517	WNF_NASV_SERVICE_RUNNING	NaAuth Service Running
+7508BCA3230D8441	WNF_NCB_APP_AVAILABLE	NCB indication of CCT or Socket Broker Based App availability.
+7508BCA3230A8F12	WNF_NDIS_ADAPTER_ARRIVAL	NDIS finds a network adapter that needs to be configured by NetSetupSvc.
+7510BCA3230A8F12	WNF_NDIS_CORRUPTED_STORE	NDIS detects corruption in the binding store.
+7508BCA323028B41	WNF_NLM_VPN_RECONNECT_CHANGE	This event is signalled by rasman about reconnect VPN state change and is used by NLM
+7510BCA323028B41	WNF_NLM_INTERNET_PRESENT	This event is signalled by NLM when the aggregated network conditions indicate that a connection to the internet is present
+7508BCA323098541	WNF_NGC_PREGEN_TRIGGER	This event signals when an caller wants to trigger KeyPregenTask.
+7510BCA323098541	WNF_NGC_AIKCERT_TRIGGER	This event signals when an caller wants to trigger AikCertEnrollTask.
+7518BCA323098541	WNF_NGC_PRO_CSP_POLICY_CHANGED	This event is fired when a policy change occurs in the NGC Pro CSP.
+7520BCA323098541	WNF_NGC_PREGEN_DELAY_TRIGGER	This event signals when an caller wants to trigger KeyPregenTask with some delay.
+7528BCA323098541	WNF_NGC_GESTURE_AUTHENTICATED	This event signals when NGC container service (ngcctnrsvc) authenticates a gesture.
+7530BCA323098541	WNF_NGC_CRYPTO_MDM_POLICY_CHANGED	This event is fired when an MDM cryptographic policy change occurs.
+7538BCA323098541	WNF_NGC_CREDENTIAL_REFRESH_REQUIRED	This event is fired when an activity occurs that requires the NGC PIN cred prov to refresh its credential state.
+7508BCA323028741	WNF_NLA_CAPABILITY_CHANGE	This event is notified when NCSI detects a capability change
+7510BCA323028741	WNF_NLA_ENTER_SUSPECT_STATE	This event notifies NCSI that it should enter the suspect state
+7518BCA323028741	WNF_NLA_TASK_TRIGGER	State name triggering WiFiTask from NlaSvc
+F508BCA33A1E8841	WNF_WPN_USER_PLATFORM_READY	This WNF state indicates to users of WPN endpoints (except AppEndpoint) that platform is ready to use. This state can also be used to know if WPN platform restarted.
+F510BCA33A1E8841	WNF_WPN_PLATFORM_INITIALIZED	This WNF state can be used by first party Apps / Services to determine when WPN platform is ready to handle app related requests like posting toast / tile and getting channel uri.
+7518BCA33A1E8841	WNF_WPN_SYSTEM_PLATFORM_READY	State indicating that system notification platform has been registered and ready to user.
+7508BCA3231E950C	WNF_NPSM_SERVICE_STARTED	This notification is to indicate that the NPSM service has started up.
+7508BCA32E1D8541	WNF_CSC_SERVICE_START	CSC Service start trigger
+3508BCA322018404	WNF_OOBE_SHL_MAGNIFIER_QUERY	Notification from ISM to OOBE to query the user whether to activate the always-on Magnifier in OOBE
+3510BCA322018404	WNF_OOBE_SHL_MAGNIFIER_CONFIRM	Notification from OOBE to ISM whether the user confirms to activate the always-on Magnifier in OOBE
+7518BCA322018404	WNF_OOBE_SHL_MONITOR_STATE	Notification to User OOBE monitor on where the progress is
+3520BCA322018404	WNF_OOBE_SHL_SPEECH_CONTROLLER	Notification of speech controller state change. Payload is state type plus string of length 512
+7508BCA322189405	WNF_OVRD_OVERRIDESCALEUPDATED	The window's override scale has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7508BCA33D01C641	WNF_PO_SCENARIO_CHANGE	Sent when the WDI session corresponding to a power scenario changes
+7510BCA33D01C641	WNF_PO_COMPOSITE_BATTERY	Sent when the composite battery is updated
+7518BCA33D01C641	WNF_PO_POWER_STATE_CHANGE	Sent after WNF_PO_COMPOSITE_BATTERY when batteries are added or removed and when one or more batteries' AC, charging, or discharging states changes
+7520BCA33D01C641	WNF_PO_ENERGY_SAVER_STATE	Triggered when Energy Saver state changes. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622
+7528BCA33D01C641	WNF_PO_ENERGY_SAVER_SETTING	Triggered when Energy Saver setting changes
+7530BCA33D01C641	WNF_PO_ENERGY_SAVER_OVERRIDE	Triggered to indicate Energy Saver override settings
+7538BCA33D01C641	WNF_PO_THERMAL_STANDBY	Triggered to indicate CR3 condition
+7540BCA33D01C641	WNF_PO_THERMAL_SHUTDOWN_OCCURRED	Sent when the previous shutdown was due to a thermal trip
+7548BCA33D01C641	WNF_PO_THERMAL_HIBERNATE_OCCURRED	Sent when the previous hibernate was due to a thermal trip
+7550BCA33D01C641	WNF_PO_DISCHARGE_ESTIMATE	Estimated time until full discharge in seconds
+755CBCA33D01C641	WNF_PO_DISCHARGE_START_FILETIME	Filetime of last known start of discharge
+7560BCA33D01C641	WNF_PO_CHARGE_ESTIMATE	Estimated time until full charge in seconds
+7568BCA33D01C641	WNF_PO_THERMAL_OVERTHROTTLE	Triggered to indicate excessive thermal throttling
+7570BCA33D01C641	WNF_PO_USER_AWAY_PREDICTION	Sent to indicate whenever user-away prediction is updated.
+3578BCA33D01C641	WNF_PO_DISPLAY_REQUEST_ACTIVE	Sent to indicate whether a display request is active in the current session.
+7580BCA33D01C641	WNF_PO_BATTERY_CHARGE_LEVEL	Triggered when battery charge crosses well-known charge level boundaries.
+7588BCA33D01C641	WNF_PO_SLEEP_STUDY_USER_PRESENCE_CHANGED	Sent when the global user presence changes.
+7590BCA33D01C641	WNF_PO_BACKGROUND_ACTIVITY_POLICY	Sent when the background activity policy changes.
+7598BCA33D01C641	WNF_PO_BATTERY_DISCHARGING	Triggered when battery is being discharged, irrespective of AC/DC state of the system.
+75A0BCA33D01C641	WNF_PO_PRIMARY_DISPLAY_VISIBLE_STATE	Visible state of the primary display as MONITOR_DISPLAY_STATE
+75A8BCA33D01C641	WNF_PO_PRIMARY_DISPLAY_LOGICAL_STATE	Logical state of the primary display as MONITOR_LOGICAL_DISPLAY_STATE
+75B0BCA33D01C641	WNF_PO_PREVIOUS_SHUTDOWN_STATE	Sent on every boot to notify previous shutdown state
+75B8BCA33D01C641	WNF_PO_MODERN_STANDBY_EXIT_INITIATED	Triggered at the start of a transition to exit modern standby
+75C0BCA33D01C641	WNF_PO_SW_HW_DRIPS_DIVERGENCE	Sent when SW DRIPS is more than HW DRIPS by a specific threshold
+75C8BCA33D01C641	WNF_PO_DRIPS_DEVICE_CONSTRAINTS_REGISTERED	Sent once platform idle states and associated device constraints have been registered
+75D0BCA33D01C641	WNF_PO_BASIC_BRIGHTNESS_ENGINE_DISABLED	One time system-wide transition to switch from the basic brightness engine to the high-precision brightness engine.
+75D8BCA33D01C641	WNF_PO_BRIGHTNESS_ALS_OFFSET	ALS brightness offset consumed by the basic brightness engine.
+75E0BCA33D01C641	WNF_PO_VIDEO_INITIALIALIZED	Set to TRUE when the video system is initialized.
+75E8BCA33D01C641	WNF_PO_OVERLAY_POWER_SCHEME_UPDATE	Notification for power-setting overlay scheme change.
+75F0BCA33D01C641	WNF_PO_CAD_STICKY_DISABLE_CHARGING	Set when an you want IOCTL_CAD_DISABLE_CHARGING to behave in a sticky manner
+75F8BCA33D01C641	WNF_PO_POWER_BUTTON_STATE	Describes the current state of the power button.
+7508BCA33D009600	WNF_PNPA_DEVNODES_CHANGED	This corresponds to a DBT_DEVNODES_CHANGED message
+3510BCA33D009600	WNF_PNPA_DEVNODES_CHANGED_SESSION	This corresponds to a DBT_DEVNODES_CHANGED message
+7518BCA33D009600	WNF_PNPA_VOLUMES_CHANGED	This corresponds to a drive letter arrival/removal message
+3520BCA33D009600	WNF_PNPA_VOLUMES_CHANGED_SESSION	This corresponds to a drive letter arrival/removal message
+7528BCA33D009600	WNF_PNPA_HARDWAREPROFILES_CHANGED	This corresponds to a hardware profiles changed message
+3530BCA33D009600	WNF_PNPA_HARDWAREPROFILES_CHANGED_SESSION	This corresponds to a hardware profiles changed message
+7538BCA33D009600	WNF_PNPA_PORTS_CHANGED	This corresponds to a ports changes message
+3540BCA33D009600	WNF_PNPA_PORTS_CHANGED_SESSION	This corresponds to a ports changes message
+7508BCA33D009603	WNF_PNPB_AWAITING_RESPONSE	This corresponds to kernel PNP waiting synchronously for user-mode clients
+7508BCA33D009602	WNF_PNPC_REBOOT_REQUIRED	This corresponds to a reboot of the system needs to be performed due to a device installation
+7510BCA33D009602	WNF_PNPC_DEVICE_INSTALL_REQUESTED	Device installation is requested.
+7518BCA33D009602	WNF_PNPC_CONTAINER_CONFIG_REQUESTED	A change that requires a device container to be updated has occured.
+7508BCA33D1C8917	WNF_PROV_TURN_COMPLETE	Fired when a full set of packages are processed.
+7508BCA33D1DC641	WNF_PS_WAKE_CHARGE_RESOURCE_POLICY	This corresponds to an application that has eclipsed job wake charge resource policy
+7508BCA33E1C8541	WNF_SRC_SYSTEM_RADIO_CHANGED	This event signals when system radio is changed
+7508BCA33F03C641	WNF_RM_MEMORY_MONITOR_USAGE_LEVEL	Supplies the current RM memory monitor memory usage level. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7510BCA33F03C641	WNF_RM_GAME_MODE_ACTIVE	Supplies the process ID of the current game mode recipient, or 0 if no recipient is active
+7508BCA33A029412	WNF_WLRS_SETTINGS	Windows or application settings have changed in Live Storage
+7510BCA33A029412	WNF_WLRS_USERTILE	Usertile has changed in Live Storage
+7518BCA33A029412	WNF_WLRS_COLLECTIONINTEREST	Collection interest has changed in Live Storage
+7508BCA33F1E8507	WNF_RPCF_FWMAN_RUNNING	This event signals when the RPC firewall manager is initialized
+7508BCA33F1A8212	WNF_RTDS_RPC_INTERFACE_TRIGGER_CHANGED	An RPC service trigger has been added or removed
+7518BCA33F1A8212	WNF_RTDS_NAMED_PIPE_TRIGGER_CHANGED	A named pipe service trigger has been added or removed
+7508BCA33E0D8B41	WNF_SCM_AUTOSTART_STATE	This event triggers to indicate SCM autostart state
+7508BCA33E0C9541	WNF_SBS_UPDATE_AVAILABLE	This event signals that there is an update available to the Secure Boot variables.
+7508BCA33A1D8541	WNF_WSC_SECURITY_CENTER_USER_NOTIFICATION	A notification dialog should be shown to the user.
+7508BCA33E0A8941	WNF_SDO_ORIENTATION_CHANGE	This event triggers when there is a simple device orientation change. It's data value is one of the SimpleDeviceOrientation enum values. Rights: SensorService can publish, Everyone can subscribe.
+750CBCA3290B9641	WNF_DEP_OOBE_COMPLETE	This event triggers when the system has completed OOBE (Windows Welcome)
+7514BCA3290B9641	WNF_DEP_UNINSTALL_DISABLED	This event triggers when the Uninstall of the system has been disabled
+7508BCA33E06830D	WNF_SHEL_IMMERSIVE_SHELL_RUNNING	This event signals when the Immersive Shell is started
+3510BCA33E06830D	WNF_SHEL_NOTIFICATIONS	Set to 0 or more to indicate whether there are any unseen notifications in the notification center. Original SDDL comes from dwm in %SDXROOT%\src\uxplat\MobileUI\Packages\MobileUI\MobileUI.pkg.xml, updated to enable the notification on OneCore
+7518BCA33E06830D	WNF_SHEL_LOGON_COMPLETE	This system-scope event is signaled each time a user's desktop becomes ready. Consider using WNF_SHEL_SESSION_LOGON_COMPLETE for a session-scoped version.
+7524BCA33E06830D	WNF_SHEL_OOBE_USER_LOGON_COMPLETE	This event signals when logon of the first user after OOBE is complete
+7528BCA33E06830D	WNF_SHEL_VEEVENT_DISPATCHER_CLIENT_PIPE_CLOSED	TDL dispatcher pipe has been closed
+7530BCA33E06830D	WNF_SHEL_TILECHANGE	This event is signalled when there is a tile change to a background task
+3538BCA33E06830D	WNF_SHEL_NOTIFICATION_SETTINGS_CHANGED	Event signals when toast notification settings have changed.
+7540BCA33E06830D	WNF_SHEL_SOFTLANDING_RULE_TRIGGERED	This event signals when a SoftLanding rule is triggered
+7548BCA33E06830D	WNF_SHEL_START_LAYOUT_READY	This event signals when Start Experience Host completes loading the Start menu layout
+7550BCA33E06830D	WNF_SHEL_APPRESOLVER_SCAN	Event signals a full app resolver scan has been invoked.
+3558BCA33E06830D	WNF_SHEL_LOCKSCREEN_ACTIVE	Set to 0 or 1 to indicate whether the lock screen is active. SDDL follows DEVICE_LOCK_STATE SDDL on skus that don't have multiple sessions, otherwise anyone can read and only system can write.
+7560BCA33E06830D	WNF_SHEL_START_APPLIFECYCLE_INSTALL_FINISHED	This event signals when Start Experience Host receives an VISUALELEMENT_EVENT_APPLIFECYCLE_INSTALL_FINISHED event from TDL
+7568BCA33E06830D	WNF_SHEL_START_APPLIFECYCLE_DOWNLOAD_STARTED	This event signals when Start Experience Host receives an VISUALELEMENT_EVENT_APPLIFECYCLE_DOWNLOAD_STARTED event from TDL
+7570BCA33E06830D	WNF_SHEL_APPLICATION_STATE_UPDATE	Event is for the shell to notify when app layout state is changed. Payload is ShellApplicationStateWnf struct.
+7578BCA33E06830D	WNF_SHEL_FOCUS_CHANGE	This event signals when focus changes to a different process, scoped to System, DWM SID and ID_CAP_INPUT_CORE appcontainer capability and DEFAPPS_CAPABILITY_GROUP SID on Mobile.
+7580BCA33E06830D	WNF_SHEL_GAMECONTROLLER_LISTENER_INFO	This event signals to toggle exclusive gamepad listening on and off, scoped to System, DWM SID and ID_CAP_INPUT_CORE appcontainer capability and DEFAPPS_CAPABILITY_GROUP SID on Mobile.
+7588BCA33E06830D	WNF_SHEL_GAMECONTROLLER_FOCUS_INFO	This event signals to toggle exclusive gamepad input on and off
+7594BCA33E06830D	WNF_SHEL_ENTERPRISE_START_LAYOUT_POLICY_VALUE_CHANGED	This even signals when Start layout MDM policy has been applied
+7598BCA33E06830D	WNF_SHEL_CORTANA_APPINDEX_UPDATED	Event signals when the apps have been pushed to the indexer has completed
+75A0BCA33E06830D	WNF_SHEL_SOFTLANDING_RULES_UPDATED	This event signals when SoftLanding rules folder is updated
+35A8BCA33E06830D	WNF_SHEL_NOTIFICATIONS_CRITICAL	This event signals that a critical notification such as an incoming call was posted. Original SDDL comes from dwm in %SDXROOT%\src\uxplat\MobileUI\Packages\MobileUI\MobileUI.pkg.xml, updated to enable notification on OneCore
+35B0BCA33E06830D	WNF_SHEL_START_VISIBILITY_CHANGED	This event signals when Start visibility changes
+75B8BCA33E06830D	WNF_SHEL_TRAY_SEARCHBOX_VISIBILITY_CHANGED	Set to 0 or 1 to indicate whether the searchbox is visibile in the tray. SDDL follows DEVICE_LOCK_STATE SDDL on skus that don't have multiple sessions, otherwise anyone can read and only system can write.
+75C0BCA33E06830D	WNF_SHEL_DEVICE_UNLOCKED	This event signals that the device is unlocked in the current session
+75C8BCA33E06830D	WNF_SHEL_PLACES_CHANGED	This event signals the changes in places' database (clientgraph)
+75D0BCA33E06830D	WNF_SHEL_SUSPEND_APP_BACKGROUND_ACTIVITY	Event is for the shell to notify when app background activity should be suspended. Payload is DWORD set to 1 or 0.
+75D8BCA33E06830D	WNF_SHEL_CREATIVE_EVENT_TRIGGERED	This event signals a creative event has been triggered
+75E0BCA33E06830D	WNF_SHEL_JUMPLIST_CHANGED	Event signals that the jumplist for an app has changed. Payload is a struct containing the current sessionId as well as a string representing the aumid of the app whose jumplist was updated.
+75E8BCA33E06830D	WNF_SHEL_START_APPLIFECYCLE_UNINSTALL_FINISHED	This event signals when Start Experience Host receives an VISUALELEMENT_EVENT_APPLIFECYCLE_UNINSTALL_FINISHED event from TDL
+75F0BCA33E06830D	WNF_SHEL_GAMECONTROLLER_NEXUS_INFO	This event signals whenever the nexus button policy changes.
+75F8BCA33E06830D	WNF_SHEL_SETTINGS_CHANGED	This event signals when a settings toggle has changed
+3500BDA33E06830D	WNF_SHEL_TOAST_PUBLISHED	This event signals when a new toast is published
+3508BDA33E06830D	WNF_SHEL_SOFTLANDING_PUBLISHED	This event signals when a new soft landing tip is published
+7510BDA33E06830D	WNF_SHEL_REQUEST_CORTANA_SETTINGSCONSTRAINTINDEX_BUILD	Event signals when an app requests cortana to build the settings constraint index
+3518BDA33E06830D	WNF_SHEL_DICTATION_RUNNING	This is the state of dictation. SDDL comes from dwm.exe in %SDXROOT%\src\uxplat\MobileUI\Packages\MobileUI\MobileUI.pkg.xml and WPNarrator in %SDXROOT%\src\media\apps\packages\Apps\WPNarrator.pkg.xml. And Phone DefApps group is required too.
+7520BDA33E06830D	WNF_SHEL_DDC_COMMAND_AVAILABLE	This event signals when a parsed command is ready for processing
+7528BDA33E06830D	WNF_SHEL_DDC_WNS_COMMAND	This event signals when a command has been delivered via WNS
+7530BDA33E06830D	WNF_SHEL_DDC_SMS_COMMAND	This event signals when a command has been delivered via SMS
+7538BDA33E06830D	WNF_SHEL_DEVICE_LOCKED	This event signals that the device is locked in the current session
+7540BDA33E06830D	WNF_SHEL_TARGETED_CONTENT_SUBSCRIPTION_ACTIVATED	This event signals a subscription has been activated.
+7548BDA33E06830D	WNF_SHEL_TARGETED_CONTENT_SUBSCRIPTION_UPDATED	This event signals the content of one or more subscriptions has been updated.
+7550BDA33E06830D	WNF_SHEL_LOCKSCREEN_IMAGE_CHANGED	This event signals that lock screen image had changed. It contains the user sid whose image was changed
+7558BDA33E06830D	WNF_SHEL_SCREEN_COVERED	Set to 0 (uncovered or unknown) or 1 (covered).
+7560BDA33E06830D	WNF_SHEL_DDC_CONNECTED_ACCOUNTS_CHANGED	This event signals when connected accounts have changed and register device should be called
+3568BDA33E06830D	WNF_SHEL_OOBE_ENABLE_PROVISIONING	This event signals when OOBE in a Shell should enable its provisioning flow
+3570BDA33E06830D	WNF_SHEL_LOCK_APP_SHOWN	This event signals that the Lock application has been presented to the user. It contains an instance cookie as specified from LogonUI.
+3578BDA33E06830D	WNF_SHEL_LOCK_APP_REQUESTING_UNLOCK	This event signals that the Lock application is requesting to unlock so the user can enter credentials.
+7580BDA33E06830D	WNF_SHEL_TILEINSTALL	This event is signalled when there is a tile install to a background task
+7588BDA33E06830D	WNF_SHEL_TILEUPDATE	This event is signalled when there is a tile update to a background task
+7590BDA33E06830D	WNF_SHEL_TILEUNINSTALL	This event is signalled when there is a tile uninstall to a background task
+3598BDA33E06830D	WNF_SHEL_ABOVE_LOCK_APP_ACTIVE	This event is signalled when there is an app launched (1) or terminated (0) above lock. Processes with the WINCAP_SHELL_EXPERIENCE_COMPOSER capability are allowed access.
+35A0BDA33E06830D	WNF_SHEL_RADIALCONTROLLER_EXPERIENCE_RESTART	This event is signalled when the RadialController Experience has restarted to allow registered API component to re-establish connection and repopulate state
+35A8BDA33E06830D	WNF_SHEL_ABOVE_LOCK_BIO_ACTIVE	This event is signalled when there is bio feedback active (1) or inactive (0) above lock
+35B0BDA33E06830D	WNF_SHEL_CORTANA_SPEECH_CANCELHANDSFREE_REQUESTED	This event can be signalled when a handsfree device needs to request Cortana to cancel speech activity.
+75B8BDA33E06830D	WNF_SHEL_CALM_DISPLAY_ACTIVE	Set to 0 (inactive) or 1 (active).
+35C0BDA33E06830D	WNF_SHEL_START_LAYOUT_UPDATED	This event signals a start layout change to a background task
+35C8BDA33E06830D	WNF_SHEL_PEOPLE_PINNED_LIST_CHANGED	This event is signalled when there is a change to the Pinned People list
+75D0BDA33E06830D	WNF_SHEL_LOCKSTATE	Current lock state of the device. Payload is DEVICE_LOCKSTATE. On multisession SKUs, everyone can read while only SYSTEM can write. On single session SKUs, everyone can read while only DefaultAccount can write. On single session SKUs, also include allow list from the SDDL for DEVICE_LOCK_STATE. Additionally, processes with the WINCAP_CORE_SHELL or WINCAP_SHELL_EXPERIENCE_COMPOSER capability can write.
+75D8BDA33E06830D	WNF_SHEL_APPLICATION_SPATIAL_INFO_UPDATE	Event is for the shell to notify when app spatial information has changed. Payload is ApplicationSpatialInformationWnf struct.
+75E0BDA33E06830D	WNF_SHEL_CORTANA_AUDIO_ACTIVE	Indicates the state of Cortana speech input and output.
+35E8BDA33E06830D	WNF_SHEL_LOCKSCREEN_INFO_UPDATED	This event signals that the LockScreen info is updated.
+75F8BDA33E06830D	WNF_SHEL_CDM_FEATURE_CONFIG_FIRST_USAGE	This event notifies the CDM when a new feature configuration is first used
+F500BEA33E06830D	WNF_SHEL_APPLICATION_STARTED	This event is signals when an application launches. The Payload is the appID.
+F508BEA33E06830D	WNF_SHEL_APPLICATION_TERMINATED	This event is signals when an application is terminated. The Payload is the appID.
+F510BEA33E06830D	WNF_SHEL_WINDOWSTIP_CONTENT_PUBLISHED	This event is signals when a request is made to show a Windows Tip bubble. The Payload is the content id(String).
+F518BEA33E06830D	WNF_SHEL_USER_IDLE	This event signals when the first time a user is idle after logon
+3520BEA33E06830D	WNF_SHEL_PEOPLE_PANE_VIEW_CHANGED	This event is signalled when there is a change to the People Pane Views
+3528BEA33E06830D	WNF_SHEL_LOCK_APP_RELOCK	This event signals that the lock screen should be reset due to a re-lock request.
+3530BEA33E06830D	WNF_SHEL_LOCK_APP_READY	This event signals that the lock screen is ready after a reset was requested.
+3538BEA33E06830D	WNF_SHEL_SESSION_LOGON_COMPLETE	This event is scoped to the user session and signaled when the desktop is ready after a logon
+7540BEA33E06830D	WNF_SHEL_HEALTH_STATE_CHANGED	This event signals when the health state of the device changes
+7548BEA33E06830D	WNF_SHEL_CONTENT_DELIVERY_MANAGER_NEEDS_REMEDIATION	This event signals that Content Delivery Manager content needs remediation
+F550BEA33E06830D	WNF_SHEL_DESKTOP_APPLICATION_STARTED	This event is signals when a desktop application launches. The Payload is the executable name.
+F558BEA33E06830D	WNF_SHEL_DESKTOP_APPLICATION_TERMINATED	This event is signals when a desktop application is terminated. The Payload is the executable name.
+F560BEA33E06830D	WNF_SHEL_SUGGESTED_APP_READY	This event signals that the app launched by sign in suggestions is ready.
+3568BEA33E06830D	WNF_SHEL_CDM_REGISTRATION_COMPLETE	This event is scoped to the user session and signaled when the CDM registration is complete
+F570BEA33E06830D	WNF_SHEL_CONTENT_DELIVERY_MANAGER_MONITORING	This event signals that Content Delivery Manager Cache Monitoring is Enabled or not.
+7508BCA33E078941	WNF_SIO_PIN_ENROLLED	Used to notify the PIN list that a PIN has been enrolled and that it should refresh.
+7510BCA33E078941	WNF_SIO_BIO_ENROLLED	Used to notify the Delay Lock settings that Biometric enrollment has been modified.
+7508BCA33E059F05	WNF_SKYD_FILE_SYNC	A file has changed on storage and a request is received to sync.
+7510BCA33E059F05	WNF_SKYD_QUOTA_CHANGE	A user's quota has changed.
+7508BCA33E039541	WNF_SMS_CHECK_ACCESS	This event triggers when the user revokes SMS access.
+7508BCA33E039512	WNF_SMSS_MEMORY_COOLING_COMPATIBLE	This event triggers when the system has multiple memory channels and memory cooling can be started
+7508BCA33E1E8702	WNF_SPAC_SPACEPORT_PROPERTY_CHANGED	This notification is issued when a property of an object changes
+7510BCA33E1E8702	WNF_SPAC_SPACEPORT_WORK_REQUESTED	This notification is issued to request work in user-mode
+3508BCA33E1E8509	WNF_SPCH_INPUT_STATE_UPDATE	Indicates the state of the shared recognizer.
+7508BCA33E1C930C	WNF_SRUM_SCREENONSTUDY_SESSION_START	Sent when a screen on study session starts
+7510BCA33E1C930C	WNF_SRUM_SCREENONSTUDY_SESSION_END	Sent when a screen on study session ends
+7508BCA33E1C9041	WNF_SRV_SRV2_STATE_CHANGE	This event signals when the server (SRV2) start/stop
+7560BCA3221D910F	WNF_OSWN_STORAGE_PRESENCE_CHANGE	This event indicates a change in the mount state of an SD card.
+7568BCA3221D910F	WNF_OSWN_STORAGE_VOLUME_STATUS_CHANGE	This event indicates a change in the volume status of an SD card.
+7570BCA3221D910F	WNF_OSWN_STORAGE_FREE_SPACE_CHANGE	This event indicates a change in the free space state of storage.
+7578BCA3221D910F	WNF_OSWN_STORAGE_TEMP_CLEANUP_CHANGE	This event indicates a change in the temp file cleanup state of storage.
+75B8BCA3221D910F	WNF_OSWN_STORAGE_FINISHED_USAGE_CATEGORY_UPDATE	This event indicates completion of an update of storage usage categories.
+7558BCA3221D910F	WNF_OSWN_SYSTEM_CLOCK_CHANGED	This event informs the system tray that the date-time has changed
+75C0BCA3221D910F	WNF_OSWN_STORAGE_SHELLHWD_EVENT	This event informs StorSvc that SHSVCS received a device handle event.
+7580BCA3221D910F	WNF_OSWN_STORAGE_APP_PAIRING_CHANGE	This event indicates a change in the app pairing state of an SD card.
+7508BCA33E1B9611	WNF_SUPP_ENABLE_ERROR_DETAILS_CACHE	Enable the Error Details Cache
+7508BCA33E0B8441	WNF_SEB_INTERNET_PRESENT	Internet available or not
+7510BCA33E0B8441	WNF_SEB_FREE_NETWORK_PRESENT	Free network available or not
+7518BCA33E0B8441	WNF_SEB_SMS_RECEIVED	SMS has been received
+7520BCA33E0B8441	WNF_SEB_NETWORK_STATE_CHANGES	Network state has changed
+7528BCA33E0B8441	WNF_SEB_MBAE_NOTIFICATION_RECEIVED	Radio Operator Message received
+7530BCA33E0B8441	WNF_SEB_NETWORK_CONTROL_CHANNEL_TRIGGER_RESET	Network control channel triggers have been reset
+7538BCA33E0B8441	WNF_SEB_TIME_ZONE_CHANGE	Time zone change
+7540BCA33E0B8441	WNF_SEB_ONLINE_ID_CONNECTED_STATE_CHANGE	Online ID connected state changed. SDDL comes from ID_CAP_EVERYONE in %SDXROOT%\src\baseos\prod\packages\WLId\WLId.pkg.xml
+7548BCA33E0B8441	WNF_SEB_SYSTEM_IDLE	system is idle or not
+7550BCA33E0B8441	WNF_SEB_BATTERY_LEVEL	System is idle or not
+7558BCA33E0B8441	WNF_SEB_DOMAIN_JOINED	System is domain joined or not
+7560BCA33E0B8441	WNF_SEB_BOOT	System has booted
+7568BCA33E0B8441	WNF_SEB_USER_PRESENT	System has at least 1 user present
+7570BCA33E0B8441	WNF_SEB_SYSTEM_AC	System is AC or DC
+7578BCA33E0B8441	WNF_SEB_MONITOR_ON	Monitor is ON or OFF
+7580BCA33E0B8441	WNF_SEB_IP_ADDRESS_AVAILABLE	IP address is available or not
+7588BCA33E0B8441	WNF_SEB_BACKGROUND_WORK_COST_CHANGE	Indicate a change in the background work cost
+7590BCA33E0B8441	WNF_SEB_BACKGROUND_WORK_COST_HIGH	Background work cost is high or not
+7598BCA33E0B8441	WNF_SEB_SYSTEM_LPE	System is in Low Power Epoch or not
+75A0BCA33E0B8441	WNF_SEB_SMART_CARD_TRANSACTION_NOTIFICATION	Smart card transaction notification. SDDL comes from ID_CAP_NFC_ADMIN in %SDXROOT%\src\net\NFC\packages\product\NFC\NFC.pkg.xml
+75A8BCA33E0B8441	WNF_SEB_SYSTEM_MAINTENANCE	System is in good state for maintenance
+75B0BCA33E0B8441	WNF_SEB_GEOLOCATION	Geolocation service should be started
+75B8BCA33E0B8441	WNF_SEB_DEV_MNF_CUSTOM_NOTIFICATION_RECEIVED	OEM custom notification received
+75C0BCA33E0B8441	WNF_SEB_MOB_OPERATOR_CUSTOM_NOTIFICATION_RECEIVED	MO custom notification received
+75C8BCA33E0B8441	WNF_SEB_CACHED_FILE_UPDATED	Cached file has updated
+75D0BCA33E0B8441	WNF_SEB_SMART_CARD_FIELD_INFO_NOTIFICATION	Smart card field entry/exit notification. SDDL comes from ID_CAP_NFC_ADMIN in %SDXROOT%\src\net\NFC\packages\product\NFC\NFC.pkg.xml
+75D8BCA33E0B8441	WNF_SEB_SMART_CARD_HCE_APPLICATION_ACTIVATION_NOTIFICATION	Smart card HCE application activation notification. SDDL comes from ID_CAP_NFC_ADMIN in %SDXROOT%\src\net\NFC\packages\product\NFC\NFC.pkg.xml
+75E0BCA33E0B8441	WNF_SEB_DEPRECATED7	Unused notification
+75E8BCA33E0B8441	WNF_SEB_DEPRECATED8	Unused notification
+75F0BCA33E0B8441	WNF_SEB_LOW_LATENCY_POWER_REQUEST	Low-latency power request notification
+75F8BCA33E0B8441	WNF_SEB_RESILIENCY_NOTIFICATION_PHASE	Resiliency phase notification
+7500BDA33E0B8441	WNF_SEB_FULL_SCREEN_VIDEO_PLAYBACK	Fullscreen video playback notification
+7508BDA33E0B8441	WNF_SEB_NFC_PERF_BOOST	Indicates high-performance boost mode for critical NFC background activity
+7510BDA33E0B8441	WNF_SEB_APP_LAUNCH_PREFETCH	Indicates app launch pre-fetch phase
+7518BDA33E0B8441	WNF_SEB_DEPRECATED1	Unused notification
+7520BDA33E0B8441	WNF_SEB_APP_RESUME	Indicates app resume phase
+7528BDA33E0B8441	WNF_SEB_DEPRECATED2	Unused notification
+7530BDA33E0B8441	WNF_SEB_DEPRECATED3	Unused notification
+7538BDA33E0B8441	WNF_SEB_DEPRECATED4	Unused notification
+7540BDA33E0B8441	WNF_SEB_DEPRECATED5	Unused notification
+7548BDA33E0B8441	WNF_SEB_DEPRECATED6	Unused notification
+7550BDA33E0B8441	WNF_SEB_CALL_STATE_CHANGED	Call state change notification
+7558BDA33E0B8441	WNF_SEB_VOICEMAIL_CHANGED	Voicemail change notification
+7560BDA33E0B8441	WNF_SEB_CALL_HISTORY_CHANGED	Call history change notification
+7568BDA33E0B8441	WNF_SEB_LINE_CHANGED	Phone line change notification
+7570BDA33E0B8441	WNF_SEB_AIRPLANE_MODE_DISABLED_FOR_EMERGENCY_CALL	Airplane mode disabled for emergency call notification
+7578BDA33E0B8441	WNF_SEB_MOBILE_BROADBAND_REGISTRATION_STATE_CHANGE	Registration state has changed
+7580BDA33E0B8441	WNF_SEB_MOBILE_BROADBAND_RADIO_STATE_CHANGE	Radio state has changed
+7588BDA33E0B8441	WNF_SEB_MOBILE_BROADBAND_PIN_LOCK_STATE_CHANGE	Pin lock state has changed
+7590BDA33E0B8441	WNF_SEB_MOBILE_BROADBAND_DEVICE_SERVICE_NOTIFICATION	Device service command has been received
+7598BDA33E0B8441	WNF_SEB_DEFAULT_SIGN_IN_ACCOUNT_CHANGE	Default Sign In account has changed
+75A0BDA33E0B8441	WNF_SEB_NETWORK_CONNECTIVITY_IN_STANDBY	Network connectivity in Standby
+75A8BDA33E0B8441	WNF_SEB_USER_PRESENCE_CHANGED	User presence changed
+75B0BDA33E0B8441	WNF_SEB_AUDIO_ACTIVITY	Audio activity in progress
+75B8BDA33E0B8441	WNF_SEB_FULL_SCREEN_HDR_VIDEO_PLAYBACK	Fullscreen HDR video playback notification
+75C0BDA33E0B8441	WNF_SEB_UWP_APP_LAUNCH	Indicates UWP app launch phase
+3508BCA33E1E8F41	WNF_SPI_LOGICALDPIOVERRIDE	Signals a change caused by SystemParametersInfo(SPI_SETLOGICALDPIOVERRIDE). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3508BCA33903850F	WNF_TMCN_ISTABLETMODE	The computer has changed density mode. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7508BCA3390B870C	WNF_TEAM_SHELL_HOTKEY_PRESSED	Indicates a hotkey was pressed
+7508BEA3390B8A41	WNF_TEL_STORAGE_CAPACITY	This is fired every time an SENSE's storage fullness crosses into a new tier or is reset. struct { DWORD PercentageFull[4]; }
+7510BEA3390B8A41	WNF_TEL_DAILY_UPLOAD_QUOTA	This is fired every time an SENSE's daily upload quota crosses into a new tier or is reset. struct { DWORD PercentageFull; }
+7518BEA3390B8A41	WNF_TEL_ONESETTINGS_UPDATED	This is fired every time a onesettings namespace is updated. {UINT64 SettingsCount; struct {UINT64 NamespaceHash; UINT64 TimeLastChanged;}[16]}
+7520BEA3390B8A41	WNF_TEL_SETTINGS_PUSH_NOTIFICATION_RECEIVED	This is fired every time a push notification is received from the OneSettings service. UTF8 string.
+7528BEA3390B8A41	WNF_TEL_TIMER_RECONFIGURED	This is fired every time a UTC service timer changes its configuration values so subscribers can call GetTimerConfiguration to check any new values.
+7528BCA33D068841	WNF_PHN_CALL_STATUS	Bitmask containing the current relevant call states. Any 3rd party app is allowed to listen to this. See PhoneWnf.h for valid values. SID referenced below is that of the Phone service.
+7530BCA33D068841	WNF_PHN_CALLFORWARDING_STATUS_LINE0	Bitmask containing the call forwarding state for phone line 0. See PhoneWnf.h for valid values. SDDL comes from ID_CAP_PHONE_2ND_PARTY, ID_CAP_PHONE_INTERNAL and PhoneSvc in %SDXROOT%\src\comms\Packages\CommsPlat\Comms.pkg.xml
+7538BCA33D068811	WNF_PHNP_SERVICE_INITIALIZED	BOOL indicating whether the Phone service has been initialized. SDDL comes from phoneCall and ID_CAP_PHONE_2ND_PARTY, ID_CAP_PHONE_INTERNAL and PhoneSvc in %SDXROOT%%\src\src\comms\Packages\CommsPlat\Comms.pkg.xml
+7540BCA33D068811	WNF_PHNP_SIMSEC_READY	BOOL indicating whether SimSec is ready to receive requests. SDDL comes from ID_CAP_PHONE_2ND_PARTY, ID_CAP_PHONE_INTERNAL and dwm in %SDXROOT%\src\uxplat\MobileUI\Packages\MobileUI\MobileUI.pkg.xml
+7548BCA33D068811	WNF_PHNP_ANNOTATION_ENDPOINT	Wide string indicating the call annotation provider's RPC endpoint name. SDDL comes from ID_CAP_CALLMESSAGING_FILTER and PhoneSvc in %SDXROOT%\src\comms\Packages\CommsPlat\Comms.pkg.xml
+7540BCA33D06880D	WNF_PHNL_LINE1_READY	BOOL indicating whether the line is ready. SDDL comes from PhoneSvc in %SDXROOT%\src\comms\Packages\CommsPlat\Comms.pkg.xml
+7508BCA3390B9209	WNF_TETH_TETHERING_STATE	State name for the Tethering service notification of all state changes
+7510BCA3390B9209	WNF_TETH_AUTOSTART_BLUETOOTH	State name for starting Tethering service over Bluetooth
+7508BCA324038341	WNF_IME_INPUT_MODE_LABEL	Input Mode Indicator label IME want to show on systray. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622
+3510BCA324038341	WNF_IME_EXPLICIT_PRIVATE_MODE	Explicit IME private mode status. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622
+7508BCA339068B04	WNF_THME_THEME_CHANGED	Notifies when the theme of the system changes
+7508BCA33914C641	WNF_TZ_LEGACY_STORE_CHANGED	Time Zone Legacy store is updated. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7510BCA33914C641	WNF_TZ_STORE_CHANGED	Time Zone store is updated. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7518BCA33914C641	WNF_TZ_TIMEZONE_CHANGED	This state is notified when the timezone is changed via SetTimeZoneInformationByID - The data value is a UINT that indicates the new TZID. SDDL comes from ID_CAP_BUILTIN_SETTIME, ID_CAP_EVERYONE and tzautoupdate in %SDXROOT%\src\globplat\product\packages\winnls\winnls.pkg.xml
+7508BCA339019604	WNF_TOPE_INP_POINTER_DEVICE_ACTIVITY	Touch Event
+3508BCA33905840F	WNF_TKBN_KEYBOARD_VISIBILITY	The touch keyboard's appearance on the screen has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3510BCA33905840F	WNF_TKBN_RESTRICTED_KEYBOARD_VISIBILITY	The restricted mode touch keyboard's appearance on the screen has changed.
+3518BCA33905840F	WNF_TKBN_IMMERSIVE_FOCUS_TRACKING	An immersive application has encountered a focus change. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3520BCA33905840F	WNF_TKBN_TOUCH_EVENT	An application encountered a touch down/up event. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3528BCA33905840F	WNF_TKBN_RESTRICTED_TOUCH_EVENT	An application encountered a touch down/up event
+3530BCA33905840F	WNF_TKBN_LANGUAGE	The active keyboard layout has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3538BCA33905840F	WNF_TKBN_FOREGROUND_WINDOW	The active keyboard layout has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3540BCA33905840F	WNF_TKBN_CARET_TRACKING	Caret tracking has updated on the desktop. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3548BCA33905840F	WNF_TKBN_AUTOCOMPLETE	The autocomplete window has been updated. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3550BCA33905840F	WNF_TKBN_MODERN_KEYBOARD_FOCUS_TRACKING	Determines whether focus is in an editable field for the purposes of the modern keyboard. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3558BCA33905840F	WNF_TKBN_KEYBOARD_VIEW_CHANGE	The view being shown by the touch keyboard has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3560BCA33905840F	WNF_TKBN_RESTRICTED_KEYBOARD_VIEW_CHANGE	The view being shown by the restricted mode touch keyboard has changed.
+3568BCA33905840F	WNF_TKBN_KEYBOARD_GESTURE	The keyboard has recognized a gesture. State is not relevant for this notification and it should not be queried after the fact. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3570BCA33905840F	WNF_TKBN_RESTRICTED_KEYBOARD_GESTURE	The restricted keyboard has recognized a gesture. State is not relevant for this notification and it should not be queried after the fact.
+3578BCA33905840F	WNF_TKBN_CANDIDATE_WINDOW_STATE	The candidate window state has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3580BCA33905840F	WNF_TKBN_KEYBOARD_LAYOUT_CHANGE	The layout being shown by the touch keyboard has changed.
+3588BCA33905840F	WNF_TKBN_RESTRICTED_KEYBOARD_LAYOUT_CHANGE	The layout being shown by the restricted mode touch keyboard has changed.
+3590BCA33905840F	WNF_TKBN_COMPOSITION_STATE	The composition state has changed. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+3598BCA33905840F	WNF_TKBN_SYSTEM_IMMERSIVE_FOCUS_TRACKING	A System Mode Application(Logon/OOBE) has encountered a focus change
+35A0BCA33905840F	WNF_TKBN_SYSTEM_TOUCH_EVENT	A System Mode application(Logon/OOBE) encountered a touch down/up event
+35A8BCA33905840F	WNF_TKBN_INPUT_PANE_DISPLAY_POLICY	The edit control in focus has changed the input pane display policy (manual/automatic). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+35B0BCA33905840F	WNF_TKBN_DESKTOP_MODE_AUTO_IHM	The system is in desktop mode but the user prefers tablet-mode IHM behavior. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+35B8BCA33905840F	WNF_TKBN_KEYBOARD_SET_VISIBLE	The touch keyboard should show or hide. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+35C0BCA33905840F	WNF_TKBN_KEYBOARD_SET_VISIBLE_NOTIFICATION	Update the show/hide status of touch keyboard that is being tracked in tabtip. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+F508BCA339058413	WNF_TKBR_CHANGE_SYSTEM	This state name is used to notify system components about state changes in the Token Broker
+7510BCA339058413	WNF_TKBR_CHANGE_APP	This state name is used to notify apps about state changes in the Token Broker
+F518BCA339058413	WNF_TKBR_CHANGE_APP_INTERNAL	This state name is used to notify apps about state changes in the Token Broker
+7508BCA3391E8B41	WNF_TPM_OWNERSHIP_TAKEN	This event signals when the Win32_TPM provider has completed taking ownership of the TPM.
+7510BCA3391E8B41	WNF_TPM_DEVICEID_STATE	This event signals the state of the TPM-based DeviceID.
+7518BCA3391E8B41	WNF_TPM_PROVISION_TRIGGER	This event triggers the TPM provisioning/status check to run.
+7520BCA3391E8B41	WNF_TPM_CLEAR_PENDING	This event signals a TPM Clear will be attempted.
+7528BCA3391E8B41	WNF_TPM_CLEAR_RESULT	This event signals if ownership was taken during TPM Provisioning and the result of TPM Clear on last reboot.
+7530BCA3391E8B41	WNF_TPM_DISABLE_DEACTIVATE_PENDING	This event signals a TPM Disable or TPM Deactivate will be attempted.
+7538BCA3391E8B41	WNF_TPM_ENABLE_ACTIVATE_COMPLETED	This event signals after the TPM is Enabled or Activated.
+7508BCA3380C960C	WNF_UBPM_POWER_SOURCE	The machine power source state
+7510BCA3380C960C	WNF_UBPM_CONSOLE_MONITOR	The machine console monitor on/off state
+7518BCA3380C960C	WNF_UBPM_FRMU_ALLOWED	The user is present and machine is on batteries and the battery level is above firmware update thershold
+7520BCA3380C960C	WNF_UBPM_PRESHUTDOWN_PHASE	The machine entered pre shutdown phase
+7508BCA338038207	WNF_UMDF_WUDFSVC_START	Trigger the Driver Manager service start
+7508BCA3381D8941	WNF_USO_STATE_CHANGE	Signals that a state transition occurred for an update session.
+7510BCA3381D8941	WNF_USO_STATE_ATTENTION_REQUIRED	Signals that a state encounter a condition that requires attention.
+7518BCA3381D8941	WNF_USO_UPDATE_PROGRESS	Signals the a change in progess of an update session.
+7520BCA3381D8941	WNF_USO_REBOOT_REQUIRED	Signals that a reboot is required to complete the update session.
+7528BCA3381D8941	WNF_USO_ACTIVE_SESSION	Signals that the current active session is changed.
+7530BCA3381D8941	WNF_USO_UPDATE_SUCCEEDED	Signals that updates have installed successfully on lite servicing stack.
+7538BCA3381D8941	WNF_USO_UPTODATE_STATUS_CHANGED	Signals that the machine's up to date status has changed.
+7540BCA3381D8941	WNF_USO_REBOOT_BLOCK_REQUESTED	Signals that USO should not reboot the system.
+7548BCA3381D8941	WNF_USO_DOWNLOAD_STARTED	Signals that update download has started on lite servicing stack.
+7550BCA3381D8941	WNF_USO_INSTALL_STARTED	Signals that update install has started on lite servicing stack.
+7508BCA329078515	WNF_DICT_CONTENT_CHANGED	The content of a user dictionary has changed (word either added or removed). SDDL SID's come from capability ID_CAP_INPUT_CORE (both application and service SID's), and DefAppsCapabilitiesGroup
+3508BCA338038113	WNF_UMGR_SIHOST_READY	Shell Infrastructure host is ready.
+7510BCA338038113	WNF_UMGR_USER_LOGIN	The user was logged in to the system.
+7518BCA338038113	WNF_UMGR_USER_LOGOUT	The user was logged out of the system.
+7520BCA338038113	WNF_UMGR_SYSTEM_USER_CONTEXT_CHANGED	Default system user, as defined by start view, has changed.
+7528BCA338038113	WNF_UMGR_SESSIONUSER_TOKEN_CHANGE	Token for the session user changed.
+3530BCA338038113	WNF_UMGR_SESSION_ACTIVE_SHELL_USER_CHANGE	Session active shell user changed.
+7538BCA338038113	WNF_UMGR_USER_TILE_CHANGED	The user tile for the specified SID was changed. The payload is the String user sid and the datasize is the byte count of MAX_PATH.
+7508BCA33B0F8841	WNF_VAN_VANUI_STATUS	The VAN UI open close status
+7508BCA33B1E8841	WNF_VPN_CLIENT_CONNECTIVITY_STATUS	The VPN Client connectivity status
+7508BCA33A0D8B41	WNF_WCM_INTERFACE_LIST	This event signals when a WCM-managed network interface has been added or removed. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7510BCA33A0D8B41	WNF_WCM_SERVICE_STATUS	Connection Manager service restart. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7518BCA33A0D8B41	WNF_WCM_MAPPING_POLICY_UPDATED	WNF state for refreshing WCM service mapping policies cache
+7520BCA33A0D8B41	WNF_WCM_PROFILE_CONFIG_UPDATED	WNF state for refreshing WCM's selection multiplex table and selectable connection list
+7510BCA32E008315	WNF_CNET_DPU_GLOBAL_STATE_OVER_LIMIT	the data of this state is 1 when the global data usage state is less than or equal to OVER_LIMIT, otherwise it is 0
+7518BCA32E008315	WNF_CNET_DPU_GLOBAL_STATE_OFF_TRACK	the data of this state is 1 when the global data usage state is less than or equal to OFF_TRACK, otherwise it is 0
+7520BCA32E008315	WNF_CNET_DPU_GLOBAL_STATE_ON_TRACK	the data of this state is 1 when the global data usage state is less than or equal to ON_TRACK, otherwise it is 0
+7528BCA32E008315	WNF_CNET_DPU_GLOBAL_STATE_UNDER_TRACK	the data of this state is 1 when the global data usage state is less than or equal to UNDER_TRACK, otherwise it is 0
+7530BCA32E008315	WNF_CNET_DPU_GLOBAL_STATE_NOT_TRACKED	the data of this state is 1 when the global data usage state is less than or equal to NOT_TRACKED, otherwise it is 0
+7548BCA32E008315	WNF_CNET_CELLULAR_CONNECTIONS_AVAILABLE	State name for Cellular connections available State. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7550BCA32E008315	WNF_CNET_NON_CELLULAR_CONNECTIONS_AVAILABLE	State name for Non-cellular connections available State. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7568BCA32E008315	WNF_CNET_NON_CELLULAR_CONNECTED	The state is 1 when a non cellular connection is in connected state, otherwise it is 0. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7570BCA32E008315	WNF_CNET_RADIO_ACTIVITY_OR_NON_CELLULAR_CONNECTED	The state is 1 when Radio is active or a non cellular connection is in connected state, otherwise it is 0. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7508BCA3291B950C	WNF_DUSM_TASK_TOAST	Trigger task scheduler to launch task for toast
+7508BCA33A0B9441	WNF_WER_SERVICE_START	The WER service needs to start. CAPABILITY_SID_LpacInstrumentation - S-1-15-3-1024-3153509613-960666767-3724611135-2725662640-12138253-543910227-1950414635-4190290187
+7510BCA33A0B9441	WNF_WER_QUEUED_REPORTS	The number of reports queued to the machine store. CAPABILITY_SID_LpacInstrumentation - S-1-15-3-1024-3153509613-960666767-3724611135-2725662640-12138253-543910227-1950414635-4190290187
+7518BCA33A0B9441	WNF_WER_CRASH_STATE	Information about applications currently crashing.
+7508BCA33A078008	WNF_WIFI_CONNECTION_STATUS	State name for Wifi radio and connection status flags. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7510BCA33A078008	WNF_WIFI_CPL_STATUS	State name for Wifi CPL status flags
+7520BCA33A078008	WNF_WIFI_SERVICE_NOTIFICATIONS	Notifications received from the WiFi Conn Svc. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7528BCA33A078008	WNF_WIFI_HOTSPOT_HOST_READY	State name for Wifi Hotspot Host ready flags. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7548BCA33A078008	WNF_WIFI_AOAC_STATUS	State name for Wifi power status flags. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7558BCA33A078008	WNF_WIFI_CONNECTION_SCORE	State name for Wifi connection status and connection score updates
+7560BCA33A078008	WNF_WIFI_TILE_UPDATE	State name for Wifi network tiles updated. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7568BCA33A078008	WNF_WIFI_AVERAGE_TRANSMIT	Average peak transmitted traffic seen by NCSI
+7570BCA33A078008	WNF_WIFI_MEDIA_STREAMING_MODE	Last media streaming mode state change
+7578BCA33A078008	WNF_WIFI_TASK_TRIGGER	State name triggering WiFiNetworkManager background task. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7580BCA33A078008	WNF_WIFI_L3_AUTH_STATE	State for triggering browser UI when a network is hijacked. SDDL comes from WcmSvc service in %SDXROOT%\src\net\NetCore\Packages\NetCore\NetCore.pkg.xml
+7588BCA33A078008	WNF_WIFI_WLANSVC_NOTIFICATION	This event sends notifications from wlansvc
+7590BCA33A078008	WNF_WIFI_HOTSPOT2_REGISTRATION_STATUS	State name for triggering hotspot2 registration status from online signup server
+750CBCA33A078A41	WNF_WIL_FEATURE_STORE	Event indicating the Normal feature store has been modified. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml
+7514BCA33A078A41	WNF_WIL_BOOT_FEATURE_STORE	Event indicating the Boot feature store has been modified. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml
+751CBCA33A078A41	WNF_WIL_FEATURE_DEVICE_USAGE_TRACKING_1	Event to indicate the first use of a feature on this device (1). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7524BCA33A078A41	WNF_WIL_FEATURE_DEVICE_USAGE_TRACKING_2	Event to indicate the first use of a feature on this device (2). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+752CBCA33A078A41	WNF_WIL_FEATURE_DEVICE_USAGE_TRACKING_3	Event to indicate the first use of a feature on this device (3). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7534BCA33A078A41	WNF_WIL_FEATURE_USAGE_TRACKING_1	Event to indicate unique use of a feature on this device (1). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+753CBCA33A078A41	WNF_WIL_FEATURE_USAGE_TRACKING_2	Event to indicate unique use of a feature on this device (2). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7544BCA33A078A41	WNF_WIL_FEATURE_USAGE_TRACKING_3	Event to indicate unique use of a feature on this device (3). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+754CBCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_1	Event to indicate uniquely observed code failures on this device (1). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7554BCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_2	Event to indicate uniquely observed code failures on this device (2). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+755CBCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_3	Event to indicate uniquely observed code failures on this device (3). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7564BCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_4	Event to indicate uniquely observed code failures on this device (4). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+756CBCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_5	Event to indicate uniquely observed code failures on this device (5). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7574BCA33A078A41	WNF_WIL_FEATURE_HEALTH_TRACKING_6	Event to indicate uniquely observed code failures on this device (6). CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+757CBCA33A078A41	WNF_WIL_MACHINE_FEATURE_STORE	Event indicates modification of the WIL Machine feature store. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7580BCA33A078A41	WNF_WIL_MACHINE_FEATURE_STORE_MODIFIED	Event fires once per boot on modification of the WIL Machine feature store. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+F588BCA33A078A41	WNF_WIL_USER_FEATURE_STORE	Event indicates modification of the WIL User feature store. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+F590BCA33A078A41	WNF_WIL_USER_FEATURE_STORE_MODIFIED	Event fires once per user session on modification of the WIL User feature store. SDDL comes from featureStagingInfo in %SDXROOT%\onecore\base\wil\mbs\Microsoft-Windows-Internal-Libraries-Capabilities\wil.wm.xml. CAPABILITY_SID_LpacAppExperience - S-1-15-3-1024-1502825166-1963708345-2616377461-2562897074-4192028372-3968301570-1997628692-1435953622.
+7508BCA33E1C9241	WNF_SRT_WINRE_CONFIGURATION_CHANGE	Triggered each time there is a configuration change in WinRE
+7508BCA33E1A8913	WNF_STOR_CONFIGURATION_DEVICE_INFO_UPDATED	This WNF event fires when the OEM, MO, and Device Hardware values change in the registry.
+7510BCA33E1A8913	WNF_STOR_CONFIGURATION_MO_TASK_RUNNING	This WNF event fires when the MO discovery task state changes. It will send an 00000000 if not running and 00000001 if running.
+7518BCA33E1A8913	WNF_STOR_CONFIGURATION_OEM_TASK_RUNNING	This WNF event fires when the OEM discovery task state changes. It will send an 00000000 if not running and 00000001 if running.
+F508BCA33A1B8741	WNF_WUA_NUM_PER_USER_UPDATES	State stores the number of per-user updates for the current user
+7510BCA33A1B8741	WNF_WUA_AU_SCAN_COMPLETE	Triggered each time an AU scan is completed
+7518BCA33A1B8741	WNF_WUA_CALL_HANG	State stores information regarding WU call hangs
+7520BCA33A1B8741	WNF_WUA_SERVICE_HANG	State stores information regarding WU service hangs
+7528BCA33A1B8741	WNF_WUA_STAGEUPDATE_DETAILS	Triggered when a StageUpdate call has completed for a phone update installation.
+7508BCA33A069211	WNF_WHTP_WINHTTP_PROXY_DISCOVERED	A network proxy has been discovered. WinHttpAutoProxySvc can write, NlaSvc can read.
+7510BCA33A069211	WNF_WHTP_WINHTTP_PROXY_AUTHENTICATION_REQUIRED	A proxy has returned a 407 status code.
+7508BCA33A1D970C	WNF_WSQM_IS_OPTED_IN	Mirrors the state of CEIPEnable and CEIPSampledIn registry settings.
+7508BCA33A009541	WNF_WNS_CONNECTIVITY_STATUS	The WNS Connection Provider connectivity status
+7508BCA33A018041	WNF_WOF_OVERLAY_CONFIGURATION_CHANGE	Overlay configuration change
+3508BCA33E069441	WNF_SHR_SHARING_CHANGED	System sharing status changed
+7510BCA33E069441	WNF_SHR_DHCP_IPv4_LEASE_LIST	ICS DHCP IPv4 lease list changed
+7518BCA33E069441	WNF_SHR_DHCP_IPv4_FASTIP_ADDRS	New assigned Fast-IP Address(es)
+7508BCA3261D9041	WNF_KSV_STREAMSTATE	This is the current stream state of a camera for a process in a given session
+7510BCA3261D9041	WNF_KSV_DEVICESTATE	This is the current device state
+7508BCA3390CC641	WNF_TB_SYSTEM_TIME_CHANGED	Time Broker has finished processing a change ot time
+3508BCA3380A8B41	WNF_UDM_SERVICE_INITIALIZED	BOOL + UserContextToken indicating whether the UserDataService service has been initialized for the specified user. On OneCore, SDDL gives read access to callers with userDataSystem and all access to IU/AU/System. On phone, SDDL comes from ID_CAP_APPOINTMENTS, ID_CAP_COMMS_COMMON, ID_CAP_CONTACTS, ID_CAP_EVERYONE, ID_CAP_PLATFORM_EXTENSIBILITY, UserDataSvc and ID_CAP_SMS in %SDXROOT%\comms\Packages\CommsPlat\Comms.pkg.xml
+3528BCA3380A8741	WNF_UDA_CONTACT_SORT_CHANGED	State name for aggregate sort and display order changes. SDDL comes from ID_CAP_COMMS_APPLICATIONS and ID_CAP_COMMS_SERVICES in %SDXROOT%\comms\Packages\CommsPlat\Comms.pkg.xml
+7508BCA3350C8919	WNF_XBOX_APPLICATION_CONTEXT_CHANGED	The application specific context has changed in steady state.
+7510BCA3350C8919	WNF_XBOX_APPLICATION_FOCUS_CHANGED	The currently focused application has changed.
+7518BCA3350C8919	WNF_XBOX_APPLICATION_ACTIVATING	An application is activating.
+7528BCA3350C8919	WNF_XBOX_SHELL_TOAST_NOTIFICATION	A new toast notification has been delivered to the shell.
+7530BCA3350C8919	WNF_XBOX_PACKAGE_UNMOUNTED_FROM_SYSTEM_FOR_LAUNCH	A package is about to be unmounted from the System OS ready to launch it on the Title OS.
+7538BCA3350C8919	WNF_XBOX_PACKAGE_INSTALL_STATE_CHANGED	A new application package has been added or an existing one has been removed.
+7548BCA3350C8919	WNF_XBOX_GLOBALIZATION_SETTING_CHANGED	An application package has been removed.
+7550BCA3350C8919	WNF_XBOX_APPLICATION_NO_LONGER_RUNNING	An application is no longer running.
+7558BCA3350C8919	WNF_XBOX_AUTOPLAY_CONTENT_DETECTED	An optical disc or other media has been detected with content.
+7560BCA3350C8919	WNF_XBOX_APPLICATION_ERROR	Application error handler
+7568BCA3350C8919	WNF_XBOX_STORAGE_ERROR	Handler for achievement cache and game save storage
+7570BCA3350C8919	WNF_XBOX_LIVE_CONNECTIVITY_CHANGED	Connectivity to the Xbox LIVE service has changed.
+7578BCA3350C8919	WNF_XBOX_SYSTEM_TITLE_AUTH_STATUS_CHANGED	System Title Authentication status has changed.
+7580BCA3350C8919	WNF_XBOX_ACHIEVEMENTS_RAW_NOTIFICATION_RECEIVED	A new achievements-related raw notifications was received.
+7588BCA3350C8919	WNF_XBOX_ERA_VM_STATUS_CHANGED	ERA VM status has changed.
+7590BCA3350C8919	WNF_XBOX_APPLICATION_LAYOUT_CHANGED	One or more application layouts changed.
+7598BCA3350C8919	WNF_XBOX_SYSTEM_IDLE_TIMEOUT_CHANGED	System Idle Timeout has changed.
+75A0BCA3350C8919	WNF_XBOX_SYSTEM_CONSTRAINED_MODE_STATUS_CHANGED	System constrained status has changed.
+75D8BCA3350C8919	WNF_XBOX_APPLICATION_COM_RESILIENCY_STATUS_CHANGED	Application's COM resiliency status has changed.
+75E0BCA3350C8919	WNF_XBOX_SYSTEM_USER_CONTEXT_CHANGED	Default system user, as defined by start view, has changed.
+75F0BCA3350C8919	WNF_XBOX_HOST_STORAGE_CONFIGURATION_CHANGED	A storage device was either plugged or unplugged.
+75F8BCA3350C8919	WNF_XBOX_EXIT_SILENT_BOOT_MODE	The system is exiting silent boot mode.
+7500BDA3350C8919	WNF_XBOX_APPLICATION_LICENSE_CHANGED	The license used by the application has changed.
+7508BDA3350C8919	WNF_XBOX_SHELL_INITIALIZED	The system shell is initialized and ready.
+7518BDA3350C8919	WNF_XBOX_PASS3_UPDATE_NOTIFICATION	Pass 3 system update has progressed and is sending a notification.
+7520BDA3350C8919	WNF_XBOX_MSA_ENVIRONMENT_CONFIGURED	The MSA and WNS environments have been configured to match the XBL environment.
+7528BDA3350C8919	WNF_XBOX_SIP_VISIBILITY_CHANGED	The visibility of the Software Input Pane has changed.
+7530BDA3350C8919	WNF_XBOX_SYSTEM_GAME_STREAMING_STATE_CHANGED	Game streaming state has changed.
+7538BDA3350C8919	WNF_XBOX_SIP_FOCUS_TRANSFER_NOTIFICATION	It is possible to transfer focus away from the Software Input Pane.
+7540BDA3350C8919	WNF_XBOX_XAM_SMB_SHARES_INIT_ALLOW_SYSTEM_READY	SMB shares have been launched.
+7548BDA3350C8919	WNF_XBOX_XBBLACKBOX_SNAP_NOTIFICATION	A snap of XBBlackbox has occurred
+7550BDA3350C8919	WNF_XBOX_SYSTEM_LOW_POWER_MAINTENANCE_WORK_ALLOWED	Maintenance work is allowed in low power mode
+7558BDA3350C8919	WNF_XBOX_ERA_TITLE_LAUNCH_NOTIFICATION	ERA launch notification with XBL title info
+7560BDA3350C8919	WNF_XBOX_STORAGE_STATUS	Status of attached storage devices
+7568BDA3350C8919	WNF_XBOX_STORAGE_CHANGED	A storage device, or its contents, have changed
+7570BDA3350C8919	WNF_XBOX_PACKAGE_STREAMING_STATE	Current state of the streaming package
+7578BDA3350C8919	WNF_XBOX_STREAMING_QUEUE_CHANGED	The install streaming queue contents have changed
+7580BDA3350C8919	WNF_XBOX_QUERY_UPDATE_NOTIFICATION	An update is available for installing content.
+7588BDA3350C8919	WNF_XBOX_REPOSITORY_CHANGED	A change has been made to the pre-indexed state repository.
+7590BDA3350C8919	WNF_XBOX_LIVETV_TUNER_COUNT_CHANGED	The number of LiveTV tuners connected to the system has changed
+7598BDA3350C8919	WNF_XBOX_PACKAGECACHE_CHANGED	A change has been made to the package cache.
+75A0BDA3350C8919	WNF_XBOX_WPN_PLATFORM_HOST_INITIALIZED	The WPN platform host is initialized and ready.
+75A8BDA3350C8919	WNF_XBOX_NARRATOR_RECT_CHANGED	The rectangle visual of the Narrator has changed.
+75B0BDA3350C8919	WNF_XBOX_PACKAGE_UNMOUNTED_FROM_SYSTEM_FOR_UNINSTALL	A package is about to be unmounted from the System OS for uninstall.
+75B8BDA3350C8919	WNF_XBOX_SEND_LTV_COMMAND_REQUESTED	A module requested for an ltv command to be issued.
+75C0BDA3350C8919	WNF_XBOX_SHELL_DATACACHE_ENTITY_CHANGED	An entity has changed in the shell data cache.
+75C8BDA3350C8919	WNF_XBOX_CORTANAOVERLAY_VISIBILITY_CHANGED	The visibility of the Cortana Overlay view has changed.
+75D0BDA3350C8919	WNF_XBOX_NOTIFICATION_UNREAD_COUNT	Number of unread notifications for the current system user.
+75D8BDA3350C8919	WNF_XBOX_EXTENDED_RESOURCE_MODE_CHANGED	Extended resource mode has been toggled
+75E0BDA3350C8919	WNF_XBOX_AUTO_SIGNIN_IN_PROGRESS	Indicates whether the shell is in the process of auto-signin. Payload is UINT32 with a 1 or 0.
+75E8BDA3350C8919	WNF_XBOX_REMOTE_SIGNOUT	A local user has signed out remotely via SPOP.
+75F0BDA3350C8919	WNF_XBOX_ACCESSIBILITY_NARRATOR_ENABLED	Indicates whether the Narrator is enabled. Payload is UINt32 with 1 (enabled) or 0 (disabled).
+75F8BDA3350C8919	WNF_XBOX_GLOBAL_SPEECH_INPUT_NOTIFICATION	A global speech command was recognized that translates to a controller button press.
+7500BEA3350C8919	WNF_XBOX_APPLICATION_CURRENT_USER_CHANGED	The current user of the application has changed.
+7508BEA3350C8919	WNF_XBOX_ERA_VM_INSTANCE_CHANGED	ERA VM Instance has come up or gone down
+7510BEA3350C8919	WNF_XBOX_RESET_IDLE_TIMER	Idle monitor timer should be reset due to user activity.
+7518BEA3350C8919	WNF_XBOX_CORTANA_TV_GRAMMAR_UPDATE_NOTIFICATION	Notification for when TV grammars for cortana needs rebuilding
+7520BEA3350C8919	WNF_XBOX_CORTANA_SIGNEDIN_USERS_GRAMMAR_UPDATE_NOTIFICATION	Notification for when signed in users change results in rebuilding grammars for cortana
+7528BEA3350C8919	WNF_XBOX_KINECT_IS_REQUIRED	An application that requires Kinect has connected to the NuiService.
+7530BEA3350C8919	WNF_XBOX_ADJUST_SNAP_CPU_AFFINITY	Adjust an app's CPU affinity if in constrained mode
+7538BEA3350C8919	WNF_XBOX_VIDEOPLAYER_ACTIVEPLAYER	The active shared video player host has changed.
+7540BEA3350C8919	WNF_XBOX_VIDEOPLAYER_PLAYERSTATE	The video player app has changed internal state.
+7548BEA3350C8919	WNF_XBOX_VIDEOPLAYER_PLAYBACKPROGRESS	The video player app has changed playback progress.
+7550BEA3350C8919	WNF_XBOX_SAFEAREA_SETTING_CHANGED	Indicates whether the safe area setting is enabled. Payload is UINT32 with a 1 or 0.
+7558BEA3350C8919	WNF_XBOX_ACTIVE_BACKGROUNDAUDIO_APPLICATION_CHANGED	The application providing audio from the background has changed.
+7560BEA3350C8919	WNF_XBOX_KEYBOARD_LOCALE_CHANGED	Indicates that the desired keyboard locale has changed.
+7568BEA3350C8919	WNF_XBOX_GAMER_ACCOUNT_CHANGED	The local gamer account has signed in or out. Payload is uint32 representing sessionid
+7570BEA3350C8919	WNF_XBOX_ERA_VM_IOPRIORITY_CHANGED	ERA VM IO priority has been changed
+7578BEA3350C8919	WNF_XBOX_SPEECH_INPUT_DEVICE	Input device changed for OneCore speech
+7588BEA3350C8919	WNF_XBOX_CORTANA_USER_CHANGED_UPDATE_NOTIFICATION	Notification for when the active user of Cortana changes from signing in/out/switching user
+7590BEA3350C8919	WNF_XBOX_ACCESSIBILITY_EXCLUSIVE_INPUT_MODE_CHANGED	The exclusive input modality for an accessibility component changed
+7598BEA3350C8919	WNF_XBOX_PROACTIVE_NOTIFICATION_TRIGGERED	Proactive notification service is triggered
+75A0BEA3350C8919	WNF_XBOX_ACHIEVEMENT_TRACKER_STATE_CHANGED	Notification for when the Achievement Tracker's state should change
+75A8BEA3350C8919	WNF_XBOX_GUIDE_DIRECT_ACTIVATION	Event to trigger direct activation of xbox guide when nexus is pressed
+75B0BEA3350C8919	WNF_XBOX_TITLE_SPOP_VETO_RECEIVED	A title SPOP veto has been received.
+75B8BEA3350C8919	WNF_XBOX_LIBRARY_RAW_NOTIFICATION_RECEIVED	A new library-related raw notifications was received.
+75C0BEA3350C8919	WNF_XBOX_MESSAGING_RAW_NOTIFICATION_RECEIVED	A new messaging-related raw notifications was received.
+75C8BEA3350C8919	WNF_XBOX_PEOPLE_RAW_NOTIFICATION_RECEIVED	A new people-related raw notifications was received.
+75D0BEA3350C8919	WNF_XBOX_MULTIPLAYER_RAW_NOTIFICATION_RECEIVED	A new multiplayer-related raw notifications was received.
+75D8BEA3350C8919	WNF_XBOX_LIVETV_RAW_NOTIFICATION_RECEIVED	A new live tv-related raw notifications was received.
+75E0BEA3350C8919	WNF_XBOX_SYSTEMUI_RAW_NOTIFICATION_RECEIVED	A new SystemUI-related raw notifications was received.
+75E8BEA3350C8919	WNF_XBOX_CLUB_RAW_NOTIFICATION_RECEIVED	A new club-related raw notifications was received.
+75F0BEA3350C8919	WNF_XBOX_CLUBCHAT_RAW_NOTIFICATION_RECEIVED	A new club chat-related raw notifications was received.
+75F8BEA3350C8919	WNF_XBOX_SETTINGS_RAW_NOTIFICATION_RECEIVED	A new settings-related raw notifications was received.
+7500BFA3350C8919	WNF_XBOX_MEDIA_IS_PLAYING_CHANGED	Notification of whether any media is playing.
+7508BFA3350C8919	WNF_XBOX_EXPANDED_RESOURCES_INACTIVE	An expandedResources app has gone inactive.
+7510BFA3350C8919	WNF_XBOX_PARENTAL_RESTRICTIONS_CHANGED	The maximum age rating currently permissable has changed.
+750CBCA3381A9541	WNF_UTS_USERS_ENROLLED	Indicates whether there are any enrolled users.
+7514BCA3381A9541	WNF_UTS_LOCKSCREEN_DISMISSAL_TRIGGERED	Triggered when the lock screen is dismissed to kick-off trusted signals.
+7508BCA3381D8441	WNF_USB_TYPE_C_PARTNER_STATE	This event indicates the state of a USB Type-C connector's partner device.
+7510BCA3381D8441	WNF_USB_BILLBOARD_CHANGE	This event indicates that the number of Billboard devices in the system has changed.
+7518BCA3381D8441	WNF_USB_PEER_DEVICE_STATE	This is the state of a peer device.
+7520BCA3381D8441	WNF_USB_CHARGING_STATE	This event indicates the USB charging state for this Windows device.
+7528BCA3381D8441	WNF_USB_FUNCTION_CONTROLLER_STATE	This event indicates the state of a USB function controller, such as detached, or attached, and successfully enumerated with host PC.

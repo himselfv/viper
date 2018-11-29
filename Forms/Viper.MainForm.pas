@@ -328,6 +328,7 @@ begin
   //Delay loading the files until they're needed
   DeviceInterfaceClassesFile := AppFolder()+'\DeviceInterfaceClasses.txt';
   RpcInterfacesFile := AppFolder()+'\RpcInterfaces.txt';
+  WnfStateNamesFile := AppFolder()+'\WnfStateNames.txt';
 
   //But warn ONCE if they're missing - now's the best time.
   Settings := GetSettings();

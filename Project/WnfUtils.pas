@@ -5,6 +5,7 @@ See https://blog.quarkslab.com/playing-with-the-windows-notification-facility-wn
 }
 
 interface
+uses SysUtils, Generics.Collections;
 
 type
   TWnfStateName = int64;
@@ -42,7 +43,20 @@ function WnfSnGetUniquePart(const WnfSn: TWnfStateName): int64; inline;
 
 function XorShift(const AValue: int64; AMask: int64): int64;
 
+type
+  TWnfSnInfo = record
+    Name: string;
+    Desc: string;
+  end;
+  TWnfSnDict = class(TDictionary<TWnfStateName, TWnfSnInfo>)
+  public
+    procedure LoadFromFile(const AFilename: string);
+  end;
+
+  EWnfSnDictParseError = class(Exception);
+
 implementation
+uses Classes;
 
 function XorShift(const AValue: int64; AMask: int64): int64;
 begin
@@ -77,6 +91,61 @@ end;
 function WnfSnGetUniquePart(const WnfSn: TWnfStateName): int64;
 begin
   Result := (WnfSn xor WNF_XOR_KEY) shr WNF_SN_UNIQUE_SHIFT;
+end;
+
+resourcestring
+  eInvalidWfnSn = 'Invalid WNF State Name: %s';
+
+procedure TWnfSnDict.LoadFromFile(const AFilename: string);
+var lines: TStringList;
+  line: string;
+  i, i_pos: integer;
+  sn_str: string;
+  sn: TWnfStateName;
+  sn_info: TWnfSnInfo;
+begin
+  lines := TStringList.Create;
+  try
+    lines.LoadFromFile(AFilename);
+    for i := 0 to lines.Count-1 do begin
+      line := Trim(lines[i]);
+      if (line = '') or (line[1] = '#') then
+        continue;
+
+      i_pos := pos(#09, line);
+      if i_pos <= 0 then
+        continue; //Bad line!
+
+      sn_str := copy(line, 1, i_pos-1);
+      delete(line, 1, i_pos);
+      if not TryStrToInt64('$'+sn_str, sn) then
+        raise EWnfSnDictParseError.CreateFmt(eInvalidWfnSn, [sn_str]);
+
+      //WNF SNs are stored lowest byte first, but StrToInt64 is HBF, reverse:
+      sn := int64(PByte(@sn)[7])
+        + int64(PByte(@sn)[6]) shl 8
+        + int64(PByte(@sn)[5]) shl 16
+        + int64(PByte(@sn)[4]) shl 24
+        + int64(PByte(@sn)[3]) shl 32
+        + int64(PByte(@sn)[2]) shl 40
+        + int64(PByte(@sn)[1]) shl 48
+        + int64(PByte(@sn)[0]) shl 56;
+
+      i_pos := pos(#09, line);
+      if i_pos <= 0 then begin
+        sn_info.Name := line;
+        sn_info.Desc := '';
+      end else begin
+        sn_info.Name := copy(line, 1, i_pos-1);
+        delete(line, 1, i_pos);
+        sn_info.Desc := line; //remainder
+      end;
+
+      Self.AddOrSetValue(sn, sn_info);
+    end;
+  finally
+    FreeAndNil(lines);
+  end;
 end;
 
 end.

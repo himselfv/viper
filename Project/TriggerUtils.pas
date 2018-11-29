@@ -5,7 +5,7 @@ unit TriggerUtils;
 // Lets you decode some IDs but might make the app start a bit slower.
 
 interface
-uses WinSvc, Generics.Collections, GuidDict, UniStrUtils;
+uses WinSvc, Generics.Collections, UniStrUtils, GuidDict, WnfUtils;
 
 {
 Trigger related events. Please call when you're making appropriate changes.
@@ -145,6 +145,7 @@ var
  //Set by external code on load to point to files to load on first demand
   DeviceInterfaceClassesFile: string = '';
   RpcInterfacesFile: string = '';
+  WnfStateNamesFile: string = '';
 
 function GetWellKnownDeviceInterfaceClasses: TGuidDictionary;
 function GetWellKnownDeviceInterfaceClassName(const ClassGuid: TGuid): string;
@@ -158,6 +159,10 @@ function GetEtwProviderName(const Guid: TGuid): string; inline;
 function GetLocalRpcInterfaces: TGUIDDictionary;
 function TryGetLocalRpcInterfaceName(const Guid: TGuid; out AName: string): boolean;
 function GetLocalRpcInterfaceName(const Guid: TGuid): string; inline;
+
+function GetWnfStateNames: TWnfSnDict;
+function TryGetWnfStateNameInfo(const WnfSn: TWnfStateName; out AInfo: TWnfSnInfo): boolean;
+function GetWnfStateNameInfo(const WnfSn: TWnfStateName): TWnfSnInfo; inline;
 
 
 implementation
@@ -551,11 +556,13 @@ begin
       end;
     end;
 
-   // Not much is known about this type of trigger
+   //
+   // The event is a Windows Notification Facility event (WNF State Name)
+   //
     SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE:
       if ATrigger.pTriggerSubtype^ = CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID then begin
         if Result.ExtractParamByType(SERVICE_TRIGGER_DATA_TYPE_BINARY, param) then
-          Result.Event := Format(sTriggerSystemStateChangeParam, [UniStrUtils.BinToHex(param.pData, param.cbData)]) //this is in fact SERVICE_TRIGGER_CUSTOM_STATE_ID
+          Result.Event := Format(sTriggerSystemStateChangeParam, [GetWnfStateNameInfo(PInt64(param.pData)^).Name])
         else
           Result.Event := Format(sTriggerSystemStateChange, []);
       end else
@@ -890,6 +897,50 @@ begin
   if not TryGetLocalRpcInterfaceName(Guid, Result) then
     Result := '';
 end;
+
+
+{
+WNF State Names are used as IDs in CUSTOM_SYSTEM_STATE_CHANGE triggers
+}
+var
+  WnfStateNames: TWnfSnDict = nil;
+
+procedure __LoadWnfStateNames;
+begin
+  WnfStateNames := TWnfSnDict.Create;
+  try
+    WnfStateNames.LoadFromFile(WnfStateNamesFile);
+  except
+    on E: EFOpenError do begin end;
+  end;
+end;
+
+procedure __NeedWnfStateNames; inline;
+begin
+  if WnfStateNames <> nil then exit;
+  __LoadWnfStateNames;
+end;
+
+function GetWnfStateNames: TWnfSnDict;
+begin
+  __NeedWnfStateNames;
+  Result := WnfStateNames;
+end;
+
+function TryGetWnfStateNameInfo(const WnfSn: TWnfStateName; out AInfo: TWnfSnInfo): boolean;
+begin
+  __NeedWnfStateNames;
+  Result := WnfStateNames.TryGetValue(WnfSn, AInfo);
+end;
+
+function GetWnfStateNameInfo(const WnfSn: TWnfStateName): TWnfSnInfo; inline;
+begin
+  if not TryGetWnfStateNameInfo(WnfSn, Result) then begin
+    Result.Name := UniStrUtils.BinToHex(@WnfSn, SizeOf(WnfSn));
+    Result.Desc := '';
+  end;
+end;
+
 
 
 initialization

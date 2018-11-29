@@ -531,6 +531,10 @@ object MainForm: TMainForm
         Caption = 'Show log'
         OnClick = miShowLogClick
       end
+      object miGetLocalRPCIntfName: TMenuItem
+        Caption = 'Get local RPC interface name'
+        OnClick = miGetLocalRPCIntfNameClick
+      end
     end
   end
   object pmFolders: TPopupMenu

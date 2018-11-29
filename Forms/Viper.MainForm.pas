@@ -119,6 +119,7 @@ type
     N7: TMenuItem;
     aSettings: TAction;
     miSettings: TMenuItem;
+    miGetLocalRPCIntfName: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -194,6 +195,7 @@ type
     procedure aSettingsExecute(Sender: TObject);
     procedure vtFoldersCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var Allowed: Boolean);
+    procedure miGetLocalRPCIntfNameClick(Sender: TObject);
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -1681,6 +1683,30 @@ begin
   service.Info.DisplayName := NewText;
   service.Info.SaveToMainFile;
   //We could also save this later in OnEdited, but there would be no way to check if DisplayName has really changed
+end;
+
+
+function TryStringToGuid(const Str: string; out Guid: TGuid): boolean;
+begin
+  try
+    Guid := StringToGUID(Str);
+  except
+    on EConvertError do
+      Result := false;
+  end;
+end;
+
+procedure TMainForm.miGetLocalRPCIntfNameClick(Sender: TObject);
+var IntfIdStr: string;
+  IntfId: TGUID;
+begin
+  if not InputQuery('Query RPC Name', 'Enter RPC interface GUID:', IntfIdStr) then
+    exit;
+  if not TryStringToGUID(IntfIdStr, IntfId) then
+    IntfId := StringToGUID('{'+IntfIdStr+'}');
+  if not TryGetLocalRpcInterfaceName(IntfId, IntfIdStr) then
+    IntfIdStr := 'Name not found';
+  MessageBox(Self.Handle, PChar(IntfIdStr), 'Query RPC Name', MB_OK);
 end;
 
 end.

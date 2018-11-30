@@ -167,7 +167,7 @@ const
      p: PP_NONE),
 
     (t: SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE;
-    st: nil;
+    st: @CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID;
      d: sTriggerSystemStateChange;
      p: PP_GENERICSUBTYPE),
 

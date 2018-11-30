@@ -33,13 +33,17 @@ object TriggerEditorForm: TTriggerEditorForm
     Top = 35
     Width = 536
     Height = 62
-    ActivePage = tsPresetGeneric
+    ActivePage = tsPresetRPC
     Anchors = [akLeft, akTop, akRight]
     Style = tsFlatButtons
     TabOrder = 2
     object tsPresetGeneric: TTabSheet
       Caption = 'Generic'
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         528
         52)
@@ -80,6 +84,10 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'Device'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         528
         52)
@@ -103,6 +111,10 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'ETW'
       ImageIndex = 2
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         528
         52)
@@ -120,6 +132,43 @@ object TriggerEditorForm: TTriggerEditorForm
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
+      end
+    end
+    object tsPresetRPC: TTabSheet
+      Caption = 'RPC'
+      ImageIndex = 3
+      TabVisible = False
+      DesignSize = (
+        528
+        52)
+      object lblRpcInterface: TLabel
+        Left = 3
+        Top = 6
+        Width = 75
+        Height = 13
+        Caption = 'RPC Interface: '
+      end
+      object lblRPCInterfaceHint: TLabel
+        Left = 3
+        Top = 30
+        Width = 162
+        Height = 13
+        Caption = 'Stored as the first Data property.'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clGrayText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object cbRpcInterface: TComboBox
+        Left = 136
+        Top = 3
+        Width = 389
+        Height = 21
+        Anchors = [akLeft, akTop, akRight]
+        TabOrder = 0
+        OnChange = cbRpcInterfaceChange
       end
     end
   end

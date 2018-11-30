@@ -40,6 +40,10 @@ type
     btnDataItemDelete: TButton;
     cbAction: TComboBoxEx;
     cbTypePreset: TComboBoxEx;
+    tsPresetRPC: TTabSheet;
+    lblRpcInterface: TLabel;
+    cbRpcInterface: TComboBox;
+    lblRPCInterfaceHint: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -58,6 +62,7 @@ type
     procedure btnDataItemDeleteClick(Sender: TObject);
     procedure vtDataItemsFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
+    procedure cbRpcInterfaceChange(Sender: TObject);
   protected
     FTrigger: PSERVICE_TRIGGER;
 
@@ -67,20 +72,30 @@ type
     function SelectedTypePreset: pointer;
     function SelectTypePreset(const Preset: pointer; NotifyChanged: boolean = true): boolean;
 
+  //Active DataItems are stored and edited as vtDataItems nodes
   protected
     procedure ReloadDataItems;
+    function GetDataItemCount(): integer;
+    function GetDataItemNode(AIndex: integer): PVirtualNode;
+    function GetDataItemNodeData(AIndex: integer): PDataItemNodeData;
+    function GetDataItem(AIndex: integer): PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+    function GetDataItems(): TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
     function AddDataItem(const ADataToCopy: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): PVirtualNode;
+    procedure DataItemsEdited;
 
   protected
     FDeviceInterfacesLoaded: boolean;
     FDeviceInterfaces: TArray<TGUID>;
     FEtwSourcesLoaded: boolean;
     FEtwSources: TArray<TGUID>;
+    FRpcInterfacesLoaded: boolean;
+    FRpcInterfaces: TArray<TGUID>;
     procedure ReloadData;
     procedure SaveData;
     procedure UpdatePresetGenericPage;
     procedure UpdatePresetDevicePage;
     procedure UpdatePresetEtwPage;
+    procedure UpdatePresetRpcPage;
     function GetSelectedDeviceInterfaceClass: TGUID;
     function GetSelectedEtwSource: TGUID;
   public
@@ -110,6 +125,8 @@ const
   PP_DEVICETYPE            = 11; //device type selection (for device interface availability)
   PP_FIREWALLPORTS         = 12; //firewall ports selection
   PP_ETWEVENT              = 13; //ETW event (category selection)
+  PP_RPCEVENT              = 14; //RPC interface event
+  PP_WNFEVENT              = 15; //SystemStateChange == WNF event
 
 const
  //The presets listed in this table will be presented in the nice neat way,
@@ -160,7 +177,7 @@ const
     (t: SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT;
     st: @RPC_INTERFACE_EVENT_GUID;
      d: sTriggerNetworkEndpointRpc;
-     p: PP_NONE),
+     p: PP_RPCEVENT),
     (t: SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT;
     st: @NAMED_PIPE_EVENT_GUID;
      d: sTriggerNetworkEndpointNamedPipe;
@@ -183,7 +200,7 @@ const
   );
 
 implementation
-uses UITypes, GuidDict, Viper.TriggerDataItemEditor;
+uses UITypes, UniStrUtils, GuidDict, WnfUtils, Viper.TriggerDataItemEditor;
 
 {$R *.dfm}
 
@@ -193,6 +210,7 @@ begin
   FTypePresetsLoaded := false;
   FDeviceInterfacesLoaded := false;
   FEtwSourcesLoaded := false;
+  FRpcInterfacesLoaded := false;
 end;
 
 procedure TTriggerEditorForm.FormDestroy(Sender: TObject);
@@ -370,7 +388,6 @@ var DraftTrigger: SERVICE_TRIGGER;
   TypePreset: PTypePreset;
   DraftGuid: TGUID;
   DraftDataItems: TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
-  ANode: PVirtualNode;
 begin
   if FTrigger <> nil then begin
     FreeMem(FTrigger);
@@ -426,12 +443,7 @@ begin
 
   //Data Items
   //Nodes keep their own copy of DATA_ITEM's data, we're going to borrow that for a minute
-  SetLength(DraftDataItems, 0);
-  for ANode in vtDataItems.ChildNodes(vtDataItems.RootNode) do begin
-    SetLength(DraftDataItems, Length(DraftDataItems)+1);
-    DraftDataItems[Length(DraftDataItems)-1] := PDataItemNodeData(vtDataItems.GetNodeData(ANode))^.Item;
-  end;
-
+  DraftDataItems := GetDataItems();
   DraftTrigger.cDataItems := Length(DraftDataItems);
   if DraftTrigger.cDataItems > 0 then
     DraftTrigger.pDataItems := @DraftDataItems[0]
@@ -506,6 +518,10 @@ begin
      pcPresetDetails.ActivePage := tsPresetEtw;
      //update the page configuration as the guid could have changed
      UpdatePresetEtwPage();
+   end;
+   PP_RPCEVENT: begin
+     pcPresetDetails.ActivePage := tsPresetRpc;
+     UpdatePresetRpcPage();
    end;
    else //PP_GENERIC and everything undefined
      pcPresetDetails.ActivePage := tsPresetGeneric;
@@ -649,7 +665,109 @@ begin
 end;
 
 
-// Data Items / Properties
+{
+RPC interface value is based on the first DataItem for the trigger.
+SCM might support multiple such DataItems but this has never been spotted
+so we don't support pretty-editing that.
+}
+
+procedure TTriggerEditorForm.UpdatePresetRpcPage;
+var providers: TGUIDDictionary;
+  i: integer;
+  pg: PGUID;
+  found: boolean;
+  val, val_lc: string;
+begin
+  providers := GetEtwProviders;
+
+  if not Self.FRpcInterfacesLoaded then begin
+    cbRpcInterface.Clear;
+    FRpcInterfaces := providers.Keys.ToArray();
+    //Associated object points to the key guid
+    for i := 0 to Length(FRpcInterfaces)-1 do begin
+      pg := @FRpcInterfaces[i];
+      cbRpcInterface.AddItem(providers[pg^], TObject(pg));
+    end;
+    cbRpcInterface.Sorted := true;
+    Self.FRpcInterfacesLoaded := true;
+  end;
+
+ //New triggers or triggers with no DataItems start with no data
+  if (FTrigger = nil) or (GetDataItemCount() < 1) then begin
+    cbRpcInterface.ItemIndex := -1;
+    cbRpcInterface.Text := '';
+    exit;
+  end;
+
+ //First DataItem is in an unsupported format, assume empty
+  if (GetDataItem(0).dwDataType <> SERVICE_TRIGGER_DATA_TYPE_STRING) then begin
+    cbRpcInterface.ItemIndex := -1;
+    cbRpcInterface.Text := '';
+    exit;
+  end;
+
+ //Select the value based on the data we have
+  val := GetDataItem(0).StringValue();
+  val_lc := val.ToLower;
+  found := false;
+  for i := 0 to cbRpcInterface.Items.Count-1 do begin
+    pg := PGUID(cbRpcInterface.Items.Objects[i]);
+    if GuidToString(pg^).ToLower = val_lc then begin
+      cbRpcInterface.ItemIndex := i;
+      found := true;
+      break;
+    end;
+  end;
+
+  if not found then begin
+    cbRpcInterface.ItemIndex := -1;
+    cbRpcInterface.Text := val;
+  end;
+end;
+
+
+procedure TTriggerEditorForm.cbRpcInterfaceChange(Sender: TObject);
+var item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  pitem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  newVal: string;
+begin
+{
+Change strategy:
+Update the first DataItem to reflect what's chosen.
+Leave the other DataItems alone.
+}
+  if FTrigger = nil then exit;
+
+  if cbRpcInterface.ItemIndex >= 0 then
+    newVal := GuidToString(PGuid(cbRpcInterface.Items.Objects[cbRpcInterface.ItemIndex])^)
+  else
+    newVal := cbRpcInterface.Text;
+
+  if GetDataItemCount() > 0 then begin
+    //Edit existing data item
+    pitem := GetDataItem(0);
+    pitem.SetRawStringValue(newVal);
+    GetDataItemNodeData(0).UpdateData;
+  end else begin
+    //Add new data item
+    item.dwDataType := SERVICE_TRIGGER_DATA_TYPE_STRING;
+    item.cbData := SizeOf(WideChar)*(Length(newVal)+1);
+    item.pData := @newVal[1];
+    Self.AddDataItem(item);
+  end;
+  vtDataItems.Invalidate;
+end;
+
+
+{
+  if (FTrigger.pDataItems^.dwDataType <> SERVICE_TRIGGER_DATA_TYPE_BINARY)
+  or (FTrigger.pDataItems^.cbData <> SizeOf(TWnfSn))
+}
+
+
+{
+ Data Items / Properties
+}
 
 procedure TTriggerEditorForm.ReloadDataItems;
 var item: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
@@ -676,6 +794,52 @@ begin
   nodeData := vtDataItems.GetNodeData(Result);
   nodeData.Item := CopyTriggerDataItem(ADataToCopy);
   nodeData.UpdateData;
+end;
+
+function TTriggerEditorForm.GetDataItemCount(): integer;
+begin
+  Result := vtDataItems.ChildCount[nil];
+end;
+
+function TTriggerEditorForm.GetDataItemNode(AIndex: integer): PVirtualNode;
+begin
+  //This is a bit ugly with VT
+  Result := vtDataItems.GetFirstChild(nil);
+  while (Result <> nil) and (AIndex > 0) do begin
+    Result := vtDataItems.GetNextSibling(Result);
+    Dec(AIndex);
+  end;
+end;
+
+function TTriggerEditorForm.GetDataItemNodeData(AIndex: integer): PDataItemNodeData;
+begin
+  Result := vtDataItems.GetNodeData(Self.GetDataItemNode(AIndex));
+end;
+
+function TTriggerEditorForm.GetDataItem(AIndex: integer): PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+var node: PVirtualNode;
+  nodeData: PDataItemNodeData;
+begin
+  node := GetDataItemNode(AIndex);
+  if node <> nil then begin
+    nodeData := vtDataItems.GetNodeData(node);
+    Result := @nodeData.Item;
+  end else
+    Result := nil;
+end;
+
+function TTriggerEditorForm.GetDataItems(): TArray<SERVICE_TRIGGER_SPECIFIC_DATA_ITEM>;
+var i: integer;
+  ANode: PVirtualNode;
+begin
+  i := 0;
+  SetLength(Result, GetDataItemCount());
+  for ANode in vtDataItems.ChildNodes(nil) do begin
+    Assert(i < Length(Result));
+    Result[i] := PDataItemNodeData(vtDataItems.GetNodeData(ANode))^.Item;
+    Inc(i);
+  end;
+  Assert(i = Length(Result));
 end;
 
 //Updates various cached fields after the underlying SERVICE_TRIGGER_SPECIFIC_DATA_ITEM changes
@@ -744,6 +908,7 @@ begin
   finally
     FreeAndNil(editor);
   end;
+  DataItemsEdited;
 end;
 
 procedure TTriggerEditorForm.btnDataItemEditClick(Sender: TObject);
@@ -769,6 +934,7 @@ begin
   finally
     FreeAndNil(editor);
   end;
+  DataItemsEdited;
 end;
 
 procedure TTriggerEditorForm.btnDataItemDeleteClick(Sender: TObject);
@@ -777,6 +943,15 @@ begin
   node := vtDataItems.FocusedNode;
   if node = nil then exit;
   vtDataItems.DeleteNode(node);
+  DataItemsEdited;
+end;
+
+//Called when the DataItems list has been edited by the user
+procedure TTriggerEditorForm.DataItemsEdited;
+begin
+  //Some pages base their pretty info on available data items
+  if Self.pcPresetDetails.ActivePage = tsPresetRPC then
+    UpdatePresetRpcPage();
 end;
 
 

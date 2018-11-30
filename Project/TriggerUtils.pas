@@ -936,7 +936,7 @@ end;
 function GetWnfStateNameInfo(const WnfSn: TWnfStateName): TWnfSnInfo; inline;
 begin
   if not TryGetWnfStateNameInfo(WnfSn, Result) then begin
-    Result.Name := UniStrUtils.BinToHex(@WnfSn, SizeOf(WnfSn));
+    Result.Name := string(UniStrUtils.BinToHex(@WnfSn, SizeOf(WnfSn)));
     Result.Desc := '';
   end;
 end;

@@ -746,6 +746,11 @@ Leave the other DataItems alone.
     newVal := cbRpcInterface.Text;
 
   pitem := GetDataItem(0);
+  if (newVal = '') and (GetDataItemCount() = 1) then begin
+    //If there's exactly one item and we've just changed its contents to nil, delete it
+    //Leave it alone if there's more: otherwise the second one moves to the first place.
+    vtDataItems.DeleteNode(GetDataItemNode(0));
+  end else
   if pitem <> nil then begin
     //Edit existing data item
     pitem.dwDataType := SERVICE_TRIGGER_DATA_TYPE_STRING;
@@ -818,10 +823,18 @@ begin
   if cbWnfEvent.ItemIndex >= 0 then
     newVal := TWnfStateName(cbWnfEvent.Items.Objects[cbWnfEvent.ItemIndex])
   else
+  if cbWnfEvent.Text = '' then
+    newVal := 0 //thankfully, not a valid event
+  else
     newVal := StrToWnfSn(cbWnfEvent.Text);
   lblWnfEventHint.Caption := GetWnfStateNameInfo(newVal).Desc;
 
   pitem := GetDataItem(0);
+  if (newVal = 0) and (GetDataItemCount() = 1) then begin
+    //If there's exactly one item and we've just changed its contents to nil, delete it
+    //Leave it alone if there's more, or the second one moves to the first place.
+    vtDataItems.DeleteNode(GetDataItemNode(0));
+  end else
   if pitem <> nil then begin
     //Edit existing data item
     pitem.dwDataType := SERVICE_TRIGGER_DATA_TYPE_BINARY;

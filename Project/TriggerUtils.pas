@@ -297,7 +297,7 @@ begin
   if Length(list) > 1 then
     Self.SetMultistringValue(list)
   else
-    SetRawStringValue(list[0]);
+    SetRawStringValue(Value);
 end;
 
 //Copies the raw contents (incl. any #00s) from the given string + the final #00 (implied).
@@ -306,7 +306,9 @@ procedure TTriggerParamHelper.SetRawStringValue(const Value: string);
 begin
   Resize((Length(Value)+1)*SizeOf(WideChar));
   if Length(Value) > 0 then
-    Move(Value[1], Self.pData^, (Length(Value)+1)*SizeOf(WideChar));
+    Move(Value[1], Self.pData^, (Length(Value)+1)*SizeOf(WideChar))
+  else
+    PWideChar(Self.pData)^ := #00; //term null
 end;
 
 procedure TTriggerParamHelper.SetMultistringValue(const Value: TStringArray);

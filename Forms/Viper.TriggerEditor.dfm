@@ -40,6 +40,9 @@ object TriggerEditorForm: TTriggerEditorForm
     object tsPresetGeneric: TTabSheet
       Caption = 'Generic'
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 52
       DesignSize = (
         528
@@ -81,6 +84,9 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'Device'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 52
       DesignSize = (
         528
@@ -105,6 +111,9 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'ETW'
       ImageIndex = 2
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 52
       DesignSize = (
         528
@@ -129,6 +138,9 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'RPC'
       ImageIndex = 3
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 52
       DesignSize = (
         528
@@ -167,7 +179,6 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'WNF'
       ImageIndex = 4
       TabVisible = False
-      ExplicitHeight = 61
       DesignSize = (
         528
         68)
@@ -246,7 +257,6 @@ object TriggerEditorForm: TTriggerEditorForm
       OnGetText = vtDataItemsGetText
       OnGetNodeDataSize = vtDataItemsGetNodeDataSize
       OnInitNode = vtDataItemsInitNode
-      ExplicitHeight = 110
       Columns = <
         item
           Position = 0
@@ -302,7 +312,6 @@ object TriggerEditorForm: TTriggerEditorForm
     Default = True
     TabOrder = 4
     OnClick = btnOkClick
-    ExplicitTop = 252
   end
   object btnCancel: TButton
     Left = 456
@@ -314,7 +323,6 @@ object TriggerEditorForm: TTriggerEditorForm
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 5
-    ExplicitTop = 252
   end
   object cbAction: TComboBoxEx
     Left = 8

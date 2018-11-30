@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, WinSvc, ServiceHelper, TriggerUtils, ComCtrls,
-  Vcl.Samples.Spin, ExtCtrls, VirtualTrees, CommonResources;
+  Vcl.Samples.Spin, ExtCtrls, VirtualTrees, CommonResources, WnfUtils;
 
 type
   TDataItemNodeData = record
@@ -43,7 +43,11 @@ type
     tsPresetRPC: TTabSheet;
     lblRpcInterface: TLabel;
     cbRpcInterface: TComboBox;
-    lblRPCInterfaceHint: TLabel;
+    lblRpcInterfaceHint: TLabel;
+    tsPresetWNF: TTabSheet;
+    lblWnfEvent: TLabel;
+    cbWnfEvent: TComboBox;
+    lblWnfEventHint: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -63,6 +67,7 @@ type
     procedure vtDataItemsFocusChanged(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex);
     procedure cbRpcInterfaceChange(Sender: TObject);
+    procedure cbWnfEventChange(Sender: TObject);
   protected
     FTrigger: PSERVICE_TRIGGER;
 
@@ -88,7 +93,6 @@ type
     FDeviceInterfaces: TArray<TGUID>;
     FEtwSourcesLoaded: boolean;
     FEtwSources: TArray<TGUID>;
-    FRpcInterfacesLoaded: boolean;
     FRpcInterfaces: TArray<TGUID>;
     procedure ReloadData;
     procedure SaveData;
@@ -96,6 +100,7 @@ type
     procedure UpdatePresetDevicePage;
     procedure UpdatePresetEtwPage;
     procedure UpdatePresetRpcPage;
+    procedure UpdatePresetWnfPage;
     function GetSelectedDeviceInterfaceClass: TGUID;
     function GetSelectedEtwSource: TGUID;
   public
@@ -186,7 +191,7 @@ const
     (t: SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE;
     st: @CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID;
      d: sTriggerSystemStateChange;
-     p: PP_GENERICSUBTYPE),
+     p: PP_WNFEVENT),
 
     (t: SERVICE_TRIGGER_TYPE_CUSTOM;
     st: nil;
@@ -200,7 +205,7 @@ const
   );
 
 implementation
-uses UITypes, UniStrUtils, GuidDict, WnfUtils, Viper.TriggerDataItemEditor;
+uses UITypes, UniStrUtils, GuidDict, Viper.TriggerDataItemEditor;
 
 {$R *.dfm}
 
@@ -210,7 +215,6 @@ begin
   FTypePresetsLoaded := false;
   FDeviceInterfacesLoaded := false;
   FEtwSourcesLoaded := false;
-  FRpcInterfacesLoaded := false;
 end;
 
 procedure TTriggerEditorForm.FormDestroy(Sender: TObject);
@@ -491,43 +495,47 @@ begin
   //Configure the generic page in case we switch to it later
   //Note: This only configures it for the base values of the preset. If the preset
   //  had any configurable values, our changes to those are ignored.
-   edtCustomType.Value := preset.t;
-   if preset.st <> nil then
-     edtCustomSubtype.Text := GuidToString(preset.st^)
-   else
-     edtCustomSubtype.Text := '';
+  edtCustomType.Value := preset.t;
+  if preset.st <> nil then
+    edtCustomSubtype.Text := GuidToString(preset.st^)
+  else
+    edtCustomSubtype.Text := '';
 
-   //Choose the appropriate propety page (maybe not generic)
-   case preset.p of
-   PP_NONE: pcPresetDetails.ActivePage := nil;
-   PP_GENERICSUBTYPE: begin
-     pcPresetDetails.ActivePage := tsPresetGeneric;
-     SetGenericCustomTypeEnabled(false);
-     UpdatePresetGenericPage();
-   end;
-   PP_DEVICETYPE: begin
-     pcPresetDetails.ActivePage := tsPresetDevice;
-     //update the page configuration as the guid could have changed
-     UpdatePresetDevicePage();
-   end;
-   PP_FIREWALLPORTS: begin
-    //No additional details except for properties
-     pcPresetDetails.ActivePage := nil;
-   end;
-   PP_ETWEVENT: begin
-     pcPresetDetails.ActivePage := tsPresetEtw;
-     //update the page configuration as the guid could have changed
-     UpdatePresetEtwPage();
-   end;
-   PP_RPCEVENT: begin
-     pcPresetDetails.ActivePage := tsPresetRpc;
-     UpdatePresetRpcPage();
-   end;
-   else //PP_GENERIC and everything undefined
-     pcPresetDetails.ActivePage := tsPresetGeneric;
-     SetGenericCustomTypeEnabled(true);
-     UpdatePresetGenericPage;
-   end;
+  //Choose the appropriate propety page (maybe not generic)
+  case preset.p of
+  PP_NONE: pcPresetDetails.ActivePage := nil;
+  PP_GENERICSUBTYPE: begin
+    pcPresetDetails.ActivePage := tsPresetGeneric;
+    SetGenericCustomTypeEnabled(false);
+    UpdatePresetGenericPage();
+  end;
+  PP_DEVICETYPE: begin
+    pcPresetDetails.ActivePage := tsPresetDevice;
+    //update the page configuration as the guid could have changed
+    UpdatePresetDevicePage();
+  end;
+  PP_FIREWALLPORTS: begin
+   //No additional details except for properties
+    pcPresetDetails.ActivePage := nil;
+  end;
+  PP_ETWEVENT: begin
+    pcPresetDetails.ActivePage := tsPresetEtw;
+    //update the page configuration as the guid could have changed
+    UpdatePresetEtwPage();
+  end;
+  PP_RPCEVENT: begin
+    pcPresetDetails.ActivePage := tsPresetRpc;
+    UpdatePresetRpcPage();
+  end;
+  PP_WNFEVENT: begin
+    pcPresetDetails.ActivePage := tsPresetWnf;
+    UpdatePresetWnfPage();
+  end;
+  else //PP_GENERIC and everything undefined
+    pcPresetDetails.ActivePage := tsPresetGeneric;
+    SetGenericCustomTypeEnabled(true);
+    UpdatePresetGenericPage;
+  end;
 end;
 
 //Actualizes the information on the Generic page
@@ -672,47 +680,42 @@ so we don't support pretty-editing that.
 }
 
 procedure TTriggerEditorForm.UpdatePresetRpcPage;
-var providers: TGUIDDictionary;
+var list: TGUIDDictionary;
+  key: PGUID;
+  item: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
   i: integer;
-  pg: PGUID;
   found: boolean;
   val, val_lc: string;
 begin
-  providers := GetEtwProviders;
-
-  if not Self.FRpcInterfacesLoaded then begin
+  if Length(FRpcInterfaces) <= 0 then begin
+    list := GetWellKnownRpcInterfaces;
     cbRpcInterface.Clear;
-    FRpcInterfaces := providers.Keys.ToArray();
+    FRpcInterfaces := list.Keys.ToArray();
     //Associated object points to the key guid
     for i := 0 to Length(FRpcInterfaces)-1 do begin
-      pg := @FRpcInterfaces[i];
-      cbRpcInterface.AddItem(providers[pg^], TObject(pg));
+      key := @FRpcInterfaces[i];
+      cbRpcInterface.AddItem(list[key^], TObject(key));
     end;
     cbRpcInterface.Sorted := true;
-    Self.FRpcInterfacesLoaded := true;
   end;
 
- //New triggers or triggers with no DataItems start with no data
-  if (FTrigger = nil) or (GetDataItemCount() < 1) then begin
-    cbRpcInterface.ItemIndex := -1;
-    cbRpcInterface.Text := '';
-    exit;
-  end;
-
- //First DataItem is in an unsupported format, assume empty
-  if (GetDataItem(0).dwDataType <> SERVICE_TRIGGER_DATA_TYPE_STRING) then begin
+ //No DataItem or first DataItem is in an unsupported format, assume empty
+  item := GetDataItem(0);
+  if (item = nil)
+  or (item.dwDataType <> SERVICE_TRIGGER_DATA_TYPE_STRING) then begin
+   //New triggers or triggers with no DataItems start with no data
     cbRpcInterface.ItemIndex := -1;
     cbRpcInterface.Text := '';
     exit;
   end;
 
  //Select the value based on the data we have
-  val := GetDataItem(0).StringValue();
+  val := item.StringValue();
   val_lc := val.ToLower;
   found := false;
   for i := 0 to cbRpcInterface.Items.Count-1 do begin
-    pg := PGUID(cbRpcInterface.Items.Objects[i]);
-    if GuidToString(pg^).ToLower = val_lc then begin
+    key := PGUID(cbRpcInterface.Items.Objects[i]);
+    if GuidToString(key^).ToLower = val_lc then begin
       cbRpcInterface.ItemIndex := i;
       found := true;
       break;
@@ -724,7 +727,6 @@ begin
     cbRpcInterface.Text := val;
   end;
 end;
-
 
 procedure TTriggerEditorForm.cbRpcInterfaceChange(Sender: TObject);
 var item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
@@ -743,9 +745,10 @@ Leave the other DataItems alone.
   else
     newVal := cbRpcInterface.Text;
 
-  if GetDataItemCount() > 0 then begin
+  pitem := GetDataItem(0);
+  if pitem <> nil then begin
     //Edit existing data item
-    pitem := GetDataItem(0);
+    pitem.dwDataType := SERVICE_TRIGGER_DATA_TYPE_STRING;
     pitem.SetRawStringValue(newVal);
     GetDataItemNodeData(0).UpdateData;
   end else begin
@@ -760,9 +763,79 @@ end;
 
 
 {
-  if (FTrigger.pDataItems^.dwDataType <> SERVICE_TRIGGER_DATA_TYPE_BINARY)
-  or (FTrigger.pDataItems^.cbData <> SizeOf(TWnfSn))
+WNF Events (State Names).
+Same strategy as with RPC Interfaces
 }
+
+procedure TTriggerEditorForm.UpdatePresetWnfPage;
+var list: TWnfSnDict;
+  key: TWnfStateName;
+  item: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  found: boolean;
+  i: integer;
+begin
+  if cbWnfEvent.Items.Count <= 0 then begin
+    list := GetWnfStateNames();
+    for key in List.Keys do
+      //Associated object is the key itself (64 bit)
+      cbWnfEvent.AddItem(list[key].Name, TObject(key));
+    cbWnfEvent.Sorted := true;
+  end;
+
+ //No DataItem or first DataItem is in an unsupported format, assume empty
+  item := GetDataItem(0);
+  if (item = nil)
+  or (item.dwDataType <> SERVICE_TRIGGER_DATA_TYPE_BINARY)
+  or (item.cbData <> SizeOf(TWnfStateName)) then begin
+    cbWnfEvent.ItemIndex := -1;
+    cbWnfEvent.Text := '';
+    exit;
+  end;
+
+ //Select the value based on the data we have
+  key := PWnfStateName(item.pData)^;
+  found := false;
+  for i := 0 to cbWnfEvent.Items.Count-1 do
+    if key = TWnfStateName(cbWnfEvent.Items.Objects[i]) then begin
+      cbWnfEvent.ItemIndex := i;
+      found := true;
+      break;
+    end;
+
+  if not found then begin
+    cbWnfEvent.ItemIndex := -1;
+    cbWnfEvent.Text := WnfSnToStr(key);
+  end;
+end;
+
+procedure TTriggerEditorForm.cbWnfEventChange(Sender: TObject);
+var item: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  pitem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+  newVal: TWnfStateName;
+begin
+  if FTrigger = nil then exit;
+
+  if cbWnfEvent.ItemIndex >= 0 then
+    newVal := TWnfStateName(cbWnfEvent.Items.Objects[cbWnfEvent.ItemIndex])
+  else
+    newVal := StrToWnfSn(cbWnfEvent.Text);
+  lblWnfEventHint.Caption := GetWnfStateNameInfo(newVal).Desc;
+
+  pitem := GetDataItem(0);
+  if pitem <> nil then begin
+    //Edit existing data item
+    pitem.dwDataType := SERVICE_TRIGGER_DATA_TYPE_BINARY;
+    pitem.SetInt64Value(newVal);
+    GetDataItemNodeData(0).UpdateData;
+  end else begin
+    //Add new data item
+    item.dwDataType := SERVICE_TRIGGER_DATA_TYPE_BINARY;
+    item.cbData := SizeOf(TWnfStateName);
+    item.pData := @newVal;
+    Self.AddDataItem(item);
+  end;
+  vtDataItems.Invalidate;
+end;
 
 
 {
@@ -952,6 +1025,8 @@ begin
   //Some pages base their pretty info on available data items
   if Self.pcPresetDetails.ActivePage = tsPresetRPC then
     UpdatePresetRpcPage();
+  if Self.pcPresetDetails.ActivePage = tsPresetWNF then
+    UpdatePresetWnfPage();
 end;
 
 

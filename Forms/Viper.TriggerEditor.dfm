@@ -2,7 +2,7 @@ object TriggerEditorForm: TTriggerEditorForm
   Left = 0
   Top = 0
   Caption = 'Edit trigger'
-  ClientHeight = 285
+  ClientHeight = 298
   ClientWidth = 552
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object TriggerEditorForm: TTriggerEditorForm
   OnShow = FormShow
   DesignSize = (
     552
-    285)
+    298)
   PixelsPerInch = 96
   TextHeight = 13
   object lblActionToType: TLabel
@@ -32,21 +32,18 @@ object TriggerEditorForm: TTriggerEditorForm
     Left = 8
     Top = 35
     Width = 536
-    Height = 62
-    ActivePage = tsPresetRPC
+    Height = 78
+    ActivePage = tsPresetWNF
     Anchors = [akLeft, akTop, akRight]
     Style = tsFlatButtons
     TabOrder = 2
     object tsPresetGeneric: TTabSheet
       Caption = 'Generic'
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 52
       DesignSize = (
         528
-        52)
+        68)
       object lblCustomType: TLabel
         Left = 3
         Top = 6
@@ -84,13 +81,10 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'Device'
       ImageIndex = 1
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 52
       DesignSize = (
         528
-        52)
+        68)
       object lblDeviceInterfaceClass: TLabel
         Left = 3
         Top = 6
@@ -111,13 +105,10 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'ETW'
       ImageIndex = 2
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 52
       DesignSize = (
         528
-        52)
+        68)
       object lblEtwEventSource: TLabel
         Left = 3
         Top = 6
@@ -138,9 +129,10 @@ object TriggerEditorForm: TTriggerEditorForm
       Caption = 'RPC'
       ImageIndex = 3
       TabVisible = False
+      ExplicitHeight = 52
       DesignSize = (
         528
-        52)
+        68)
       object lblRpcInterface: TLabel
         Left = 3
         Top = 6
@@ -148,7 +140,7 @@ object TriggerEditorForm: TTriggerEditorForm
         Height = 13
         Caption = 'RPC Interface: '
       end
-      object lblRPCInterfaceHint: TLabel
+      object lblRpcInterfaceHint: TLabel
         Left = 3
         Top = 30
         Width = 162
@@ -171,18 +163,59 @@ object TriggerEditorForm: TTriggerEditorForm
         OnChange = cbRpcInterfaceChange
       end
     end
+    object tsPresetWNF: TTabSheet
+      Caption = 'WNF'
+      ImageIndex = 4
+      TabVisible = False
+      ExplicitHeight = 61
+      DesignSize = (
+        528
+        68)
+      object lblWnfEvent: TLabel
+        Left = 3
+        Top = 6
+        Width = 61
+        Height = 13
+        Caption = 'WNF Event: '
+      end
+      object lblWnfEventHint: TLabel
+        Left = 3
+        Top = 30
+        Width = 522
+        Height = 38
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        AutoSize = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clGrayText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        WordWrap = True
+        ExplicitHeight = 22
+      end
+      object cbWnfEvent: TComboBox
+        Left = 136
+        Top = 3
+        Width = 389
+        Height = 21
+        Anchors = [akLeft, akTop, akRight]
+        TabOrder = 0
+        OnChange = cbWnfEventChange
+      end
+    end
   end
   object pnlDataItems: TPanel
     Left = 8
-    Top = 103
+    Top = 119
     Width = 536
-    Height = 138
+    Height = 135
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
     DesignSize = (
       536
-      138)
+      135)
     object lblDataItemsCaption: TLabel
       Left = 7
       Top = 0
@@ -194,7 +227,7 @@ object TriggerEditorForm: TTriggerEditorForm
       Left = 7
       Top = 19
       Width = 441
-      Height = 110
+      Height = 107
       Anchors = [akLeft, akTop, akRight, akBottom]
       BorderWidth = 1
       Header.AutoSizeIndex = 0
@@ -213,6 +246,7 @@ object TriggerEditorForm: TTriggerEditorForm
       OnGetText = vtDataItemsGetText
       OnGetNodeDataSize = vtDataItemsGetNodeDataSize
       OnInitNode = vtDataItemsInitNode
+      ExplicitHeight = 110
       Columns = <
         item
           Position = 0
@@ -260,7 +294,7 @@ object TriggerEditorForm: TTriggerEditorForm
   end
   object btnOk: TButton
     Left = 354
-    Top = 252
+    Top = 265
     Width = 87
     Height = 25
     Anchors = [akRight, akBottom]
@@ -268,10 +302,11 @@ object TriggerEditorForm: TTriggerEditorForm
     Default = True
     TabOrder = 4
     OnClick = btnOkClick
+    ExplicitTop = 252
   end
   object btnCancel: TButton
     Left = 456
-    Top = 252
+    Top = 265
     Width = 88
     Height = 25
     Anchors = [akRight, akBottom]
@@ -279,6 +314,7 @@ object TriggerEditorForm: TTriggerEditorForm
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 5
+    ExplicitTop = 252
   end
   object cbAction: TComboBoxEx
     Left = 8

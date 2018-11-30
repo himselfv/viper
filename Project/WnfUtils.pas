@@ -9,6 +9,7 @@ uses SysUtils, Generics.Collections;
 
 type
   TWnfStateName = int64;
+  PWnfStateName = ^TWnfStateName;
 
 const
   //WNF Scope markers
@@ -43,6 +44,10 @@ function WnfSnGetUniquePart(const WnfSn: TWnfStateName): int64; inline;
 
 function XorShift(const AValue: int64; AMask: int64): int64;
 
+function WnfSnToStr(const AWnfSn: TWnfStateName): string;
+function TryStrToWnfSn(const AValue: string; out AWnfSn: TWnfStateName): boolean;
+function StrToWnfSn(const AValue: string): TWnfStateName;
+
 type
   TWnfSnInfo = record
     Name: string;
@@ -56,7 +61,7 @@ type
   EWnfSnDictParseError = class(Exception);
 
 implementation
-uses Classes;
+uses Classes, UniStrUtils;
 
 function XorShift(const AValue: int64; AMask: int64): int64;
 begin
@@ -93,8 +98,40 @@ begin
   Result := (WnfSn xor WNF_XOR_KEY) shr WNF_SN_UNIQUE_SHIFT;
 end;
 
+{
+Since there's no canonical way to print out WNF State Names, we'll follow the
+byte order, from lowest to highest
+}
+
+function WnfSnToStr(const AWnfSn: TWnfStateName): string;
+begin
+  Result := string(UniStrUtils.BinToHex(@AWnfSn, SizeOf(AWnfSn)));
+end;
+
+function TryStrToWnfSn(const AValue: string; out AWnfSn: TWnfStateName): boolean;
+begin
+  Result := TryStrToInt64('$'+AValue, AWnfSn);
+  if Result then
+    //WNF SNs are stored lowest byte first, but StrToInt64 is HBF, reverse:
+    AWnfSn := int64(PByte(@AWnfSn)[7])
+      + int64(PByte(@AWnfSn)[6]) shl 8
+      + int64(PByte(@AWnfSn)[5]) shl 16
+      + int64(PByte(@AWnfSn)[4]) shl 24
+      + int64(PByte(@AWnfSn)[3]) shl 32
+      + int64(PByte(@AWnfSn)[2]) shl 40
+      + int64(PByte(@AWnfSn)[1]) shl 48
+      + int64(PByte(@AWnfSn)[0]) shl 56;
+end;
+
 resourcestring
   eInvalidWfnSn = 'Invalid WNF State Name: %s';
+
+function StrToWnfSn(const AValue: string): TWnfStateName;
+begin
+  if not TryStrToWnfSn(AValue, Result) then
+    raise EWnfSnDictParseError.CreateFmt(eInvalidWfnSn, [AValue]);
+end;
+
 
 procedure TWnfSnDict.LoadFromFile(const AFilename: string);
 var lines: TStringList;
@@ -118,18 +155,7 @@ begin
 
       sn_str := copy(line, 1, i_pos-1);
       delete(line, 1, i_pos);
-      if not TryStrToInt64('$'+sn_str, sn) then
-        raise EWnfSnDictParseError.CreateFmt(eInvalidWfnSn, [sn_str]);
-
-      //WNF SNs are stored lowest byte first, but StrToInt64 is HBF, reverse:
-      sn := int64(PByte(@sn)[7])
-        + int64(PByte(@sn)[6]) shl 8
-        + int64(PByte(@sn)[5]) shl 16
-        + int64(PByte(@sn)[4]) shl 24
-        + int64(PByte(@sn)[3]) shl 32
-        + int64(PByte(@sn)[2]) shl 40
-        + int64(PByte(@sn)[1]) shl 48
-        + int64(PByte(@sn)[0]) shl 56;
+      sn := StrToWnfSn(sn_str);
 
       i_pos := pos(#09, line);
       if i_pos <= 0 then begin
@@ -147,5 +173,6 @@ begin
     FreeAndNil(lines);
   end;
 end;
+
 
 end.

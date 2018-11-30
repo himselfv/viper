@@ -97,6 +97,8 @@ type
 function LoadDisabledTriggers(const AServiceName: string): TArray<TDisabledTrigger>;
 procedure DisableTrigger(const AServiceName: string; ATrigger: PSERVICE_TRIGGER);
 function EnableTrigger(const AServiceName: string; AId: string; ATrigger: PSERVICE_TRIGGER = nil): boolean;
+function ReadDisabledTrigger(const AServiceName: string; const AId: string): PSERVICE_TRIGGER;
+procedure WriteDisabledTrigger(const AServiceName: string; const AId: string; ATrigger: PSERVICE_TRIGGER);
 procedure DeleteDisabledTriggers(const AKeyPaths: array of string);
 
 
@@ -636,6 +638,42 @@ begin
     for i := 0 to Length(Result)-1 do
       FreeMem(Result[i].Trigger);
     raise;
+  end;
+end;
+
+//Creates a new instance of PSERVICE_TRIGGER populated with the data of the disabled
+//trigger with a given Id
+//Returns nil if no such trigger exists.
+function ReadDisabledTrigger(const AServiceName: string; const AId: string): PSERVICE_TRIGGER;
+var reg: TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    if not reg.OpenKeyReadOnly(GetDisabledTriggerKey(AServiceName, AId)) then begin
+      Result := nil;
+      exit;
+    end;
+    Result := CreateTriggerFromRegistryKey(reg);
+  finally
+    FreeAndNil(reg);
+  end;
+end;
+
+//Updates disabled trigger contents with the data from the given PSERVICE_TRIGGER
+procedure WriteDisabledTrigger(const AServiceName: string; const AId: string; ATrigger: PSERVICE_TRIGGER);
+var reg: TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    WriteTriggerToRegistryKey(
+      reg,
+      ATrigger,
+      sHkeyLocalMachine + GetDisabledTriggerKey(AServiceName, AId)
+    );
+  finally
+    FreeAndNil(reg);
   end;
 end;
 

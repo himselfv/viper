@@ -385,7 +385,7 @@ begin
 
   aJumpToRegistry.Visible := Length(sel) = 1;
 
-  aEditTrigger.Visible := (Tree.SelectedCount = 1) and HaveSCM; //"Edit" only works on live triggers
+  aEditTrigger.Visible := (Tree.SelectedCount = 1);
   aExportTrigger.Visible := Tree.SelectedCount > 0;
   aExportAllTriggers.Visible := (Tree.RootNode.ChildCount > 0); //"Export all" is available if we have any triggers
   aDeleteTrigger.Visible := (Tree.SelectedCount > 0);
@@ -849,9 +849,6 @@ begin
   Sel := Self.SelectedFacets;
   if Length(Sel) <> 1 then exit;
 
-  //"Edit" only works on live triggers
-  if Sel[0].Trigger.IsDisabled then exit;
-
   TriggerData := nil;
 
   EditForm := TTriggerEditorForm.Create(Self);
@@ -861,12 +858,20 @@ begin
     if not IsPositiveResult(EditForm.EditTrigger(TriggerData)) then
       exit; //TriggerData is freed in Finally
 
-   //Store the edited trigger in the service config
-    with OpenService2(Sel[0].Trigger.ServiceName,
-      STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
-      SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
-    begin
-      ChangeServiceTrigger(SvcHandle, Sel[0].Trigger.Data^, TriggerData^);
+    if not Sel[0].Trigger.IsDisabled then begin
+     //Store the edited trigger in the service config
+      with OpenService2(Sel[0].Trigger.ServiceName,
+        STANDARD_RIGHTS_REQUIRED or SC_MANAGER_CONNECT,
+        SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG) do
+      begin
+        ChangeServiceTrigger(SvcHandle, Sel[0].Trigger.Data^, TriggerData^);
+        TriggerUtils.TriggerListChanged(Self, Sel[0].Trigger.ServiceName);
+      end;
+    end
+    else begin
+     //Store the edited trigger in the registry
+      WriteDisabledTrigger(Sel[0].Trigger.ServiceName, Sel[0].Trigger.DisabledId,
+        TriggerData);
       TriggerUtils.TriggerListChanged(Self, Sel[0].Trigger.ServiceName);
     end;
 

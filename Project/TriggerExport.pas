@@ -712,11 +712,11 @@ begin
   reg := TRegistry.Create;
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
+    KeyPath := GetDisabledTriggerKey(AServiceName, AId);
 
     if ATrigger <> nil then
       trig := ATrigger
     else begin
-      KeyPath := GetDisabledTriggerKey(AServiceName, AId);
       if not reg.OpenKeyReadOnly(KeyPath) then
         exit; //cannot read source, don't continue
       trig := CreateTriggerFromRegistryKey(reg);
@@ -735,7 +735,8 @@ begin
     end;
 
     //If the above worked, delete the disabled instance
-    reg.DeleteKey(KeyPath);
+    if KeyPath <> '' then //Safety: DO NOT delete "everything"
+      reg.DeleteKey(KeyPath);
   finally
     FreeAndNil(reg);
   end;

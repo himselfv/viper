@@ -510,7 +510,7 @@ begin
    else //PP_GENERIC and everything undefined
      pcPresetDetails.ActivePage := tsPresetGeneric;
      SetGenericCustomTypeEnabled(true);
-    UpdatePresetGenericPage;
+     UpdatePresetGenericPage;
    end;
 end;
 

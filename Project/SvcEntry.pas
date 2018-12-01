@@ -356,8 +356,9 @@ end;
 procedure TServiceEntry.SetStartTypeEx(const AValue: dword);
 begin
   if AValue = SERVICE_DELAYED_AUTOSTART then begin
-    ChangeServiceStartType(Self.ServiceName, SERVICE_AUTO_START);
+    //Set the delayed flag first so that if it's not supported we don't change anything
     Self.SetDelayedAutostart(true);
+    ChangeServiceStartType(Self.ServiceName, SERVICE_AUTO_START);
   end else
     ChangeServiceStartType(Self.ServiceName, AValue);
 end;

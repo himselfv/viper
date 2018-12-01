@@ -285,7 +285,7 @@ end;
 constructor TServiceList.Create(AOwner: TComponent);
 begin
   inherited;
-  OnServiceInvalidated.Remove(ServiceInvalidated);
+  OnServiceInvalidated.Add(ServiceInvalidated);
 end;
 
 destructor TServiceList.Destroy;
@@ -746,7 +746,7 @@ procedure TServiceList.InvalidateServiceNode(Sender: TBaseVirtualTree; Node: PVi
   Data: Pointer; var Abort: Boolean);
 begin
   //We don't need to check whether it's TServiceData or not, all objects are unique pointers
-  if TObject(Sender.GetNodeData(Node)) = Data then
+  if TObject(Sender.GetNodeData(Node)^) = Data then
     Sender.InvalidateNode(Node);
   if Sender.Selected[Node] then
     SelectionChanged; //properties of one of the selected nodes changed

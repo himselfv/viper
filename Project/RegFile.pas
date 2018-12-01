@@ -8,7 +8,7 @@ Reg file format specifications:
 We support a LIMITED subset of functionality that our own export uses.
 Limitations:
 - Only 5.00 format is supported
-- No key name escapting (there seems to be none)
+- No key name escaping (there seems to be none)
 - We don't preserve comments or formatting on load-save
 - Not all data types are supported on import
 
@@ -517,7 +517,7 @@ begin
 
       //New section
       if (line[1]='[') then begin
-        if (Length(line)<2) or (line[Length(line)]<>']') then
+        if (Length(line)<3) or (line[Length(line)]<>']') then // [] and non-empty
           raise ERegFileFormatError.CreateFmt(eRegInvalidSectionHeader, [line]);
         //Store the collected section
         if haveRk then
@@ -525,8 +525,13 @@ begin
         else
           haveRk := true;
         //Anyway, reset the rk
-        rk.Name := line.Substring(1, Length(line)-2);
-        rk.Delete := false;
+        rk.Name := copy(line, 2, Length(line)-2);
+        rk.Delete := (rk.Name[1]='-'); //available per check above
+        if rk.Delete then begin
+          rk.Name := copy(rk.Name, 2, MaxInt);
+          if rk.Name = '' then //"-" sign without key name
+            raise ERegFileFormatError.CreateFmt(eRegInvalidSectionHeader, [line]);
+        end;
         SetLength(rk.Entries, 0);
         Inc(i);
         continue;

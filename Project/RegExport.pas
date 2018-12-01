@@ -66,10 +66,83 @@ procedure WriteToRegistry(reg: TRegistry; const file_: TRegFile); overload;
 procedure WriteToRegistry(reg: TRegistry; const key: TRegFileKey); overload;
 procedure WriteToRegistry(reg: TRegistry; const entry: TRegFileEntry); overload;
 
+{
+Utility functions with no better place to be
+}
+resourcestring
+  eUnacceptableKeyPath = 'Unacceptable key path for operation: "%s"';
+
+function RegNormalizePath(const AKeyPath: string): string;
+function RegGetDepth(AKeyPath: string): integer;
+procedure RegAssertNonEmpty(const AKeyPath: string); inline;
+procedure RegAssertDepth(const AKeyPath: string; const ADepth: integer); inline;
 
 
 implementation
 uses Classes;
+
+{
+Normalilzes the registry path:
+* Removes all instances of multiple \\\\ by collapsing them
+* \..\s are unsupported for registry paths
+* Forward slashes / are valid in the key names so shouldn't be reversed
+https://docs.microsoft.com/en-us/windows/desktop/SysInfo/structure-of-the-registry
+}
+function RegNormalizePath(const AKeyPath: string): string;
+var i: integer;
+  slash: boolean;
+begin
+  Result := '';
+  slash := false;
+  for i := 1 to Length(AKeyPath) do
+    if AKeyPath[i] = '\' then
+      if not slash then begin
+        Result := Result + AKeyPath[i];
+        slash := true;
+      end else begin
+        //skip
+      end
+    else begin
+      Result := Result + AKeyPath[i];
+      slash := false;
+    end;
+end;
+
+//Returns the depth of the given registry key. 0 = empty path, 1 = first level, etc.
+function RegGetDepth(AKeyPath: string): integer;
+var i: integer;
+begin
+  AKeyPath := RegNormalizePath(AKeyPath); //Prevent things like Software\\Test
+
+  Result := 0;
+  if (AKeyPath = '') or (AKeyPath='\') then
+    exit;
+
+  if AKeyPath[1] <> '\' then
+    i := 1
+  else
+    i := 2;
+  repeat
+    Inc(Result);
+    i := pos('\', AKeyPath, i);
+  until i <= 0;
+end;
+
+//Makes sure the given path is not empty, nor references "all registry key"
+procedure RegAssertNonEmpty(const AKeyPath: string);
+begin
+  if (Length(AKeyPath) <= 2)  //so important that we'll check directly
+  or (RegGetDepth(AKeyPath) < 1) then //covers the empty case
+    raise EAssertionFailed.CreateFmt(eUnacceptableKeyPath, [AKeyPath]);
+end;
+
+//Makes sure the given path is of at least the given depth
+procedure RegAssertDepth(const AKeyPath: string; const ADepth: integer);
+begin
+  if RegGetDepth(AKeyPath) < ADepth then
+    raise EAssertionFailed.CreateFmt(eUnacceptableKeyPath, [AKeyPath]);
+end;
+
 
 //Retrieves size and type data for the value
 //On error returns false and sets LastError
@@ -144,6 +217,9 @@ begin
   GetAbsoluteKeyPath(key.Name, KeyPath, RootKey);
   reg.RootKey := RootKey;
   if key.Delete then begin
+    //Safety: NEVER delete '' (empty string) or top-level keys.
+    KeyPath := RegNormalizePath(KeyPath);
+    RegAssertDepth(KeyPath, 2);
     reg.DeleteKey(KeyPath);
     exit;
   end;

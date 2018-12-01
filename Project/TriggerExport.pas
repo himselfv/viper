@@ -560,8 +560,11 @@ begin
   reg := TRegistry.Create;
   try
     reg.RootKey := RootKey;
-    for key in KeyPaths do
+    for key in KeyPaths do begin
+      //Safety: NEVER delete '' (empty string) or top-level keys.
+      RegAssertDepth(key, 2);
       reg.DeleteKey(key);
+    end;
   finally
     FreeAndNil(reg);
   end;
@@ -735,8 +738,9 @@ begin
     end;
 
     //If the above worked, delete the disabled instance
-    if KeyPath <> '' then //Safety: DO NOT delete "everything"
-      reg.DeleteKey(KeyPath);
+    //Safety: NEVER delete '' (empty string) or top-level keys.
+    RegAssertDepth(KeyPath, 2);
+    reg.DeleteKey(KeyPath);
   finally
     FreeAndNil(reg);
   end;

@@ -129,8 +129,8 @@ end;
 
 class function TServiceEntry.GetHSC_RW: SC_HANDLE;
 begin
-  if FhSC = 0 then
-    FhSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  if FhSC_RW = 0 then
+    FhSC_RW := OpenSCManager(SC_MANAGER_ALL_ACCESS);
   Result := FhSC_RW;
 end;
 

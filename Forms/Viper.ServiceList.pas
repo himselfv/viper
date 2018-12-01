@@ -753,8 +753,6 @@ begin
 end;
 
 
-
-
 //Can return nil if this is not a service node
 function TServiceList.GetServiceEntry(Node: PVirtualNode): TServiceEntry;
 var Data: TObject;

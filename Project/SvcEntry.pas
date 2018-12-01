@@ -26,8 +26,10 @@ type
   );
   TServiceQueriedData = set of TServiceQueriedBit;
 
- //Actual registered service on a live system
- //We load a lot of these and querying the info is rather slow, so we do it on-demand.
+  {
+  Actual registered service on a live system
+  We load a lot of these and querying the info is rather slow, so we do it on-demand.
+  }
   TServiceEntry = class
   protected
    //Common ServiceManager handle to query basic information. We share this because we fetch info
@@ -102,14 +104,15 @@ type
   end;
 
 
-//Subscribe to be notified of changes
+//Subscribe to be notified of changes to the services.
 var
   OnServiceInvalidated: TList<TNotifyEvent>;
 
-
-//Shortcuts
-procedure RefreshService(Service: TServiceEntry);
+//Call when the service changes for any reason (internal or external)
 procedure InvalidateService(Service: TServiceEntry);
+
+//Call to refresh the service data and invalidate the service
+procedure RefreshService(Service: TServiceEntry);
 
 
 implementation
@@ -156,6 +159,7 @@ begin
   inherited;
 end;
 
+//Reload all cached values from the SCM
 procedure TServiceEntry.Refresh();
 begin
   Self.Status := QueryServiceStatusProcess(Self.Handle);

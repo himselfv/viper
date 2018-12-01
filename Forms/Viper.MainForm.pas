@@ -455,7 +455,7 @@ begin
         FServices[j].Status := S.ServiceStatus;
         //Will be invalidated later
       end else begin
-        svc := TExtServiceEntry.CreateFromEnum(hSC, S);
+        svc := TExtServiceEntry.CreateFromEnum(S);
         svc.Info := FServiceCat.Find(svc.ServiceName);
         FServices.Add(svc);
         //Will be pushed to UI later

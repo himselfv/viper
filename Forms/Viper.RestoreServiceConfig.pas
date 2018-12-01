@@ -238,47 +238,42 @@ end;
 //Internal restore operation, the counterpart to WriteServiceConfigFile. Uses the preloaded FEntries
 //list so that we don't re-read the file; it could've changed.
 procedure TRestoreServiceConfigForm.RestoreServiceConfig(out ANotFound: string; out AFailed: string);
-var AService, AStartTypeStr: string;
+var AServiceName, AStartTypeStr: string;
   AStartType: cardinal;
-  hSC: SC_HANDLE;
-  AConfig: LPQUERY_SERVICE_CONFIG;
+  AService: TServiceEntry;
   i: integer;
 begin
   ANotFound := '';
   AFailed := '';
 
-  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
-  try
+  for i := 0 to FEntries.Count-1 do begin
+    if not ParseConfigurationLine(FEntries[i], AServiceName, AStartTypeStr) then
+      continue;
+    AStartType := StringToStartType(AStartTypeStr);
 
-    for i := 0 to FEntries.Count-1 do begin
-      if not ParseConfigurationLine(FEntries[i], AService, AStartTypeStr) then
-        continue;
-      AStartType := StringToStartType(AStartTypeStr);
+    try
+      //We need TServiceEntry to handle StartTypeEx
+      AService := TServiceEntry.Create(AServiceName);
       try
-        //Do not bother if it already matches. This way we ignore the services which we can't change, but don't need to.
-        AConfig := QueryServiceConfig(hSC, AService);
-        //okay to throw, will catch below
-        try
-          if AConfig.dwStartType = AStartType then
-            continue;
-        finally
-          FreeMem(AConfig);
-        end;
-
-        ChangeServiceStartType(hSC, AService, AStartType);
-      except
-        on E: EOsError do begin
-          if E.ErrorCode = ERROR_SERVICE_DOES_NOT_EXIST then
-            ANotFound := ANotFound + ',' + AService
-          else
-            AFailed := AFailed + ',' + AService;
+        //Do not bother if it already matches. This way we ignore the services
+        //which we can't change, but don't need to.
+        if AService.StartTypeEx = AStartType then
           continue;
-        end;
+        AService.SetStartTypeEx(AStartType);
+      finally
+        FreeAndNil(AService);
+      end;
+
+    except
+      on E: EOsError do begin
+        if E.ErrorCode = ERROR_SERVICE_DOES_NOT_EXIST then
+          ANotFound := ANotFound + ',' + AServiceName
+        else
+          AFailed := AFailed + ',' + AServiceName;
+        continue;
       end;
     end;
 
-  finally
-    CloseServiceHandle(hSC);
   end;
 
   if ANotFound <> '' then
@@ -286,7 +281,6 @@ begin
   if AFailed <> '' then
     delete(AFailed, 1, 1); //remove initial ","
 end;
-
 
 
 end.

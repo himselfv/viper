@@ -34,6 +34,10 @@ type
    //on demand (=> dissociated queries) and do not want to reopen the manager every request.
     class var FhSC: SC_HANDLE;
     class function GetHSC: SC_HANDLE; inline;
+   //Same but for changes. Might be unavailable if you don't have rights; then
+   //Get() will fail each time.
+    class var FhSC_RW: SC_HANDLE;
+    class function GetHSC_RW: SC_HANDLE; inline;
   protected
     FHandle: SC_HANDLE; //Only to query basic information. Open your own with extended rights for changes
     FQueriedData: TServiceQueriedData;
@@ -50,7 +54,8 @@ type
     ServiceName: string;
     DisplayName: string;
     Status: SERVICE_STATUS_PROCESS;
-    constructor CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatusProcess);
+    constructor Create(const AServiceName: string); overload;
+    constructor CreateFromEnum(const S: PEnumServiceStatusProcess);
     destructor Destroy; override;
     procedure Refresh(); overload;
     function GetEffectiveDisplayName: string; virtual;
@@ -119,8 +124,22 @@ begin
  //and there's no real point in closing handles when the app is going down.
 end;
 
+class function TServiceEntry.GetHSC_RW: SC_HANDLE;
+begin
+  if FhSC = 0 then
+    FhSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  Result := FhSC_RW;
+end;
 
-constructor TServiceEntry.CreateFromEnum(hSC: SC_HANDLE; const S: PEnumServiceStatusProcess);
+
+constructor TServiceEntry.Create(const AServiceName: string);
+begin
+  inherited Create;
+  Self.ServiceName := AServiceName;
+  Self.Refresh; //to query status
+end;
+
+constructor TServiceEntry.CreateFromEnum(const S: PEnumServiceStatusProcess);
 begin
   inherited Create;
   Self.ServiceName := S^.lpServiceName;
@@ -271,7 +290,7 @@ begin
   //Any BOOL!=0 is supposed to be equal to TRUE, Delphi uses DWORD(-1),
   //but Win10 requires this to be exactly 1 or fails.
   dword(info.fDelayedAutostart) := 1;
-  res := ChangeServiceConfig2(Self.ServiceName, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, @info);
+  res := ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, @info);
   if res <> 0 then
     RaiseLastOsError(res);
 end;
@@ -358,9 +377,9 @@ begin
   if AValue = SERVICE_DELAYED_AUTOSTART then begin
     //Set the delayed flag first so that if it's not supported we don't change anything
     Self.SetDelayedAutostart(true);
-    ChangeServiceStartType(Self.ServiceName, SERVICE_AUTO_START);
+    ChangeServiceStartType(Self.GetHSC_RW, Self.ServiceName, SERVICE_AUTO_START);
   end else
-    ChangeServiceStartType(Self.ServiceName, AValue);
+    ChangeServiceStartType(Self.GetHSC_RW, Self.ServiceName, AValue);
 end;
 
 

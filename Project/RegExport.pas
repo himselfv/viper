@@ -119,12 +119,12 @@ begin
     exit;
 
   if AKeyPath[1] <> '\' then
-    i := 1
+    i := 0
   else
-    i := 2;
+    i := 1;
   repeat
     Inc(Result);
-    i := pos('\', AKeyPath, i);
+    i := pos('\', AKeyPath, i+1);
   until i <= 0;
 end;
 

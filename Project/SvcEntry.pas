@@ -3,8 +3,23 @@ unit SvcEntry;
 interface
 uses SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections, ImgList;
 
+const
+  {
+  Additional autostart mode which you can only use with TServiceEntry's Get/SetStartMode().
+  In SCM delayed autostart is stored as SERVICE_AUTO_START + additional flag.
+
+  Any service can be marked as a delayed auto-start service; however, this
+  setting has no effect unless the service is an auto-start service.
+  https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/ns-winsvc-_service_delayed_auto_start_info
+  }
+  SERVICE_DELAYED_AUTOSTART = $00010002;
+
+
 type
   TServiceQueriedBit = (
+    qbDescriptionQueried,
+    qbConfigQueried,
+    qbServiceDllQueried,
     qbLaunchProtectionQueried,
     qbTriggerCountQueried,
     qbDelayedAutostartQueried
@@ -21,23 +36,16 @@ type
     class function GetHSC: SC_HANDLE; inline;
   protected
     FHandle: SC_HANDLE; //Only to query basic information. Open your own with extended rights for changes
-    FDescriptionQueried: boolean;
-    FDescription: string;
-    FConfigQueried: boolean;
-    FConfig: LPQUERY_SERVICE_CONFIG;
-    FServiceDllQueried: boolean;
-    FServiceDll: string;
     FQueriedData: TServiceQueriedData;
-    FLaunchProtection: cardinal;
+    FDescription: string;
+    FConfig: LPQUERY_SERVICE_CONFIG;
+    FServiceDll: string;
     FTriggerCount: integer;
-    FDelayedAutostart: boolean;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
     function GetDescription: string; inline;
     function GetServiceDll: string; inline;
-    function GetLaunchProtection: cardinal; inline;
     function GetTriggerCount: integer;
-    function GetDelayedAutostart: boolean;
   public
     ServiceName: string;
     DisplayName: string;
@@ -49,20 +57,32 @@ type
     function GetImageFilename: string;
     function GetLoadOrderGroup: string; inline;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
+    function DependsOn(const ADependency: string): boolean;
+    property Handle: SC_HANDLE read GetHandle;
+    property Description: string read GetDescription;
+    property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
+    property ServiceDll: string read GetServiceDll;
+    property LoadOrderGroup: string read GetLoadOrderGroup;
+
+  protected
+    FLaunchProtection: cardinal;
+    FDelayedAutostart: boolean;
+    function GetLaunchProtection: cardinal; inline;
+    function GetDelayedAutostart: boolean;
+    function GetStartTypeEx: dword;
+  public
     function CanStart: boolean; inline;
     function CanForceStart: boolean; inline;
     function CanStop: boolean; inline;
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
     function IsLaunchProtected: boolean; inline;
-    function DependsOn(const ADependency: string): boolean;
-    property Handle: SC_HANDLE read GetHandle;
-    property Description: string read GetDescription;
-    property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil
-    property ServiceDll: string read GetServiceDll;
-    property LoadOrderGroup: string read GetLoadOrderGroup;
-    property DelayedAutostart: boolean read GetDelayedAutostart;
+    procedure SetDelayedAutostart(const Value: boolean);
+    procedure SetStartTypeEx(const AValue: dword);
+    property StartTypeEx: dword read GetStartTypeEx write SetStartTypeEx;
+    property DelayedAutostart: boolean read GetDelayedAutostart write SetDelayedAutostart;
     property LaunchProtection: cardinal read GetLaunchProtection;
+
     property TriggerCount: integer read GetTriggerCount;
   end;
   PServiceEntry = ^TServiceEntry;
@@ -120,10 +140,9 @@ end;
 procedure TServiceEntry.Refresh();
 begin
   Self.Status := QueryServiceStatusProcess(Self.Handle);
-  Self.FConfigQueried := false;
+  Self.FQueriedData := [];
   FreeMem(Self.FConfig);
   Self.FConfig := nil;
-  Self.FQueriedData := [];
 end;
 
 function TServiceEntry.GetHandle: SC_HANDLE;
@@ -135,8 +154,8 @@ end;
 
 function TServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
-  if not FConfigQueried then begin
-    FConfigQueried := true; //BEFORE we run potentially exception-throwing code
+  if not (qbConfigQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbConfigQueried]; //BEFORE we run potentially exception-throwing code
     try
       FConfig := QueryServiceConfig(Self.Handle);
     except
@@ -156,8 +175,8 @@ end;
 
 function TServiceEntry.GetDescription: string;
 begin
-  if not FDescriptionQueried then begin
-    FDescriptionQueried := true;
+  if not (qbDescriptionQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbDescriptionQueried];
     FDescription := QueryServiceDescription(Self.Handle);
   end;
   Result := FDescription;
@@ -165,8 +184,8 @@ end;
 
 function TServiceEntry.GetServiceDll: string;
 begin
-  if not FServiceDllQueried then begin
-    FServiceDllQueried := true;
+  if not (qbServiceDllQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbServiceDllQueried];
     if Self.Config <> nil then
       if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
       or (pos('lsass.exe', Self.Config.lpBinaryPathName)>0) then
@@ -183,6 +202,7 @@ function TServiceEntry.GetLaunchProtection: cardinal;
 var tmp: PSERVICE_LAUNCH_PROTECTED;
 begin
   if not (qbLaunchProtectionQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbLaunchProtectionQueried];
     try
       tmp := QueryServiceLaunchProtected(Self.Handle);
       if tmp <> nil then begin
@@ -198,7 +218,6 @@ begin
           raise;
       end;
     end;
-    FQueriedData := FQueriedData + [qbLaunchProtectionQueried];
   end;
   Result := FLaunchProtection;
 end;
@@ -207,6 +226,7 @@ function TServiceEntry.GetTriggerCount: integer;
 var triggers: PSERVICE_TRIGGER_INFO;
 begin
   if not (qbTriggerCountQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbTriggerCountQueried];
     triggers := QueryServiceTriggers(Self.Handle);
     if triggers = nil then
       FTriggerCount := 0
@@ -214,7 +234,6 @@ begin
       FTriggerCount := triggers.cTriggers;
       FreeMem(triggers);
     end;
-    FQueriedData := FQueriedData + [qbTriggerCountQueried];
   end;
   Result := FTriggerCount;
 end;
@@ -223,6 +242,7 @@ function TServiceEntry.GetDelayedAutostart: boolean;
 var info: LPSERVICE_DELAYED_AUTO_START_INFO;
 begin
   if not (qbDelayedAutostartQueried in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbDelayedAutostartQueried];
     try
       info := LPSERVICE_DELAYED_AUTO_START_INFO(
         QueryServiceConfig2(Self.Handle, SERVICE_CONFIG_DELAYED_AUTO_START_INFO));
@@ -235,13 +255,25 @@ begin
       end;
     end;
     try
-      Self.FDelayedAutostart := info.fDelayedAutostart;
+      Self.FDelayedAutostart := (info <> nil) and info.fDelayedAutostart;
     finally
       FreeMem(info);
     end;
-    FQueriedData := FQueriedData + [qbDelayedAutostartQueried];
   end;
   Result := Self.FDelayedAutostart;
+end;
+
+//Enables/disables delayed autostart; throws if it's not supported
+procedure TServiceEntry.SetDelayedAutostart(const Value: boolean);
+var info: SERVICE_DELAYED_AUTO_START_INFO;
+  res: integer;
+begin
+  //Any BOOL!=0 is supposed to be equal to TRUE, Delphi uses DWORD(-1),
+  //but Win10 requires this to be exactly 1 or fails.
+  dword(info.fDelayedAutostart) := 1;
+  res := ChangeServiceConfig2(Self.ServiceName, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, @info);
+  if res <> 0 then
+    RaiseLastOsError(res);
 end;
 
 
@@ -306,6 +338,30 @@ function TServiceEntry.IsLaunchProtected: boolean;
 begin
   Result := Self.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE;
 end;
+
+//Returns enhanced StartType which includes delayed autostart
+function TServiceEntry.GetStartTypeEx: dword;
+begin
+  if Config = nil then
+    Result := SERVICE_DEMAND_START //can't really tell so assume default
+  else begin
+    Result := Config.dwStartType;
+    if (Result = SERVICE_AUTO_START)
+    and Self.GetDelayedAutostart then //auto start supports additional delayed flag
+      Result := SERVICE_DELAYED_AUTOSTART;
+  end;
+end;
+
+//Sets enhanced start type which includes delayed autostart
+procedure TServiceEntry.SetStartTypeEx(const AValue: dword);
+begin
+  if AValue = SERVICE_DELAYED_AUTOSTART then begin
+    ChangeServiceStartType(Self.ServiceName, SERVICE_AUTO_START);
+    Self.SetDelayedAutostart(true);
+  end else
+    ChangeServiceStartType(Self.ServiceName, AValue);
+end;
+
 
 //True if a given string is included in service dependencies
 function TServiceEntry.DependsOn(const ADependency: string): boolean;

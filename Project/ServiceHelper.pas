@@ -146,8 +146,10 @@ type
 function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload;
 function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte; overload;
 
-function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): BOOL; overload;
-function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): BOOL; overload;
+//Returns 0 or GetLastError code
+function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): integer; overload;
+function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer; overload;
+function ChangeServiceConfig2(const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer; overload;
 
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
@@ -605,20 +607,34 @@ begin
   end;
 end;
 
-function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): BOOL;
+function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: pointer): integer;
 begin
-  Result := WinSvc.ChangeServiceConfig2(hSvc, dwInfoLevel, lpInfo);
+  if WinSvc.ChangeServiceConfig2(hSvc, dwInfoLevel, lpInfo) then
+    Result := 0
+  else
+    Result := GetLastError();
 end;
 
-function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): BOOL;
+function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer;
 var hSvc: SC_HANDLE;
 begin
-  hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_CONFIG);
-  if hSvc = 0 then Result := false else
+  hSvc := OpenService(hSC, AServiceName, SERVICE_QUERY_CONFIG or SERVICE_CHANGE_CONFIG or SERVICE_START);
+  if hSvc = 0 then Result := GetLastError() else
   try
     Result := ChangeServiceConfig2(hSvc, dwInfoLevel, lpInfo);
   finally
     CloseServiceHandle(hSvc);
+  end;
+end;
+
+function ChangeServiceConfig2(const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer;
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  try
+    Result := ChangeServiceConfig2(hSC, AServiceName, dwInfoLevel, lpInfo);
+  finally
+    CloseServiceHandle(hSC);
   end;
 end;
 
@@ -660,13 +676,13 @@ end;
 
 procedure ChangeServiceTriggers(hSvc: SC_HANDLE; lpTriggers: PSERVICE_TRIGGER_INFO);
 begin
-  if not ChangeServiceConfig2(hSvc, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) then
+  if ChangeServiceConfig2(hSvc, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) <> 0 then
     RaiseLastOsError();
 end;
 
 procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTriggers: PSERVICE_TRIGGER_INFO);
 begin
-  if not ChangeServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) then
+  if ChangeServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_TRIGGER_INFO, lpTriggers) <> 0 then
     RaiseLastOsError();
 end;
 
@@ -1145,7 +1161,7 @@ procedure ChangeServiceLaunchProtected(hSvc: SC_HANDLE; dwLaunchProtection: DWOR
 var lp: SERVICE_LAUNCH_PROTECTED;
 begin
   lp.dwLaunchProtected := dwLaunchProtection;
-  if not ChangeServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED, @lp) then
+  if ChangeServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED, @lp) <> 0 then
     RaiseLastOsError();
 end;
 

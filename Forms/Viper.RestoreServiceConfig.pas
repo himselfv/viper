@@ -80,6 +80,7 @@ begin
     SERVICE_AUTO_START: Result := 'auto';
     SERVICE_DEMAND_START: Result := 'manual';
     SERVICE_DISABLED: Result := 'disabled';
+    SERVICE_DELAYED_AUTOSTART: Result := 'delayed';
   else Result := IntToStr(AStartType);
   end;
 end;
@@ -109,6 +110,9 @@ begin
   if SameText(AString, 'disabled') then
     AStartType := SERVICE_DISABLED
   else
+  if SameText(AString, 'delayed') then
+    AStartType := SERVICE_DELAYED_AUTOSTART
+  else
     Result := false
 end;
 
@@ -132,7 +136,7 @@ begin
         continue;
       end;
 
-      AEntries.Add(AServices[i].ServiceName + '=' + StartTypeToString(AServices[i].Config.dwStartType));
+      AEntries.Add(AServices[i].ServiceName + '=' + StartTypeToString(AServices[i].StartTypeEx));
     end;
 
     AEntries.SaveToFile(AFilename);

@@ -31,6 +31,7 @@ type
     aResumeService: TAction;
     aRestartService: TAction;
     aStartTypeAutomatic: TAction;
+    aStartTypeAutoDelayed: TAction;
     aStartTypeManual: TAction;
     aStartTypeDisabled: TAction;
     aDeleteService: TAction;
@@ -60,9 +61,10 @@ type
     Executablefilename1: TMenuItem;
     N3: TMenuItem;
     miStartType: TMenuItem;
-    Automatic1: TMenuItem;
-    Manual1: TMenuItem;
-    Disabled1: TMenuItem;
+    miStartTypeAutomatic: TMenuItem;
+    miStartTypeAutoDelayed: TMenuItem;
+    miStartTypeManual: TMenuItem;
+    miStartTypeDisabled: TMenuItem;
     miAdvancedSubmenu: TMenuItem;
     miExportService: TMenuItem;
     miDeleteService: TMenuItem;
@@ -113,6 +115,7 @@ type
     procedure aResumeServiceExecute(Sender: TObject);
     procedure aRestartServiceExecute(Sender: TObject);
     procedure aStartTypeAutomaticExecute(Sender: TObject);
+    procedure aStartTypeAutoDelayedExecute(Sender: TObject);
     procedure aStartTypeManualExecute(Sender: TObject);
     procedure aStartTypeDisabledExecute(Sender: TObject);
     procedure aJumpToBinaryExecute(Sender: TObject);
@@ -214,6 +217,7 @@ resourcestring
   sServiceStatusOther = 'Other (%d)';
 
   sServiceStartTypeAuto = 'Auto';
+  sServiceStartTypeAutoDelayed = 'Delayed';
   sServiceStartTypeDemand = 'Manual';
   sServiceStartTypeDisabled = 'Disabled';
   sServiceStartTypeBoot = 'Auto (boot)';
@@ -378,11 +382,10 @@ begin
            SERVICE_PAUSED: CellText := sServiceStatusPaused;
          else CellText := Format(sServiceStatusOther, [Data.Status.dwCurrentState]);
          end;
-      colStartMode: if Data.Config = nil then
-           CellText := ''
-         else
-         case Data.Config.dwStartType of
+      colStartMode:
+         case Data.StartTypeEx of
            SERVICE_AUTO_START: CellText := sServiceStartTypeAuto;
+           SERVICE_DELAYED_AUTOSTART: CellText := sServiceStartTypeAutoDelayed;
            SERVICE_DEMAND_START: CellText := sServiceStartTypeDemand;
            SERVICE_DISABLED: CellText := sServiceStartTypeDisabled;
            SERVICE_BOOT_START: CellText := sServiceStartTypeBoot;
@@ -513,6 +516,21 @@ begin
     TSlCustomNode(BaseData).GetImageIndex(Kind, Column, Ghosted, ImageIndex, ImageList);
 end;
 
+//Assigns ranks to service start types, for sorting
+function RankServiceStartType(const AService: TServiceEntry): integer; inline;
+begin
+  if AService.Config = nil then
+    Result := +MAXINT    //Unaccessible services all go to the bottom
+  else begin
+    Result := AService.StartTypeEx;
+    //DELAYED needs to be moved to just after AUTO
+    if Result = SERVICE_DELAYED_AUTOSTART then
+      Result := SERVICE_AUTO_START*10 + 1
+    else
+      Result := Result*10;
+  end;
+end;
+
 procedure TServiceList.vtServicesCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var BaseData1, BaseData2: TObject;
@@ -542,16 +560,7 @@ begin
       //Result := CompareText(Data1.ServiceName, Data2.ServiceName);
     end;
     colStatus: Result := Data2.Status.dwCurrentState - Data1.Status.dwCurrentState;
-    colStartMode: if Data1.Config = nil then
-         if Data2.Config = nil then
-           Result := 0
-         else
-           Result := 1
-       else
-         if Data2.Config = nil then
-           Result := -1
-         else
-           Result := Data1.Config.dwStartType - Data2.Config.dwStartType;
+    colStartMode: Result := RankServiceStartType(Data1) - RankServiceStartType(Data2);
     colDescription: Result := CompareText(Data1.Description, Data2.Description);
     colTriggers: Result := Data2.TriggerCount - Data1.TriggerCount; //Triggers are by default sorted from biggest
     colFilename: Result := CompareText(Data1.GetImageFilename, Data2.GetImageFilename);
@@ -656,13 +665,15 @@ begin
  //Check start type item if all selected services share it
   CommonStartType := GetCommonStartType(services);
   aStartTypeAutomatic.Checked := (CommonStartType = SERVICE_AUTO_START);
+  aStartTypeAutoDelayed.Checked := (CommonStartType = SERVICE_DELAYED_AUTOSTART);
   aStartTypeManual.Checked := (CommonStartType = SERVICE_DEMAND_START);
   aStartTypeDisabled.Checked := (CommonStartType = SERVICE_DISABLED);
 
   aStartTypeAutomatic.Visible := Length(services)>0;
+  aStartTypeAutoDelayed.Visible := Length(services)>0;
   aStartTypeManual.Visible := Length(services)>0;
   aStartTypeDisabled.Visible := Length(services)>0;
-  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
+  miStartType.Visible := aStartTypeAutomatic.Visible or aStartTypeAutoDelayed.Visible or aStartTypeManual.Visible or aStartTypeDisabled.Visible;
 
   CommonProtectionType := GetCommonProtectionType(services);
   aProtectionNone.Checked := (CommonProtectionType = SERVICE_LAUNCH_PROTECTED_NONE);
@@ -699,9 +710,9 @@ begin
     end;
 
     if Result = cardinal(-1) then
-      Result := service.Config.dwStartType
+      Result := service.StartTypeEx
     else
-      if Result <> service.Config.dwStartType then begin
+      if Result <> service.StartTypeEx then begin
         Result := cardinal(-1);
         break;
       end;
@@ -1062,7 +1073,16 @@ procedure TServiceList.aStartTypeAutomaticExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
   for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_AUTO_START);
+    Service.SetStartTypeEx(SERVICE_AUTO_START);
+    RefreshService(Service);
+  end;
+end;
+
+procedure TServiceList.aStartTypeAutoDelayedExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  for Service in GetSelectedServices() do begin
+    Service.SetStartTypeEx(SERVICE_DELAYED_AUTOSTART);
     RefreshService(Service);
   end;
 end;
@@ -1071,7 +1091,7 @@ procedure TServiceList.aStartTypeManualExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
   for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_DEMAND_START);
+    Service.SetStartTypeEx(SERVICE_DEMAND_START);
     RefreshService(Service);
   end;
 end;
@@ -1080,7 +1100,7 @@ procedure TServiceList.aStartTypeDisabledExecute(Sender: TObject);
 var Service: TServiceEntry;
 begin
   for Service in GetSelectedServices() do begin
-    ChangeServiceStartType(Service.ServiceName, SERVICE_DISABLED);
+    Service.SetStartTypeEx(SERVICE_DISABLED);
     RefreshService(Service);
   end;
 end;

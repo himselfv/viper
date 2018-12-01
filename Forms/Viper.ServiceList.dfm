@@ -143,6 +143,11 @@ object ServiceList: TServiceList
       GroupIndex = 1
       OnExecute = aStartTypeAutomaticExecute
     end
+    object aStartTypeAutoDelayed: TAction
+      Category = 'StartType'
+      Caption = 'Automatic (Delayed)'
+      OnExecute = aStartTypeAutoDelayedExecute
+    end
     object aStartTypeManual: TAction
       Category = 'StartType'
       AutoCheck = True
@@ -312,19 +317,23 @@ object ServiceList: TServiceList
     end
     object miStartType: TMenuItem
       Caption = 'Start mode'
-      object Automatic1: TMenuItem
+      object miStartTypeAutomatic: TMenuItem
         Action = aStartTypeAutomatic
         AutoCheck = True
         GroupIndex = 1
         RadioItem = True
       end
-      object Manual1: TMenuItem
+      object miStartTypeAutoDelayed: TMenuItem
+        Action = aStartTypeAutoDelayed
+        GroupIndex = 1
+      end
+      object miStartTypeManual: TMenuItem
         Action = aStartTypeManual
         AutoCheck = True
         GroupIndex = 1
         RadioItem = True
       end
-      object Disabled1: TMenuItem
+      object miStartTypeDisabled: TMenuItem
         Action = aStartTypeDisabled
         AutoCheck = True
         GroupIndex = 1

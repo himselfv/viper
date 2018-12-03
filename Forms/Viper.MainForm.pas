@@ -122,6 +122,7 @@ type
     miQueryLocalRPC: TMenuItem;
     miQueryLocalCOM: TMenuItem;
     miDumpLocalRPC: TMenuItem;
+    miImportServices: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);

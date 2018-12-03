@@ -449,6 +449,9 @@ object MainForm: TMainForm
       object N4: TMenuItem
         Caption = '-'
       end
+      object miImportServices: TMenuItem
+        Action = MainServiceList.aImportServices
+      end
       object Saveserviceconfig1: TMenuItem
         Action = aSaveAllServicesConfig
       end

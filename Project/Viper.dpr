@@ -18,6 +18,7 @@ uses
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm},
   Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
+  Viper.ServiceImport in 'Viper.ServiceImport.pas' {ServiceImportForm},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',
@@ -44,7 +45,5 @@ begin
   Application.CreateForm(TLogForm, LogForm);
   Application.CreateForm(TSettingsForm, SettingsForm);
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
-  Application.CreateForm(TTriggerEditorForm, TriggerEditorForm);
-  Application.CreateForm(TTriggerDataItemEditor, TriggerDataItemEditor);
   Application.Run;
 end.

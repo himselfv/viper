@@ -127,6 +127,9 @@
             <Form>TriggerImportList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="Viper.ServiceImport.pas">
+            <Form>ServiceImportForm</Form>
+        </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>
         <DCCReference Include="ShellUtils.pas"/>

@@ -259,6 +259,12 @@ object ServiceList: TServiceList
         ' service'
       OnExecute = aUnlockSecurityExecute
     end
+    object aImportServices: TAction
+      Category = 'ServiceSetup'
+      Caption = 'Import .reg...'
+      Hint = 'Add or update service information from the registry export file'
+      OnExecute = aImportServicesExecute
+    end
   end
   object pmServices: TPopupMenu
     OnPopup = pmServicesPopup
@@ -389,6 +395,9 @@ object ServiceList: TServiceList
       object miExportService: TMenuItem
         Action = aExportService
       end
+      object miImportServices: TMenuItem
+        Action = aImportServices
+      end
       object N1: TMenuItem
         Caption = '-'
       end
@@ -402,5 +411,11 @@ object ServiceList: TServiceList
     Filter = 'Registry Export Files (*.reg)|*.reg|All files (*.*)|*.*'
     Left = 88
     Top = 16
+  end
+  object OpenRegFileDialog: TOpenDialog
+    DefaultExt = '.reg'
+    Filter = 'Registry Export Files (*.reg)|*.reg|All files (*.*)|*.*'
+    Left = 88
+    Top = 72
   end
 end

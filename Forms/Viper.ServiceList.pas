@@ -36,6 +36,7 @@ type
     aStartTypeDisabled: TAction;
     aDeleteService: TAction;
     aExportService: TAction;
+    aImportServices: TAction;
     aUseColors: TAction;
     aCopyServiceID: TAction;
     aCopyServiceName: TAction;
@@ -67,6 +68,7 @@ type
     miStartTypeDisabled: TMenuItem;
     miAdvancedSubmenu: TMenuItem;
     miExportService: TMenuItem;
+    miImportServices: TMenuItem;
     miDeleteService: TMenuItem;
     aEditSecurity: TAction;
     aUnlockSecurity: TAction;
@@ -87,6 +89,7 @@ type
     Shortsummary1: TMenuItem;
     N5: TMenuItem;
     SaveRegFileDialog: TSaveDialog;
+    OpenRegFileDialog: TOpenDialog;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -134,6 +137,7 @@ type
     procedure vtServicesInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure aExportServiceExecute(Sender: TObject);
+    procedure aImportServicesExecute(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
@@ -238,7 +242,7 @@ resourcestring
 
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
-  RegExport, Viper.StyleSettings, Viper.Log;
+  RegExport, Viper.StyleSettings, Viper.Log, Viper.ServiceImport;
 
 {$R *.dfm}
 
@@ -695,7 +699,9 @@ begin
 
   aExportService.Visible := Length(services)>0;
   aDeleteService.Visible := Length(services)>0;
-  miAdvancedSubmenu.Visible := aExportService.Visible or aDeleteService.Visible;
+  aImportServices.Visible := true;
+  miAdvancedSubmenu.Visible := aExportService.Visible or aImportServices.Visible
+    or aDeleteService.Visible;
 end;
 
 //Returns a StartType common for all listed services, or -1 if there's variation
@@ -1296,6 +1302,14 @@ begin
   finally
     FreeAndNil(exp);
   end;
+end;
+
+procedure TServiceList.aImportServicesExecute(Sender: TObject);
+begin
+  with OpenRegFileDialog do
+    if not Execute then
+      exit;
+  Viper.ServiceImport.ImportRegFile(Self, OpenRegFileDialog.FileName);
 end;
 
 end.

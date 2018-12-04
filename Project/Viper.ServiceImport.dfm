@@ -26,13 +26,9 @@ object ServiceImportForm: TServiceImportForm
     Align = alClient
     Style = tsFlatButtons
     TabOrder = 0
-    ExplicitWidth = 573
-    ExplicitHeight = 326
     object tsServices: TTabSheet
       Caption = 'tsServices'
       TabVisible = False
-      ExplicitWidth = 565
-      ExplicitHeight = 316
       DesignSize = (
         469
         303)
@@ -53,7 +49,6 @@ object ServiceImportForm: TServiceImportForm
         Checked = True
         TabOrder = 0
         TabStop = True
-        ExplicitWidth = 556
       end
       object rbUpdateServicesOnly: TRadioButton
         Left = 3
@@ -63,7 +58,6 @@ object ServiceImportForm: TServiceImportForm
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Update existing services only'
         TabOrder = 1
-        ExplicitWidth = 556
       end
       object VirtualStringTree1: TVirtualStringTree
         Left = 3
@@ -71,6 +65,7 @@ object ServiceImportForm: TServiceImportForm
         Width = 463
         Height = 233
         Anchors = [akLeft, akTop, akRight, akBottom]
+        BorderWidth = 1
         Header.AutoSizeIndex = 0
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
@@ -79,8 +74,6 @@ object ServiceImportForm: TServiceImportForm
         Header.Font.Style = []
         Header.MainColumn = -1
         TabOrder = 2
-        ExplicitWidth = 559
-        ExplicitHeight = 246
         Columns = <>
       end
     end
@@ -88,6 +81,8 @@ object ServiceImportForm: TServiceImportForm
       Caption = 'tsSettings'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
       ExplicitWidth = 565
       ExplicitHeight = 316
       DesignSize = (
@@ -170,9 +165,6 @@ object ServiceImportForm: TServiceImportForm
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitLeft = 64
-    ExplicitTop = 328
-    ExplicitWidth = 185
     DesignSize = (
       477
       41)
@@ -185,7 +177,6 @@ object ServiceImportForm: TServiceImportForm
       Caption = 'Next >'
       Default = True
       TabOrder = 0
-      ExplicitLeft = 400
     end
     object btnCancel: TButton
       Left = 392
@@ -197,7 +188,6 @@ object ServiceImportForm: TServiceImportForm
       Caption = 'Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 488
     end
   end
 end

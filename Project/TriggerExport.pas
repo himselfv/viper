@@ -65,6 +65,7 @@ type
 procedure LoadTriggersFromFile(const AFilename: string; out Triggers: TArray<TRegTriggerEntry>;
   out Status: TTriggerImportStatus);
 
+function SplitServiceRegistryPath(KeyPath: string; out ServiceName: string; out Subkey: string): boolean;
 function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string; out Index: integer): boolean;
 function CreateTriggerFromSection(rk: TRegFileKey): PSERVICE_TRIGGER;
 
@@ -271,29 +272,51 @@ begin
   end;
 end;
 
+//Parses an absolute registry path.
+//Returns true if it leads to some service key's subkey, returns this services'
+//name and subkey. Returns false otherwise.
+function SplitServiceRegistryPath(KeyPath: string; out ServiceName: string; out Subkey: string): boolean;
+var i_pos: integer;
+begin
+  //Support both HKEY-based and simple paths.
+  if KeyPath.StartsWith(sScmHKEY) then
+    Delete(KeyPath, 1, Length(sScmHKEY))
+    //This leaves us with initial \
+  else
+  if (Length(KeyPath) > 0) and (KeyPath[1] <> '\') then
+    //sScmBasePath requires initial \
+    KeyPath := '\' + KeyPath;
+
+  if not KeyPath.StartsWith(sScmBasePath) then begin
+    Result := false;
+    exit;
+  end;
+  Delete(KeyPath, 1, 1+Length(sScmBasePath)); //with the "\"
+
+  i_pos := pos('\', KeyPath);
+  if i_pos <= 0 then begin
+    Result := false;
+    exit;
+  end;
+
+  ServiceName := Copy(KeyPath, 1, i_pos-1);
+  Delete(KeyPath, 1, i_pos); //with the "\"
+
+  Subkey := KeyPath;
+end;
+
 //Tries to decode the trigger section name in the default format
 //Returns false on failure
 function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string;
   out Index: integer): boolean;
 var i_pos: integer;
 begin
-  ServiceName := '';
-  Index := -1;
-
-  if not SectionName.StartsWith(sScmHKEY+sScmBasePath) then begin
+  if not SplitServiceRegistryPath(SectionName, ServiceName, SectionName) then begin
+    ServiceName := '';
+    Index := -1;
     Result := false;
     exit;
   end;
-  Delete(SectionName, 1, Length(sScmHKEY)+Length(sScmBasePath)+1); //with the "\"
-
-  i_pos := pos('\', SectionName);
-  if i_pos <= 0 then begin
-    Result := false;
-    exit;
-  end;
-
-  ServiceName := Copy(SectionName, 1, i_pos-1);
-  Delete(SectionName, 1, i_pos); //with the "\"
 
   if not SectionName.StartsWith(sTriggersSubkey) then begin
     Result := false;

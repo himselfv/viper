@@ -61,6 +61,7 @@ type
     FKeys: TList<TRegFileKey>;
   public
   {
+  https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/ns-winsvc-_query_service_configa
   Basic info:
     QUERY_SERVICE_CONFIG
       dwServiceType       DWORD       Type
@@ -68,15 +69,21 @@ type
       dwErrorControl      DWORD       ErrorControl
       lpBinaryPathName:   LPWSTR      ImagePath
       lpLoadOrderGroup:   LPWSTR      Group
-      dwTagId:            DWORD       Tag?
+      dwTagId:            DWORD       Tag
       lpDependencies:     LPWSTR      DependOnService, DependOnGroup
-      lpServiceStartName: LPWSTR      ServiceName?
+      lpServiceStartName: LPWSTR      ObjectName
       lpDisplayName:      LPWSTR      DisplayName
     end;
+  For svchost-based services, either in / or /Parameters:
+    ServiceDll
+    ServiceDllUnloadOnStop
+    ServiceMain
+  Svchost-based services should be SERVICE_WIN32_SHARE_PROCESS,
+    normal ones - SERVICE_WIN32_OWN_PROCESS.
   }
-    ServiceType: dword;
+    ServiceType: dword;   //Normal SERVICE_TYPE enum + SERVICE_INTERACTIVE_PROCESS flag
     StartType: dword;
-    ErrorControl: dword;
+    ErrorControl: dword;  //IGNORE/NORMAL/SEVERE/CRITICAL -- see QueryServiceConfig docs
     ImagePath: string;
     Group: string;
     Tag: dword;
@@ -138,7 +145,7 @@ type
     SERVICE_SID_INFO
     dwServiceSidType          dword       ServiceSidType
   }
-    ServiceSidType: dword; //SERVICE_SID_TYPE_*
+    ServiceSidType: dword; //SERVICE_SID_TYPE_*  NONE/UNRESTRICTED/RESTRICTED
 
   {
   SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO?
@@ -164,13 +171,6 @@ type
     SERVICE_PREFERRED_NODE_INFO
       usPreferredNode         ushort      PreferredNode
       fDelete                 bool
-  }
-
-  {
-  TODO:
-    ServiceDll
-    ServiceMain
-
   }
 
     constructor Create;

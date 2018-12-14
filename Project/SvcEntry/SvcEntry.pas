@@ -25,6 +25,7 @@ type
   end;
 
   TServiceEntryQueryFlag = (
+    qfStatus,
     qfImageInformation,
     qfDependencies
   );
@@ -56,6 +57,7 @@ type
   public
     procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); virtual;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //can be nil!
+    property ServiceName: string read FServiceName;
     property ServiceType: dword read GetServiceType;
     property RawDisplayName: string read GetRawDisplayName write SetRawDisplayName;
     property RawDescription: string read GetRawDescription write SetRawDescription;
@@ -70,14 +72,12 @@ type
     function GetDependencies: TArray<string>; inline;
     function FindDependencyIndex(const AServiceName: string): integer;
   public
-    function HasDependency(const AServiceName: string): boolean;
+    function DependsOn(const AServiceName: string): boolean; inline;
     procedure SetDependencies(const AValue: TArray<string>);
     procedure AddDependency(const AServiceName: string);
     procedure DeleteDependency(const AServiceName: string);
     property DependencyList: string read GetDependencyList;
     property Dependencies: TArray<string> read GetDependencies;
-
-
 
   //Start type
   protected
@@ -115,31 +115,55 @@ type
     property ServiceDll: string read GetRawServiceDll;
     property EffectiveImagePath: string read GetEffectiveImagePath;
 
-
   //Status
-  //Caching should be handled by descendants.
+  //Each service object HAS a status structure but it may not be filled with real info
+  //if it's not supproted
   protected
+    FStatus: SERVICE_STATUS_PROCESS;
+    function GetStatus: SERVICE_STATUS_PROCESS; inline;
+    procedure UpdateStatus; virtual;
     function GetCurrentState: dword; inline;
     function GetControlsAccepted: dword; inline;
   public
-    function GetStatus: PSERVICE_STATUS_PROCESS; virtual; //can be nil
     function CanStart: boolean; inline;
     function CanForceStart: boolean; inline;
     function CanStop: boolean; inline;
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
-    property Status: PSERVICE_STATUS_PROCESS read GetStatus; //can be nil
+    property Status: SERVICE_STATUS_PROCESS read GetStatus;
 
   //Security
+  protected
+    function GetSidType: dword; virtual;
+    procedure SetSidType(const AValue: dword); virtual;
+    function GetRequiredPrivileges: TArray<string>; virtual;
+    procedure SetRequiredPrivileges(const AValue: TArray<string>); virtual;
   public
     function IsLaunchProtected: boolean; inline;
     function GetLaunchProtection: cardinal; virtual;
     property LaunchProtection: cardinal read GetLaunchProtection;
+    property SidType: dword read GetSidType write SetSidType;
+    property RequiredPrivileges: TArray<string> read GetRequiredPrivileges
+      write SetRequiredPrivileges;
 
-
+  //Triggers
+  protected
+    function GetTriggers: PSERVICE_TRIGGER_INFO; virtual;
+    function GetTriggerCount: integer; inline;
   public
+    procedure SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO); virtual;
+    property Triggers: PSERVICE_TRIGGER_INFO read GetTriggers; //can be nil
+    property TriggerCount: integer read GetTriggerCount;
 
-    property ServiceName: string read FServiceName;
+  //Additional properties obtained through QueryServiceConfig2
+  protected
+    function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; virtual;
+    procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); virtual;
+    function GetUseFailureActionsOnNonCrashFailures: boolean; virtual;
+    procedure SetUseFailureActionsOnNonCrashFailures(const AValue: boolean); virtual;
+    function GetPreshutdownTimeout: dword; virtual;
+    procedure SetPreshutdownTimeout(const AValue: dword); virtual;
+
   end;
   PServiceEntry = ^TServiceEntry;
 
@@ -339,8 +363,9 @@ begin
   Result := SvcEntry.FindDependencyIndex(LDependencies, AServiceName);
 end;
 
+//True if a given string is included in service dependencies
 //AServiceName needs to include GROUP_MARK if it's a group
-function TServiceEntry.HasDependency(const AServiceName: string): boolean;
+function TServiceEntry.DependsOn(const AServiceName: string): boolean;
 begin
   Result := Self.FindDependencyIndex(AServiceName) >= 0;
 end;
@@ -549,39 +574,41 @@ end;
 
 {
 Status
-Not all descendants have to implement. Caching should be handled by descendants.
+All service objects have the status structure but not all populate it with
+meaningful info.
 }
 //Returns the current status structure
-//The pointer WILL BE NIL if the descendant does not implement the statuses
-//or cannot retrieve it due to insufficient rights.
-//There is NO STATUS PROPERTY to discourage from accessing it mindlessly
-function TServiceEntry.GetStatus: PSERVICE_STATUS_PROCESS;
+function TServiceEntry.GetStatus: SERVICE_STATUS_PROCESS;
 begin
-  Result := nil;
+  if not (qfStatus in Self.FQueryFlags) then begin
+    Self.FQueryFlags := Self.FQueryFlags + [qfStatus];
+    Self.UpdateStatus;
+  end;
+  Result := Self.FStatus;
+end;
+
+//Populates the status structure with actual information
+//Descendants can override to query the status on demand if needed
+procedure TServiceEntry.UpdateStatus;
+begin
+  FillChar(Self.FStatus, 0, SizeOf(Self.FStatus));
+  FStatus.dwCurrentState := SERVICE_STOPPED; //we don't know better
+  FStatus.dwControlsAccepted := 0; //assume nothing is accepted
 end;
 
 function TServiceEntry.GetCurrentState: dword;
-var LStatus: PSERVICE_STATUS_PROCESS;
 begin
-  LStatus := GetStatus;
-  if LStatus <> nil then
-    Result := LStatus.dwCurrentState
-  else
-    Result := SERVICE_STOPPED; //we don't know better
+  Result := Status.dwCurrentState;
 end;
 
 function TServiceEntry.GetControlsAccepted: dword;
-var LStatus: PSERVICE_STATUS_PROCESS;
 begin
-  LStatus := GetStatus;
-  if LStatus <> nil then
-    Result := LStatus.dwControlsAccepted
-  else
-    Result := 0; //assume nothing is accepted
+  Result := Status.dwControlsAccepted;
 end;
 
 {
-These give us an estimation of when we can and cannot do something with the service.
+The following funcitons give us an estimation of when we can and cannot do
+something with the service.
 }
 
 function TServiceEntry.CanStart: boolean;
@@ -629,6 +656,96 @@ end;
 function TServiceEntry.IsLaunchProtected: boolean;
 begin
   Result := Self.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE;
+end;
+
+function TServiceEntry.GetSidType: dword;
+begin
+  Result := SERVICE_SID_TYPE_NONE;
+end;
+
+procedure TServiceEntry.SetSidType(const AValue: dword);
+begin
+  NotImplemented;
+end;
+
+function TServiceEntry.GetRequiredPrivileges: TArray<string>;
+begin
+  SetLength(Result, 0);
+end;
+
+procedure TServiceEntry.SetRequiredPrivileges(const AValue: TArray<string>);
+begin
+  NotImplemented;
+end;
+
+
+{
+Triggers
+}
+
+//Returns PSERVICE_TRIGGER_INFO for this service or nil if its unavailable
+//The returned pointer is owned by TServiceEntry and should not be freed.
+function TServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO;
+begin
+  Result := nil;
+end;
+
+//Sets new trigger configuration for the service.
+//The passed pointer is owned by the caller and should be freed by the caller
+procedure TServiceEntry.SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO);
+begin
+  NotImplemented;
+end;
+
+function TServiceEntry.GetTriggerCount: integer;
+var LTriggers: PSERVICE_TRIGGER_INFO;
+begin
+  LTriggers := Self.Triggers;
+  if LTriggers <> nil then
+    Result := triggers.cTriggers
+  else
+    Result := 0;
+end;
+
+
+{
+Additional properties available via QueryServiceConfig2
+}
+
+//Retrieves the LPSERVICE_FAILURE_ACTIONS structure for this service, or nil if
+//it's unavailable.
+//The structure is allocated by TServiceEntry and should not be freed.
+function TServiceEntry.GetFailureActions: LPSERVICE_FAILURE_ACTIONS;
+begin
+  Result := nil;
+end;
+
+//Overwrites LPSERVICE_FAILURE_ACTIONS contents for this service with the given
+//information.
+//The passed structure is owned and should be freed by the caller.
+procedure TServiceEntry.SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS);
+begin
+  NotImplemented;
+end;
+
+function TServiceEntry.GetUseFailureActionsOnNonCrashFailures: boolean;
+begin
+  Result := false;
+end;
+
+procedure TServiceEntry.SetUseFailureActionsOnNonCrashFailures(const AValue: boolean);
+begin
+  NotImplemented;
+end;
+
+function TServiceEntry.GetPreshutdownTimeout: dword;
+begin
+  Result := 0;
+end;
+
+procedure TServiceEntry.SetPreshutdownTimeout(const AValue: dword);
+begin
+  NotImplemented;
 end;
 
 

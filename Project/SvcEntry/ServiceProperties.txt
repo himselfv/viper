@@ -40,6 +40,7 @@ SERVICE_CONFIG_FAILURE_ACTIONS:
       SC_ACTION
         Type_: SC_ACTION_TYPE;
         Delay: DWORD;
+
   FailureActions: 40 bytes
   I think this is a SERVICE_FAILURE_ACTIONS + 3xSC_ACTION together, with dynamic
   fields simply containing trash.
@@ -61,10 +62,6 @@ SERVICE_CONFIG_FAILURE_ACTIONS:
     fFailureActionsOnNonCrashFailures   Bool    FailureActionsOnNonCrashFailures
       That's the checkbox under the normal failure actions in the MMC Snap-In.
   }
-    FailureActions: TByteArray; //binary, 40 bytes. Last 4 bytes seems to be a timeout for something (e.g. 60000)
-    FailureCommand: string; //single-string, command
-    FailureActionsOnNonCrashFailures: boolean; //dword_bool
-    RebootMessage: string;
 
 
 SERVICE_CONFIG_DELAYED_AUTO_START_INFO (SERVICE_DELAYED_AUTOSTART_INFO):

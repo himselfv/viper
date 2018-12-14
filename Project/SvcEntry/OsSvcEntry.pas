@@ -13,7 +13,7 @@ type
     qbConfigQueried,
     qbImageInformationQueried,
     qbLaunchProtectionQueried,
-    qbTriggerCountQueried,
+    qbTriggers,
     qbDelayedAutostartQueried
   );
   TServiceQueriedData = set of TServiceQueriedBit;
@@ -39,28 +39,20 @@ type
     FConfig: LPQUERY_SERVICE_CONFIG;
     FImageInformation: TServiceImageInformation;
     function GetHandle: SC_HANDLE; inline;
-    function GetConfig: LPQUERY_SERVICE_CONFIG; inline;
+    function GetConfig: LPQUERY_SERVICE_CONFIG; override;
+    procedure FreeConfig;
     function GetRawDescription: string; override;
     function GetImageInformation: TServiceImageInformation; override;
-public
-    DisplayName: string;
-    Status: SERVICE_STATUS_PROCESS;
+    procedure UpdateStatus; override;
+  public
     constructor Create(const AServiceName: string); overload;
     constructor CreateFromEnum(const S: PEnumServiceStatusProcess);
     destructor Destroy; override;
     procedure Invalidate(); overload;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
-    function DependsOn(const ADependency: string): boolean;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
-
-  //Triggers
-  protected
-    FTriggerCount: integer;
-    function GetTriggerCount: integer;
-  public
-    property TriggerCount: integer read GetTriggerCount;
 
   protected
     FLaunchProtection: cardinal;
@@ -70,6 +62,12 @@ public
     procedure SetStartType(const Value: dword); override;
   public
     procedure SetDelayedAutostart(const Value: boolean); override;
+
+  //Triggers
+  protected
+    FTriggers: PSERVICE_TRIGGER_INFO;
+    function GetTriggers: PSERVICE_TRIGGER_INFO; override;
+    procedure FreeTriggers;
 
   end;
 
@@ -97,20 +95,21 @@ end;
 constructor TOsServiceEntry.Create(const AServiceName: string);
 begin
   inherited Create;
-  Self.ServiceName := AServiceName;
+  Self.FServiceName := AServiceName;
   Self.Refresh; //to query status
 end;
 
 constructor TOsServiceEntry.CreateFromEnum(const S: PEnumServiceStatusProcess);
 begin
   inherited Create;
-  Self.ServiceName := S^.lpServiceName;
-  Self.DisplayName := S^.lpDisplayName;
-  Self.Status := S^.ServiceStatus;
+  Self.FServiceName := S^.lpServiceName;
+  Self.FStatus := S^.ServiceStatus;
+  Self.FQueryFlags := Self.FQueryFlags + [qfStatus];
 end;
 
 destructor TOsServiceEntry.Destroy;
 begin
+  FreeTriggers;
   if Self.FConfig <> nil then begin
     FreeMem(Self.FConfig);
     Self.FConfig := nil;
@@ -121,10 +120,9 @@ end;
 //Reload all cached values from the SCM
 procedure TOsServiceEntry.Invalidate();
 begin
-  Self.Status := QueryServiceStatusProcess(Self.Handle);
   Self.FQueriedData := [];
-  FreeMem(Self.FConfig);
-  Self.FConfig := nil;
+  FreeConfig;
+  FreeTriggers;
 end;
 
 function TOsServiceEntry.GetHandle: SC_HANDLE;
@@ -134,10 +132,16 @@ begin
   Result := Self.FHandle;
 end;
 
+procedure TOsServiceEntry.UpdateStatus;
+begin
+  Self.Status := QueryServiceStatusProcess(Self.Handle);
+end;
+
 function TOsServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
   if not (qbConfigQueried in FQueriedData) then begin
     FQueriedData := FQueriedData + [qbConfigQueried]; //BEFORE we run potentially exception-throwing code
+    FreeConfig; //release older pointer
     try
       FConfig := QueryServiceConfig(Self.Handle);
     except
@@ -153,6 +157,13 @@ begin
     end;
   end;
   Result := FConfig;
+end;
+
+//Releases the cached config structure
+procedure TOsServiceEntry.FreeConfig;
+begin
+  FreeMem(Self.FConfig);
+  Self.FConfig := nil;
 end;
 
 function TOsServiceEntry.GetRawDescription: string;
@@ -209,23 +220,6 @@ begin
   Result := FLaunchProtection;
 end;
 
-function TOsServiceEntry.GetTriggerCount: integer;
-var triggers: PSERVICE_TRIGGER_INFO;
-begin
-  if not (qbTriggerCountQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbTriggerCountQueried];
-    triggers := QueryServiceTriggers(Self.Handle);
-    if triggers = nil then
-      FTriggerCount := 0
-    else begin
-      FTriggerCount := triggers.cTriggers;
-      FreeMem(triggers);
-    end;
-  end;
-  Result := FTriggerCount;
-end;
-
-
 procedure TOsServiceEntry.SetStartType(const Value: dword);
 begin
   ChangeServiceStartType(Self.GetHSC_RW, Self.ServiceName, Value);
@@ -269,30 +263,30 @@ begin
     RaiseLastOsError(res);
 end;
 
+function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO; override;
+begin
+  if not (qbTriggers in Self.FQueriedData) then begin
+    Self.FQueriedData := Self.FQueriedData + [qbTriggers];
+    FreeTriggers(); //in case the pointer is somehow present
+    Self.FTriggers := QueryServiceTriggers(Self.Handle);
+  end;
+  Result := Self.FTriggers;
+end;
+
+procedure TOsServiceEntry.FreeTriggers;
+begin
+  if Self.FTriggers <> nil then begin
+    FreeMem(Self.FTriggers);
+    Self.FTriggers := nil;
+  end;
+end;
+
 
 procedure TOsServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
 begin
   AImageList := nil;
   AIndex := -1;
 end;
-
-
-
-
-//True if a given string is included in service dependencies
-function TOsServiceEntry.DependsOn(const ADependency: string): boolean;
-var deps: TArray<string>;
-  dep: string;
-begin
-  Result := false;
-  deps := SplitNullSeparatedList(Self.Config.lpDependencies);
-  for dep in deps do
-    if SameText(dep, ADependency) then begin
-      Result := true;
-      break;
-    end;
-end;
-
 
 
 end.

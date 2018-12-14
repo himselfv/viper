@@ -1,0 +1,96 @@
+Service properties and where to find them
+There are two ways to access services: through SCM API and through Registry. This document lists all known service properties and how to access them both ways.
+
+BASIC INFO
+QueryServiceConfig() / ChangeServiceConfig():
+https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/ns-winsvc-_query_service_configa
+
+SCM param		Type		Registry param
+  ServiceType		DWORD		Type					Normal SERVICE_TYPE enum + SERVICE_INTERACTIVE_PROCESS
+  StartType		DWORD		Start
+  ErrorControl		DWORD		ErrorControl				IGNORE/NORMAL/SEVERE/CRITICAL -- see QueryServiceConfig docs
+  BinaryPathName	string		ImagePath
+  LoadOrderGroup	string		Group
+  TagId			DWORD		Tag					Only used for drivers
+  Dependencies		string		DependOnService, DependOnGroup
+  ServiceStartName	string		ObjectName				User name with which to start the service
+  Password		string		?					Password for the above user (empty for system accounts)
+  DisplayName		string		DisplayName
+
+For svchost-based services, in either / or /Parameters:
+					ServiceDll
+				    	ServiceDllUnloadOnStop
+    					ServiceMain
+Svchost-based services should be SERVICE_WIN32_SHARE_PROCESS, normal ones - SERVICE_WIN32_OWN_PROCESS.
+
+
+EXTENDED INFO
+QueryServiceConfig2() / ChangeServiceConfig2()
+
+SERVICE_CONFIG_DESCRIPTION:
+  Description		string		Description
+
+SERVICE_CONFIG_FAILURE_ACTIONS:
+    SERVICE_FAILURE_ACTIONS
+      dwResetPeriod       dword
+      lpRebootMsg         string      RebootMessage
+      lpCommand           string      FailureCommand
+      cActions            dword
+      lpsaActions         LPSC_ACTION
+      SC_ACTION
+        Type_: SC_ACTION_TYPE;
+        Delay: DWORD;
+  FailureActions: 40 bytes
+  I think this is a SERVICE_FAILURE_ACTIONS + 3xSC_ACTION together, with dynamic
+  fields simply containing trash.
+    ResetPeriod           dword       reset the failure counter after %1 ms
+    trash?                dword
+    trash?                dword
+    trash? 03 00 00 00    dword
+    trash? 14 00 00 00    dword       maybe offset of the first SC_ACTION from the start?
+    3x
+      Type                dword       SC_ACTION_TYPE
+      Delay               dword       delay in ms
+    MMC Services Snap-in only shows one "delay" that's applied to all 3 cases, but
+    until you edit them, many services actually have different times (e.g. 2+3).
+    If any of the actions is "Reboot", they all get the "delay before reboot" set
+    in the additional windows.
+
+  SERVICE_CONFIG_FAILURE_ACTIONS_FLAG:
+    SERVICE_FAILURE_ACTIONS_FLAG
+    fFailureActionsOnNonCrashFailures   Bool    FailureActionsOnNonCrashFailures
+      That's the checkbox under the normal failure actions in the MMC Snap-In.
+  }
+    FailureActions: TByteArray; //binary, 40 bytes. Last 4 bytes seems to be a timeout for something (e.g. 60000)
+    FailureCommand: string; //single-string, command
+    FailureActionsOnNonCrashFailures: boolean; //dword_bool
+    RebootMessage: string;
+
+
+SERVICE_CONFIG_DELAYED_AUTO_START_INFO (SERVICE_DELAYED_AUTOSTART_INFO):
+  DelayedAutostart		boolean		DelayedAutoStart
+
+SERVICE_CONFIG_SERVICE_SID_INFO (SERVICE_SID_INFO):
+  ServiceSidType		dword		ServiceSidType			SERVICE_SID_TYPE_*  NONE/UNRESTRICTED/RESTRICTED
+
+SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO:
+  RequiredPrivileges		array<string>	RequiredPrivileges
+
+SERVICE_CONFIG_PRESHUTDOWN_INFO:
+  PreshutdownTimeout		dword		PreshutdownTimeout
+
+
+
+  {
+  SERVICE_CONFIG_TRIGGER_INFO
+    \Triggers
+    SERVICE_CONFIG_TRIGGER_INFO
+  }
+    //TODO
+
+  {
+  SERVICE_CONFIG_PREFERRED_NODE:
+    SERVICE_PREFERRED_NODE_INFO
+      usPreferredNode         ushort      PreferredNode
+      fDelete                 bool
+  }

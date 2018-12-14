@@ -6,6 +6,8 @@ uses Windows;
 function ExpandEnvironmentStrings(const AString: string): string;
 
 function SplitNullSeparatedList(AList: PChar): TArray<string>;
+function JoinNullSeparatedList(const AList: TArray<string>): string;
+
 
 implementation
 uses SysUtils;
@@ -42,6 +44,14 @@ begin
     Inc(AList, Length(Result[i])+1); //skip string and terminating null
     Inc(i);
   end;
+end;
+
+function JoinNullSeparatedList(const AList: TArray<string>): string;
+var i: integer;
+begin
+  Result := '';
+  for i := 0 to Length(AList)-1 do
+    Result := Result + AList[i] + #00;
 end;
 
 end.

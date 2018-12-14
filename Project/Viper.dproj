@@ -133,7 +133,8 @@
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>
         <DCCReference Include="ShellUtils.pas"/>
-        <DCCReference Include="SvcEntry.pas"/>
+        <DCCReference Include="SvcEntry\SvcEntry.pas"/>
+        <DCCReference Include="SvcEntry\OsSvcEntry.pas"/>
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <DCCReference Include="SecEdit.pas"/>

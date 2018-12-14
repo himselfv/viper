@@ -108,6 +108,8 @@ type
   TEnumServiceStatusProcessW = ENUM_SERVICE_STATUS_PROCESSW;
   TEnumServiceStatusProcess = TEnumServiceStatusProcessW;
 
+  PSERVICE_STATUS_PROCESS = ^SERVICE_STATUS_PROCESS;
+
 function EnumServicesStatus(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
   out Services: PEnumServiceStatus; out ServicesReturned: cardinal): boolean;
 function EnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
@@ -229,9 +231,18 @@ function OpenServiceKey(const AServiceName: string): TRegistry;
 function GetTriggersKey(const AServiceName: string): string; inline;
 function GetTriggerKey(const AServiceName: string; AIndex: integer): string; inline;
 
+
+type
+  TServiceDllInformation = record
+    ServiceDll: string;
+    ServiceDllUnloadOnStop: boolean;
+    ServiceMain: string;
+  end;
+
 //Services which have svchost as their executable support additional parameter specifying
 //the DLL to load.
-function QueryServiceServiceDll(const AServiceName: string): string;
+function QueryServiceServiceDll(const AServiceName: string): string; overload; inline;
+function QueryServiceServiceDllEx(const AServiceName: string): TServiceDllInformation; overload;
 
 
 procedure StartService(hSvc: SC_HANDLE); overload;
@@ -965,20 +976,6 @@ begin
 end;
 
 
-//Old version, supposedly slower
-function QueryServiceServiceDll2(const AServiceName: string): string;
-var reg: TRegistry;
-begin
-  reg := OpenServiceKey(AServiceName);
-  try
-    if not reg.OpenKey('Parameters', false) then
-      Result := ''
-    else
-      Result := reg.ReadString('ServiceDll');
-  finally
-    FreeAndNil(reg);
-  end;
-end;
 
 function RegQueryValueSz(hKey: HKEY; ValueName: string; out Value: string): cardinal;
 var sz: cardinal;
@@ -1000,20 +997,60 @@ begin
   end;
 end;
 
+function RegQueryValueDword(hKey: HKEY; ValueName: string; out Value: dword): cardinal;
+var sz: cardinal;
+  valType: cardinal;
+begin
+  sz := SizeOf(Value);
+
+  Result := RegQueryValueEx(hKey, PChar(ValueName), nil, @valType, @Value, @sz);
+  if Result = 0 then begin
+    if valType <> REG_DWORD then
+      Result := ERROR_INVALID_DATATYPE;
+  end;
+end;
+
+
 function QueryServiceServiceDll(const AServiceName: string): string;
+begin
+  Result := QueryServiceServiceDllEx(AServiceName).ServiceDll;
+end;
+
+function QueryServiceServiceDllEx(const AServiceName: string): TServiceDllInformation; overload;
 var hk: HKEY;
 begin
+  Result.ServiceDll := '';
+  Result.ServiceDllUnloadOnStop := false;
+  Result.ServiceMain := '';
   if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)+'\Parameters'),
-    0, KEY_QUERY_VALUE, hk) <> 0 then
-  begin
-    Result := '';
+    0, KEY_QUERY_VALUE, hk) <> 0
+  then
     exit;
-  end;
   try
-    if RegQueryValueSz(hk, 'ServiceDll', Result) <> 0 then
-      Result := '';
+    if RegQueryValueSz(hk, 'ServiceDll', Result.ServiceDll) <> 0 then
+      Result.ServiceDll := '';
+    if RegQueryValueDword(hk, 'ServiceDllUnloadOnStop', PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
+      Result.ServiceDllUnloadOnStop := false;
+    if RegQueryValueSz(hk, 'ServiceMain', Result.ServiceMain) <> 0 then
+      Result.ServiceMain := '';
+
+    //Fallback: these parameters can also be in the root key of the service
+    if Result.ServiceDll = '' then begin
+      RegCloseKey(hk);
+      hk := HKEY_LOCAL_MACHINE; //so that accidental Close() does nothing
+      if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)),
+        0, KEY_QUERY_VALUE, hk) <> 0
+      then
+        exit;
+      if RegQueryValueSz(hk, 'ServiceDll', Result.ServiceDll) <> 0 then
+        Result.ServiceDll := '';
+      if RegQueryValueDword(hk, 'ServiceDllUnloadOnStop', PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
+        Result.ServiceDllUnloadOnStop := false;
+      if RegQueryValueSz(hk, 'ServiceMain', Result.ServiceMain) <> 0 then
+        Result.ServiceMain := '';
+    end;
   finally
-    RegCloseKey(HKEY_LOCAL_MACHINE);
+    RegCloseKey(hk);
   end;
 end;
 

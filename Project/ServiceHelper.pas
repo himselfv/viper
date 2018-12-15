@@ -45,12 +45,16 @@ const
 
   SERVICE_WRITE_ACCESS = SERVICE_CHANGE_CONFIG;
 
+//Raises an OS error in case of error
+procedure ScmCheck(const AErrorCode: integer); overload; inline;
+procedure ScmCheck(const AErrorCode: integer; const AAdditionalInfo: string); overload; inline;
+
+//Opens SCM
 function OpenSCManager(dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE;
 function OpenService(hSC: SC_HANDLE; const AServiceName: string; dwAccess: cardinal = SC_MANAGER_ALL_ACCESS): SC_HANDLE; overload;
 procedure OpenScmAndService(out hSC: SC_HANDLE; out hSvc: SC_HANDLE;
   const AServiceName: string; dwScmAccess: cardinal = SC_MANAGER_ALL_ACCESS;
   dwServiceAccess: cardinal = SC_MANAGER_ALL_ACCESS);
-
 
 {
 RAAI service manager / service access.
@@ -129,6 +133,13 @@ function QueryServiceStatusProcess(const AServiceName: string): SERVICE_STATUS_P
 function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG; overload;
 function QueryServiceConfig(hSC: SC_HANDLE; const AServiceName: string): LPQUERY_SERVICE_CONFIG; overload;
 
+//Returns 0 or GetLastError code
+function ChangeServiceConfig(hSvc: SC_HANDLE; const AConfig: QUERY_SERVICE_CONFIG;
+  const lpdwTagId: PDword; const lpPassword: PWideChar): integer; overload;
+function ChangeServiceConfig(hSC: SC_HANDLE; const AServiceName: string;
+  const AConfig: QUERY_SERVICE_CONFIG; const lpdwTagId: PDword;
+  const lpPassword: PWideChar): integer; overload;
+
 const
   SERVICE_CONFIG_LAUNCH_PROTECTED = 12; //Since windows 8
 
@@ -145,7 +156,8 @@ type
   end;
 
 //Result has to be freed
-function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload;
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; out lpData: PByte): integer; overload;
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte; overload; inline;
 function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte; overload;
 
 //Returns 0 or GetLastError code
@@ -283,6 +295,20 @@ function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out Servi
 
 implementation
 uses SysUtils;
+
+//Raises an OS error in case of error
+procedure ScmCheck(const AErrorCode: integer);
+begin
+  if AErrorCode <> 0 then
+    RaiseLastOsError(AErrorCode);
+end;
+
+procedure ScmCheck(const AErrorCode: integer; const AAdditionalInfo: string);
+begin
+  if AErrorCode <> 0 then
+    RaiseLastOsError(AErrorCode, AAdditionalInfo);
+end;
+
 
 const
   ERROR_MUI_FILE_NOT_FOUND = 15100;
@@ -577,19 +603,54 @@ begin
   end;
 end;
 
-function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte;
+{
+Calls ChangeServiceConfig with the parameter set taken from AConfig.
+lpPassword is missing from QUERY_SERVICE_CONFIG
+lpdwTagId is an out parameter (see docs), the value in AConfig is ignored
+}
+function ChangeServiceConfig(hSvc: SC_HANDLE; const AConfig: QUERY_SERVICE_CONFIG;
+  const lpdwTagId: PDword; const lpPassword: PWideChar): integer;
+begin
+  if not WinSvc.ChangeServiceConfig(hSvc,
+    AConfig.dwServiceType, AConfig.dwStartType, AConfig.dwErrorControl,
+    AConfig.lpBinaryPathName, AConfig.lpLoadOrderGroup, lpdwTagId,
+    AConfig.lpDependencies, AConfig.lpServiceStartName, lpPassword,
+    AConfig.lpDisplayName)
+  then
+    Result := GetLastError()
+  else
+    Result := 0;
+end;
+
+function ChangeServiceConfig(hSC: SC_HANDLE; const AServiceName: string;
+  const AConfig: QUERY_SERVICE_CONFIG; const lpdwTagId: PDword;
+  const lpPassword: PWideChar): integer;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_CHANGE_CONFIG);
+  if hSvc = 0 then Result := GetLastError() else
+  try
+    Result := ChangeServiceConfig(hSvc, AConfig, lpdwTagId, lpPassword);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+
+//This version returns the error code and leaves error raising to clients
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; out lpData: PByte): integer;
 var lastSize, bufSize: cardinal;
   err: integer;
 begin
-  Result := nil;
   bufSize := 0;
   lastSize := 0;
-  while not WinSvc.QueryServiceConfig2(hSvc, dwInfoLevel, Result, lastSize, @bufSize) do begin
-    err := GetLastError();
+  lpData := nil;
+  while not WinSvc.QueryServiceConfig2(hSvc, dwInfoLevel, lpData, lastSize, @bufSize) do begin
+    Result := GetLastError();
     case err of
       ERROR_INSUFFICIENT_BUFFER: begin
         if bufSize <= lastSize then //avoid infinite cycle
-          RaiseLastOsError(err);
+          exit; //with this error
        //otherwise fall through and realloc
       end;
      //Might return FILE_NOT_FOUND or RESOURCE_TYPE_NOT_FOUND if the description is EXPAND_SZ, e.g.
@@ -599,15 +660,32 @@ begin
       ERROR_RESOURCE_TYPE_NOT_FOUND,
       ERROR_RESOURCE_NAME_NOT_FOUND,
       ERROR_MUI_FILE_NOT_FOUND: begin
-       //TODO: We can sometimes query the source string ourselves (like Autoruns does).
-        Result := nil;
-        break;
+        //TODO: We can sometimes query the source string ourselves (like Autoruns does).
+        if lpData <> nil then begin
+          FreeMem(lpData);
+          lpData := nil;
+        end;
+        Result := 0;
+        exit;
       end;
-    else RaiseLastOsError();
+    else
+      if lpData <> nil then begin
+        FreeMem(lpData);
+        lpData := nil;
+      end;
+      exit;
     end;
-    ReallocMem(Result, bufSize);
+    ReallocMem(lpData, bufSize);
     lastSize := bufSize;
   end;
+  Result := 0;
+end;
+
+//This version handles error raising
+function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal): PByte;
+begin
+  Result := nil;
+  ScmCheck(QueryServiceConfig2(hSvc, dwInfoLevel, Result));
 end;
 
 function QueryServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal): PByte;
@@ -1249,8 +1327,8 @@ end;
 
 procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
 begin
-  if not ChangeServiceConfig(hSvc, SERVICE_NO_CHANGE, dwStartType, SERVICE_NO_CHANGE, nil, nil,
-    nil, nil, nil, nil, nil) then
+  if not WinSvc.ChangeServiceConfig(hSvc, SERVICE_NO_CHANGE, dwStartType,
+    SERVICE_NO_CHANGE, nil, nil, nil, nil, nil, nil, nil) then
     RaiseLastOsError();
 end;
 

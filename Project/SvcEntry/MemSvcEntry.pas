@@ -25,7 +25,7 @@ type
     function GetRawDescription: string; override;
     procedure SetRawDescription(const AValue: string); override;
   public
-    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); override;
+    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
 
   public
     FDelayedAutostart: boolean;
@@ -105,7 +105,7 @@ begin
   Result := @Self.FConfig;
 end;
 
-procedure TMemServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string);
+procedure TMemServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar);
 begin
 {
 Empty arguments must be handled in exactly the same way as ChangeServiceConfig!

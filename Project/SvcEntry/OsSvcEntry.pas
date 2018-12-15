@@ -14,7 +14,9 @@ type
     qbImageInformationQueried,
     qbLaunchProtectionQueried,
     qbTriggers,
-    qbDelayedAutostartQueried
+    qbDelayedAutostartQueried,
+    qbSidType,
+    qbRequiredPrivileges
   );
   TServiceQueriedData = set of TServiceQueriedBit;
 
@@ -40,9 +42,12 @@ type
     FImageInformation: TServiceImageInformation;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; override;
+    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
     procedure FreeConfig;
     function GetRawDescription: string; override;
+    procedure SetRawDescription(const AValue: string); override;
     function GetImageInformation: TServiceImageInformation; override;
+    procedure SetImageInformation(const AValue: TServiceImageInformation); override;
     procedure UpdateStatus; override;
   public
     constructor Create(const AServiceName: string); overload;
@@ -53,21 +58,40 @@ type
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
 
+  //Security
   protected
     FLaunchProtection: cardinal;
     FDelayedAutostart: boolean;
+    FSidType: dword;
+    FRequiredPrivileges: TArray<string>;
   public
+    procedure SetStartType(const Value: dword); override;
     function GetLaunchProtection: cardinal; override;
     procedure SetLaunchProtection(const AValue: cardinal); override;
     function GetDelayedAutostart: boolean; override;
-    procedure SetStartType(const Value: dword); override;
     procedure SetDelayedAutostart(const Value: boolean); override;
+    function GetSidType: dword; override;
+    procedure SetSidType(const AValue: dword); override;
+    function GetRequiredPrivileges: TArray<string>; override;
+    procedure SetRequiredPrivileges(const AValue: TArray<string>); override;
 
   //Triggers
   protected
     FTriggers: PSERVICE_TRIGGER_INFO;
     function GetTriggers: PSERVICE_TRIGGER_INFO; override;
+    procedure SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO); override;
     procedure FreeTriggers;
+
+  //Additional properties
+  protected
+    function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; override;
+    procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); override;
+    function GetFailureActionsOnNonCrashFailures: boolean; override;
+    procedure SetFailureActionsOnNonCrashFailures(const AValue: boolean); override;
+    function GetPreshutdownTimeout: dword; override;
+    procedure SetPreshutdownTimeout(const AValue: dword); override;
+    function GetPreferredNode: integer; override;
+    procedure SetPreferredNodeInfo(const ANode: integer); override;
 
   end;
 
@@ -159,6 +183,11 @@ begin
   Result := FConfig;
 end;
 
+procedure TOsServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar);
+begin
+  ScmCheck(ChangeServiceConfig(Self.GetHSC_RW, Self.ServiceName, AValue, nil, APassword));
+end;
+
 //Releases the cached config structure
 procedure TOsServiceEntry.FreeConfig;
 begin
@@ -173,6 +202,13 @@ begin
     FDescription := QueryServiceDescription(Self.Handle);
   end;
   Result := FDescription;
+end;
+
+procedure TOsServiceEntry.SetRawDescription(const AValue: string);
+var buf: SERVICE_DESCRIPTION;
+begin
+  buf.lpDescription := PWideChar(AValue);
+  ScmCheck(ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_DESCRIPTION, @buf));
 end;
 
 function TOsServiceEntry.GetImageInformation: TServiceImageInformation;
@@ -232,23 +268,17 @@ end;
 
 function TOsServiceEntry.GetDelayedAutostart: boolean;
 var info: LPSERVICE_DELAYED_AUTO_START_INFO;
+  err: integer;
 begin
   if not (qbDelayedAutostartQueried in FQueriedData) then begin
     FQueriedData := FQueriedData + [qbDelayedAutostartQueried];
-    try
-      info := LPSERVICE_DELAYED_AUTO_START_INFO(
-        QueryServiceConfig2(Self.Handle, SERVICE_CONFIG_DELAYED_AUTO_START_INFO));
-    except
-      on E: EOsError do begin
-        if (E.ErrorCode = ERROR_INVALID_PARAMETER) then
-          info := nil
-        else
-          raise;
-      end;
-    end;
-    try
+    err := QueryServiceConfig2(Self.Handle, LPSERVICE_DELAYED_AUTO_START_INFO, PByte(info));
+    case err of
+    ERROR_INVALID_LEVEL, ERROR_INVALID_PARAMETER:
+      Self.FDelayedAutostart := false;
+    else
+      ScmCheck(err);
       Self.FDelayedAutostart := (info <> nil) and info.fDelayedAutostart;
-    finally
       FreeMem(info);
     end;
   end;
@@ -267,6 +297,35 @@ begin
   if res <> 0 then
     RaiseLastOsError(res);
 end;
+
+function TOsServiceEntry.GetSidType: dword;
+var tmp: SERVICE_SID_INFO;
+  err: integer;
+begin
+  if not (qbSidType in FQueriedData) then begin
+    FQueriedData := FQueriedData + [qbSidType];
+    err := QueryServiceConfig2(Self.Handle, SERVICE_CONFIG_SERVICE_SID_INFO, PByte(tmp));
+    case err of
+    ERROR_INVALID_LEVEL, ERROR_INVALID_PARAMETER:
+      Self.FSidType := SERVICE_SID_TYPE_NONE
+    else
+      ScmCheck(err);
+      Self.FSidType := tmp.dwServiceSidType;
+      FreeMem(tmp);
+    end;
+  end;
+  Result := Self.FSidType;
+end;
+
+procedure TOsServiceEntry.SetSidType(const AValue: dword);
+var tmp: SERVICE_SID_INFO;
+begin
+  tmp.dwServiceSidType := AValue;
+  ScmCheck(ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_SERVICE_SID_INFO, @tmp));
+  Self.FSidType := AValue;
+  Self.FQueriedData := Self.FQueriedData + qbSidType;
+end;
+
 
 function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO;
 begin

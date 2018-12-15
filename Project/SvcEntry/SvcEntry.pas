@@ -60,7 +60,7 @@ type
     function GetDescription: string; virtual;
     procedure SetDescription(const AValue: string); virtual;
   public
-    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); virtual;
+    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); virtual;
     function GetEffectiveDisplayName: string; virtual;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //can be nil!
     property ServiceName: string read FServiceName write FServiceName;
@@ -156,7 +156,7 @@ type
     function GetTriggers: PSERVICE_TRIGGER_INFO; virtual;
     function GetTriggerCount: integer; inline;
   public
-    procedure SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO); virtual;
+    procedure SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO); virtual;
     property Triggers: PSERVICE_TRIGGER_INFO read GetTriggers; //can be nil
     property TriggerCount: integer read GetTriggerCount;
 
@@ -262,7 +262,7 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/nf-winsvc-changeserv
   register them in certain registry keys (see docs).
   At the moment you cannot change TagIds at all, this requires some thought.
 }
-procedure TServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string);
+procedure TServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar);
 begin
   NotImplemented;
 end;
@@ -753,7 +753,7 @@ end;
 
 //Sets new trigger configuration for the service.
 //The passed pointer is owned by the caller and should be freed by the caller
-procedure TServiceEntry.SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO);
+procedure TServiceEntry.SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO);
 begin
   NotImplemented;
 end;

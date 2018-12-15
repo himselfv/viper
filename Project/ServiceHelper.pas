@@ -200,6 +200,10 @@ procedure ChangeServiceTriggers(hSC: SC_HANDLE; const AServiceName: string; lpTr
 
 //Lets the clients keep standalone copies of trigger data.
 
+function GetTriggerInfoMemorySize(const Tr: PSERVICE_TRIGGER_INFO): NativeUInt;
+function CopyServiceTriggers(const Tr: PSERVICE_TRIGGER_INFO): PSERVICE_TRIGGER_INFO;
+
+function GetTriggerMemorySize(const Tr: PSERVICE_TRIGGER): NativeUInt;
 function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
 function CopyTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM): SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
 procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_ITEM);
@@ -698,44 +702,56 @@ begin
 end;
 
 
-//Makes a copy of a given trigger. The copy has to be freed by the caller.
-function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
+//Calculates the size in memory all parts of a given trigger would occupy if
+//stored consecutively
+function GetTriggerMemorySize(const Tr: PSERVICE_TRIGGER): NativeUInt;
 var i: integer;
-  totalMem: NativeUInt;
+begin
+  Result := SizeOf(Tr^);
+  if Tr.pTriggerSubtype <> nil then
+    Result := Result + SizeOf(TGUID);
+  if Tr.pDataItems <> nil then
+    for i := 0 to Tr.cDataItems-1 do
+      Result := Result + SizeOf(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM) + NativeUInt(tr.pDataItems[i].cbData);
+end;
+
+{
+Copies all consecutive fields of SERVICE_TRIGGER into another place in memory.
+The destination must have enough memory. This function is dangerous due to potential
+memory overruns so it should not be published: use CopyTrigger.
+Returns the size of destination memory used (might be different from the source
+memory size in some edge cases).
+}
+function MoveTrigger(const AFrom: PSERVICE_TRIGGER; const ATo: PSERVICE_TRIGGER): NativeUint;
+var i: integer;
   freePtr: PByte;
   pFromItem, pToItem: PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
 begin
-  totalMem := SizeOf(tr);
-  if Tr.pTriggerSubtype <> nil then
-    totalMem := totalMem + SizeOf(TGUID);
-  if tr.pDataItems <> nil then
-    for i := 0 to tr.cDataItems-1 do
-      totalMem := totalMem + sizeof(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM) + NativeUInt(tr.pDataItems[i].cbData);
+  freePtr := PByte(ATo);
 
-  GetMem(Result, totalMem);
-  freePtr := PByte(Result);
+  Inc(freePtr, SizeOf(AFrom^));
+  ATo.dwTriggerType := AFrom.dwTriggerType;
+  ATo.dwAction := AFrom.dwAction;
+  ATo.cDataItems := AFrom.cDataItems;
 
-  Inc(freePtr, SizeOf(tr));
-  Result.dwTriggerType := Tr.dwTriggerType;
-  Result.dwAction := Tr.dwAction;
-  Result.cDataItems := Tr.cDataItems;
-
-  if tr.pTriggerSubtype <> nil then begin
-    Result.pTriggerSubtype := PGuid(freePtr);
+  if AFrom.pTriggerSubtype <> nil then begin
+    ATo.pTriggerSubtype := PGuid(freePtr);
     Inc(freePtr, SizeOf(TGUID));
-    Result.pTriggerSubtype^ := tr.pTriggerSubtype^;
+    ATo.pTriggerSubtype^ := AFrom.pTriggerSubtype^;
   end else
-    Result.pTriggerSubtype := nil;
+    ATo.pTriggerSubtype := nil;
 
-  if tr.pDataItems <> nil then begin
+  if (AFrom.pDataItems <> nil)
+  and (AFrom.cDataItems > 0)    //so that we don't uint-underflow below
+  then begin
     //Allocate memory for the DATA_ITEM headers (need to go sequentially)
-    Result.pDataItems := PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM(freePtr);
-    Inc(freePtr, tr.cDataItems * SizeOf(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM));
+    ATo.pDataItems := PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM(freePtr);
+    Inc(freePtr, AFrom.cDataItems * SizeOf(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM));
 
     //Allocate and copy memory for each item
-    pFromItem := tr.pDataItems;
-    pToItem := Result.pDataItems;
-    for i := 0 to tr.cDataItems-1 do begin
+    pFromItem := AFrom.pDataItems;
+    pToItem := ATo.pDataItems;
+    for i := 0 to AFrom.cDataItems-1 do begin
       pToItem.dwDataType := pFromItem.dwDataType;
       pToItem.cbData := pFromItem.cbData;
       pToItem.pData := freePtr;
@@ -745,9 +761,20 @@ begin
       Inc(pFromItem);
     end;
   end else begin
-    Result.pDataItems := nil;
-    Result.cDataItems := 0; //even if Tr said something else
+    ATo.pDataItems := nil;
+    ATo.cDataItems := 0; //even if AFrom said something else
   end;
+
+  Result := NativeUint(freePtr)-NativeUint(ATo);
+end;
+
+//Makes a copy of a given trigger. The copy has to be freed by the caller.
+function CopyTrigger(const Tr: SERVICE_TRIGGER): PSERVICE_TRIGGER;
+var totalMem: NativeUInt;
+begin
+  totalMem := GetTriggerMemorySize(@Tr);
+  GetMem(Result, totalMem);
+  MoveTrigger(@Tr, Result);
 end;
 
 //Makes a copy of a given SERVICE_TRIGGER_SPECIFIC_DATA_ITEM. The copy has to be freed by the caller.
@@ -770,6 +797,62 @@ procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_
 begin
   if Tr.pData <> nil then
     FreeMem(Tr.pData);
+end;
+
+
+//Calculates the size in memory all parts of a given trigger info would occupy
+//if stored consecutively
+function GetTriggerInfoMemorySize(const Tr: PSERVICE_TRIGGER_INFO): NativeUInt;
+var i: integer;
+begin
+  Result := SizeOf(Tr^);
+  if Tr.pTriggers <> nil then
+    for i := 0 to Tr^.cTriggers-1 do
+      Result := Result + GetTriggerMemorySize(@Tr.pTriggers[i]);
+end;
+
+{
+Copies all the consecutive internal content of a SERVICE_TRIGGER_INFO to another
+place in memory.
+The destination must have enough memory. This function is dangerous due to potential
+memory overruns so it should not be published: use CopyTrigger.
+Returns the size of the destination memory used.
+}
+function MoveServiceTriggers(const AFrom: PSERVICE_TRIGGER_INFO; ATo: PSERVICE_TRIGGER_INFO): NativeUint;
+var freePtr, fromPtr: PByte;
+  i: integer;
+  used: NativeUint;
+begin
+  freePtr := PByte(ATo);
+
+  Inc(freePtr, SizeOf(ATo^));
+  ATo.cTriggers := AFrom.cTriggers;
+  ATo.pReserved := AFrom.pReserved;
+
+  if (AFrom.pTriggers <> nil)
+  and (AFrom.cTriggers > 0)   //so that we don't uint-underflow below
+  then begin
+    ATo.pTriggers := PSERVICE_TRIGGER(freePtr);
+    fromPtr := PByte(AFrom.pTriggers);
+    for i := 0 to AFrom.cTriggers-1 do begin
+      used := MoveTrigger(PSERVICE_TRIGGER(fromPtr), PSERVICE_TRIGGER(freePtr));
+      Inc(freePtr, used); //might be different from fromPtr sizes in some edge cases
+      Inc(fromPtr, GetTriggerMemorySize(PSERVICE_TRIGGER(fromPtr)));
+    end;
+  end else begin
+    ATo.pTriggers := nil;
+    ATo.cTriggers := 0; //even if AFrom said something else
+  end;
+
+  Result := NativeUint(freePtr)-NativeUint(ATo);
+end;
+
+function CopyServiceTriggers(const Tr: PSERVICE_TRIGGER_INFO): PSERVICE_TRIGGER_INFO;
+var totalMem: NativeUInt;
+begin
+  totalMem := GetTriggerInfoMemorySize(Tr);
+  GetMem(Result, totalMem);
+  MoveServiceTriggers(Tr, Result);
 end;
 
 

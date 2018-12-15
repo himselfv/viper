@@ -135,6 +135,7 @@
         <DCCReference Include="ShellUtils.pas"/>
         <DCCReference Include="SvcEntry\SvcEntry.pas"/>
         <DCCReference Include="SvcEntry\OsSvcEntry.pas"/>
+        <DCCReference Include="SvcEntry\MemSvcEntry.pas"/>
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <DCCReference Include="SecEdit.pas"/>

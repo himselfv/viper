@@ -13,7 +13,8 @@ SCM param		Type		Registry param
   LoadOrderGroup	string		Group
   TagId			DWORD		Tag					Only used for drivers
   Dependencies		string		DependOnService, DependOnGroup
-  ServiceStartName	string		ObjectName				User name with which to start the service
+  ServiceStartName	string		ObjectName				Win32: User name with which to start the service
+										Kernel: Driver object name that the system uses to load the device driver
   Password		string		?					Password for the above user (empty for system accounts)
   DisplayName		string		DisplayName
 

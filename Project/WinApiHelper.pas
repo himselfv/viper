@@ -7,6 +7,7 @@ function ExpandEnvironmentStrings(const AString: string): string;
 
 function SplitNullSeparatedList(AList: PChar): TArray<string>;
 function JoinNullSeparatedList(const AList: TArray<string>): string;
+procedure CopyNullSeparatedList(const AList: PChar; out ACopy: string); overload;
 
 
 implementation
@@ -52,6 +53,24 @@ begin
   Result := '';
   for i := 0 to Length(AList)-1 do
     Result := Result + AList[i] + #00;
+end;
+
+//Creates a copy of a given list in a string variable. Simply assigning the variable
+//would not work since only the text until the first #00 would be assigned.
+procedure CopyNullSeparatedList(const AList: PChar; out ACopy: string);
+var ptr: PChar;
+begin
+  if AList = nil then begin
+    SetLength(ACopy, 0);
+    exit;
+  end;
+  ptr := AList;
+  //Find terminating #00#00
+  while (ptr[0] <> #00) or (ptr[1] <> #00) do
+    Inc(ptr);
+  Inc(ptr); //we need the first #00 explicitly
+  SetLength(ACopy, NativeUInt(ptr)-NativeUint(AList));
+  Move(AList^, ACopy[1], SizeOf(char)*Length(ACopy));
 end;
 
 end.

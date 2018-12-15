@@ -14,6 +14,9 @@ const
   }
   SERVICE_DELAYED_AUTOSTART = $00010002;
 
+  //We use a special constant to signal that PFN is disabled, while SCM uses a flag
+  //SCM's PFN is ushort so MAXINT is certainly safe for claiming
+  PREFERRED_NODE_DISABLED = MAXINT;
 
 type
   //Image path information
@@ -32,7 +35,6 @@ type
   TServiceEntryQueryFlags = set of TServiceEntryQueryFlag;
 
   TServiceEntry = class
-
   protected
     FQueryFlags: TServiceEntryQueryFlags;
     procedure NotImplemented;
@@ -90,7 +92,7 @@ type
     function GetLoadOrderGroup: string; inline;
     function GetTagId: dword; inline;
   public
-    procedure SetLoadOrderGroup(const AGroup: string; const ATagId: integer); virtual;
+    procedure SetLoadOrderGroup(const AGroup: string); virtual;
     property StartType: dword read GetStartType write SetStartType;
     property DelayedAutostart: boolean read GetDelayedAutostart write SetDelayedAutostart;
     property StartTypeEx: dword read GetStartTypeEx write SetStartTypeEx;
@@ -139,8 +141,9 @@ type
     function GetRequiredPrivileges: TArray<string>; virtual;
     procedure SetRequiredPrivileges(const AValue: TArray<string>); virtual;
   public
-    function IsLaunchProtected: boolean; inline;
     function GetLaunchProtection: cardinal; virtual;
+    procedure SetLaunchProtection(const AValue: cardinal); virtual;
+    function IsLaunchProtected: boolean; inline;
     property LaunchProtection: cardinal read GetLaunchProtection;
     property SidType: dword read GetSidType write SetSidType;
     property RequiredPrivileges: TArray<string> read GetRequiredPrivileges
@@ -159,10 +162,13 @@ type
   protected
     function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; virtual;
     procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); virtual;
-    function GetUseFailureActionsOnNonCrashFailures: boolean; virtual;
-    procedure SetUseFailureActionsOnNonCrashFailures(const AValue: boolean); virtual;
+    function GetFailureActionsOnNonCrashFailures: boolean; virtual;
+    procedure SetFailureActionsOnNonCrashFailures(const AValue: boolean); virtual;
     function GetPreshutdownTimeout: dword; virtual;
     procedure SetPreshutdownTimeout(const AValue: dword); virtual;
+    function GetPreferredNode: integer; virtual;
+    procedure SetPreferredNodeInfo(const ANode: integer); virtual;
+
 
   end;
   PServiceEntry = ^TServiceEntry;
@@ -229,10 +235,18 @@ begin
   Result := nil;
 end;
 
-//Changes basic service configuration for this service
-//The rules are the same as for ChangeServiceConfig parameters. If you don't want
-//to change a parameter, pass the appropriate NULL/NO_CHANGE value.
-//If you set AValue.ServiceStartName (Username), you also may need to pass APassword.
+{
+Changes basic service configuration for this service.
+The rules are the same as for ChangeServiceConfig parameters. If you don't want
+to change a parameter, pass the appropriate NULL/NO_CHANGE value.
+https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/nf-winsvc-changeserviceconfiga
+
+* If you set AValue.ServiceStartName (Username), you also may need to pass APassword.
+* You cannot change TagId this way.
+  TagIds are *generated* by the SCM and *returned* to you and you then should
+  register them in certain registry keys (see docs).
+  At the moment you cannot change TagIds at all, this requires some thought.
+}
 procedure TServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string);
 begin
   NotImplemented;
@@ -561,15 +575,13 @@ begin
     Result := LConfig.dwTagId;
 end;
 
-procedure TServiceEntry.SetLoadOrderGroup(const AGroup: string; const ATagId: integer);
+procedure TServiceEntry.SetLoadOrderGroup(const AGroup: string);
 var LConfig: QUERY_SERVICE_CONFIG;
 begin
   FillChar(LConfig, 0, SizeOf(LConfig));
   LConfig.lpLoadOrderGroup := PChar(AGroup);
-  LConfig.dwTagId := ATagId;
   Self.SetConfig(LConfig, '');
 end;
-
 
 
 {
@@ -653,6 +665,11 @@ begin
   Result := SERVICE_LAUNCH_PROTECTED_NONE;
 end;
 
+procedure TServiceEntry.SetLaunchProtection(const AValue: cardinal);
+begin
+  NotImplemented;
+end;
+
 function TServiceEntry.IsLaunchProtected: boolean;
 begin
   Result := Self.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE;
@@ -728,12 +745,12 @@ begin
   NotImplemented;
 end;
 
-function TServiceEntry.GetUseFailureActionsOnNonCrashFailures: boolean;
+function TServiceEntry.GetFailureActionsOnNonCrashFailures: boolean;
 begin
   Result := false;
 end;
 
-procedure TServiceEntry.SetUseFailureActionsOnNonCrashFailures(const AValue: boolean);
+procedure TServiceEntry.SetFailureActionsOnNonCrashFailures(const AValue: boolean);
 begin
   NotImplemented;
 end;
@@ -744,6 +761,18 @@ begin
 end;
 
 procedure TServiceEntry.SetPreshutdownTimeout(const AValue: dword);
+begin
+  NotImplemented;
+end;
+
+//Returns the preferred node for this service
+function TServiceEntry.GetPreferredNode: integer;
+begin
+  Result := PREFERRED_NODE_DISABLED;
+end;
+
+//Sets the preferred node or deletes this setting
+procedure TServiceEntry.SetPreferredNodeInfo(const ANode: integer);
 begin
   NotImplemented;
 end;

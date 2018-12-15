@@ -58,6 +58,7 @@ type
     FLaunchProtection: cardinal;
     FDelayedAutostart: boolean;
     function GetLaunchProtection: cardinal; override;
+    procedure SetLaunchProtection(const AValue: cardinal); override;
     function GetDelayedAutostart: boolean; override;
     procedure SetStartType(const Value: dword); override;
   public
@@ -218,6 +219,11 @@ begin
     end;
   end;
   Result := FLaunchProtection;
+end;
+
+procedure TOsServiceEntry.SetLaunchProtection(const AValue: cardinal);
+begin
+  ChangeServiceLaunchProtected(Self.GetHSC_RW, Self.ServiceName, AValue);
 end;
 
 procedure TOsServiceEntry.SetStartType(const Value: dword);

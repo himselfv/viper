@@ -24,6 +24,7 @@ uses
   ShellUtils in 'ShellUtils.pas',
   SvcEntry in 'SvcEntry\SvcEntry.pas',
   OsSvcEntry in 'SvcEntry\OsSvcEntry.pas',
+  MemSvcEntry in 'SvcEntry\MemSvcEntry.pas',
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',

@@ -1033,7 +1033,7 @@ begin
       hSvcs[i].h := OpenService(hSC, services[i].ServiceName);
       if hSvcs[i].h = 0 then RaiseLastOsError();
       if services[i].CanStop then begin
-        PServiceStatus(@services[i].Status)^ := StopService(hSvcs[i].h);
+        services[i].UpdateStatus(StopService(hSvcs[i].h));
         RefreshService(services[i]);
         hSvcs[i].waiting := true;
       end else
@@ -1045,7 +1045,7 @@ begin
       all_stopped := true;
       for i := 0 to Length(hSvcs)-1 do
         if hSvcs[i].waiting then begin
-          services[i].Status := QueryServiceStatusProcess(hSvcs[i].h);
+          services[i].UpdateStatus(QueryServiceStatusProcess(hSvcs[i].h));
           if services[i].Status.dwCurrentState = SERVICE_STOPPED then
             hSvcs[i].waiting := false
           else

@@ -4,8 +4,8 @@ TServiceEntry implementation based on OS functions.
 }
 
 interface
-uses SvcEntry,
-  SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections, ImgList;
+uses SvcEntry, SysUtils, Classes, Windows, WinSvc, ServiceHelper,
+  Generics.Collections;
 
 type
   TServiceQueriedBit = (
@@ -48,8 +48,7 @@ type
     constructor Create(const AServiceName: string); overload;
     constructor CreateFromEnum(const S: PEnumServiceStatusProcess);
     destructor Destroy; override;
-    procedure Invalidate(); overload;
-    procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
+    procedure Invalidate; override;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
@@ -57,11 +56,11 @@ type
   protected
     FLaunchProtection: cardinal;
     FDelayedAutostart: boolean;
+  public
     function GetLaunchProtection: cardinal; override;
     procedure SetLaunchProtection(const AValue: cardinal); override;
     function GetDelayedAutostart: boolean; override;
     procedure SetStartType(const Value: dword); override;
-  public
     procedure SetDelayedAutostart(const Value: boolean); override;
 
   //Triggers
@@ -269,7 +268,7 @@ begin
     RaiseLastOsError(res);
 end;
 
-function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO; override;
+function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO;
 begin
   if not (qbTriggers in Self.FQueriedData) then begin
     Self.FQueriedData := Self.FQueriedData + [qbTriggers];
@@ -285,13 +284,6 @@ begin
     FreeMem(Self.FTriggers);
     Self.FTriggers := nil;
   end;
-end;
-
-
-procedure TOsServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
-begin
-  AImageList := nil;
-  AIndex := -1;
 end;
 
 

@@ -34,7 +34,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, ComCtrls, VirtualTrees, Generics.Collections,
-  RegFile;
+  RegFile, MemSvcEntry;
 
 type
   //The list of all params which may or may not be available for the service
@@ -54,17 +54,12 @@ const
   RequiredServiceParams = [spImagePath];
 
 type
-  TImportService = class
+  TImportService = class(TMemServiceEntry)
   protected
-    FServiceName: string;
-    FAvailableParams: TImportServiceParams;
     FKeys: TList<TRegFileKey>;
   public
-
-
     constructor Create;
     destructor Destroy; override;
-    property ServiceName: string read FServiceName write FServiceName;
     property Keys: TList<TRegFileKey> read FKeys;
   end;
   TImportServiceList = class(TDictionary<string, TImportService>)
@@ -157,7 +152,7 @@ begin
   if Self.TryGetValue(AServiceName, Result) then
     exit;
   Result := TImportService.Create;
-  Result.Name := AServiceName;
+  Result.ServiceName := AServiceName;
   Self.Add(AServiceName, Result);
 end;
 

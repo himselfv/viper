@@ -22,9 +22,10 @@ type
     FDisplayName: string;
     FDescription: string;
     function GetConfig: LPQUERY_SERVICE_CONFIG; override;
-    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); override;
     function GetRawDescription: string; override;
     procedure SetRawDescription(const AValue: string); override;
+  public
+    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); override;
 
   public
     FDelayedAutostart: boolean;
@@ -42,6 +43,7 @@ type
     procedure SetSidType(const AValue: dword); override;
     function GetRequiredPrivileges: TArray<string>; override;
     procedure SetRequiredPrivileges(const AValue: TArray<string>); override;
+  public
     function GetLaunchProtection: cardinal; override;
     procedure SetLaunchProtection(const AValue: cardinal); override;
 
@@ -49,14 +51,24 @@ type
     class var FEmptyTriggers: SERVICE_TRIGGER_INFO;
   protected
     FTriggers: PSERVICE_TRIGGER_INFO;
-    function GetTriggers: PSERVICE_TRIGGER_INFO; virtual;
-    procedure SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO); virtual;
+    function GetTriggers: PSERVICE_TRIGGER_INFO; override;
     procedure FreeTriggers;
+  public
+    procedure SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO); override;
 
   protected
+    FFailureActions: packed record
+      //LPSERVICE_FAILURE_ACTION always points to a block of memory like this:
+      FHeader: SERVICE_FAILURE_ACTIONS;
+      FActions: array[0..2] of SC_ACTION;
+      //These are just data for FHeader's pointers:
+      FRebootMsg: string;
+      FCommand: string;
+    end;
     FFailureActionsOnNonCrashFailures: boolean;
     FPreshutdownTimeout: dword;
     FPreferredNode: integer;
+  public
     function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; override;
     procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); override;
     function GetFailureActionsOnNonCrashFailures: boolean; override;
@@ -69,16 +81,17 @@ type
   end;
 
 implementation
-uses ServiceHelper;
+uses WinApiHelper, ServiceHelper;
 
 constructor TMemServiceEntry.Create;
 begin
   inherited Create;
-  FillChar(@Self.FConfig, 0, SizeOf(Self.FConfig));
+  FillChar(Self.FConfig, 0, SizeOf(Self.FConfig));
   //Each instance will override this class var but whatever:
   FEmptyTriggers.cTriggers := 0;
   FEmptyTriggers.pTriggers := nil;
   FPreferredNode := PREFERRED_NODE_DISABLED;
+  FillChar(Self.FFailureActions, 0, SizeOf(Self.FFailureActions));
 end;
 
 destructor TMemServiceEntry.Destroy;
@@ -115,7 +128,7 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/nf-winsvc-changeserv
   //AValue.dwTagId: Ignore dwTagId.
   if AValue.lpDependencies <> nil then begin
     //We need a string-typed copy but simply assining will copy until first #00
-    Self.FDependencies := CopyNullSeparatedList(AValue.lpDependencies);
+    CopyNullSeparatedList(AValue.lpDependencies, Self.FDependencies);
     Self.FConfig.lpDependencies := PWideChar(Self.FDependencies);
   end;
   if AValue.lpServiceStartName <> nil then begin
@@ -214,12 +227,25 @@ end;
 
 function TMemServiceEntry.GetFailureActions: LPSERVICE_FAILURE_ACTIONS;
 begin
-
+  Result := @Self.FFailureActions.FHeader;
 end;
 
 procedure TMemServiceEntry.SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS);
+var i: integer;
 begin
-
+  Self.FFailureActions.FHeader := AValue^;
+  for i := 0 to Length(Self.FFailureActions.FActions)-1 do begin
+    //Even though cAction can indicate any number of actions, in reality there can be at most 3.
+    //Write the available ones and zero out the rest
+    if (i < integer(AValue.cActions)) and (AValue.lpsaActions <> nil) then
+      Self.FFailureActions.FActions[i] := AValue.lpsaActions[i]
+    else
+      FillChar(Self.FFailureActions.FActions[i], 0, SizeOf(SC_ACTION));
+  end;
+  Self.FFailureActions.FRebootMsg := AValue.lpRebootMsg;
+  Self.FFailureActions.FHeader.lpRebootMsg := PWideChar(Self.FFailureActions.FRebootMsg);
+  Self.FFailureActions.FCommand := AValue.lpCommand;
+  Self.FFailureActions.FHeader.lpCommand := PWideChar(Self.FFailureActions.FCommand);
 end;
 
 function TMemServiceEntry.GetFailureActionsOnNonCrashFailures: boolean;

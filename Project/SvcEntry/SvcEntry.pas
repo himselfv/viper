@@ -1,7 +1,8 @@
 unit SvcEntry;
 
 interface
-uses SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections;
+uses SysUtils, Classes, Windows, WinSvc, ServiceHelper, Generics.Collections,
+  ImgList;
 
 const
   {
@@ -39,9 +40,11 @@ type
     FQueryFlags: TServiceEntryQueryFlags;
     procedure NotImplemented;
   public
-    constructor Create;
+    constructor Create; overload;
+    constructor Create(const AServiceName: string); overload;
     procedure Invalidate; virtual;
     procedure Refresh; virtual;
+    procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); virtual;
 
   //Basic information
   protected
@@ -58,8 +61,9 @@ type
     procedure SetDescription(const AValue: string); virtual;
   public
     procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: string); virtual;
+    function GetEffectiveDisplayName: string; virtual;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //can be nil!
-    property ServiceName: string read FServiceName;
+    property ServiceName: string read FServiceName write FServiceName;
     property ServiceType: dword read GetServiceType;
     property RawDisplayName: string read GetRawDisplayName write SetRawDisplayName;
     property RawDescription: string read GetRawDescription write SetRawDescription;
@@ -82,7 +86,7 @@ type
     property Dependencies: TArray<string> read GetDependencies;
 
   //Start type
-  protected
+  public
     function GetStartType: dword; inline;
     procedure SetStartType(const AValue: dword); virtual;
     function GetDelayedAutostart: boolean; virtual;
@@ -91,7 +95,6 @@ type
     procedure SetStartTypeEx(const AValue: dword);
     function GetLoadOrderGroup: string; inline;
     function GetTagId: dword; inline;
-  public
     procedure SetLoadOrderGroup(const AGroup: string); virtual;
     property StartType: dword read GetStartType write SetStartType;
     property DelayedAutostart: boolean read GetDelayedAutostart write SetDelayedAutostart;
@@ -107,15 +110,12 @@ type
     procedure SetImageInformation(const AValue: TServiceImageInformation); virtual;
     function GetImageInformationCached: TServiceImageInformation; inline;
     procedure SetImageInformationCached(const AValue: TServiceImageInformation); inline;
+  public
     function GetRawImagePath: string; inline;
     function GetRawServiceDll: string; inline;
-    function GetEffectiveImagePath: string;
-  public
+    function GetImageFilename: string;
     property ImageInformation: TServiceImageInformation read GetImageInformationCached
       write SetImageInformationCached;
-    property ImagePath: string read GetRawImagePath;
-    property ServiceDll: string read GetRawServiceDll;
-    property EffectiveImagePath: string read GetEffectiveImagePath;
 
   //Status
   //Each service object HAS a status structure but it may not be filled with real info
@@ -123,7 +123,7 @@ type
   protected
     FStatus: SERVICE_STATUS_PROCESS;
     function GetStatus: SERVICE_STATUS_PROCESS; inline;
-    procedure UpdateStatus; virtual;
+    procedure UpdateStatus; overload; virtual;
     function GetCurrentState: dword; inline;
     function GetControlsAccepted: dword; inline;
   public
@@ -132,7 +132,9 @@ type
     function CanStop: boolean; inline;
     function CanPause: boolean; inline;
     function CanResume: boolean; inline;
-    property Status: SERVICE_STATUS_PROCESS read GetStatus;
+    procedure UpdateStatus(const AStatus: SERVICE_STATUS_PROCESS); overload; virtual;
+    procedure UpdateStatus(const AStatus: SERVICE_STATUS); overload; virtual;
+    property Status: SERVICE_STATUS_PROCESS read GetStatus write UpdateStatus;
 
   //Security
   protected
@@ -208,6 +210,12 @@ begin
   FQueryFlags := [];
 end;
 
+constructor TServiceEntry.Create(const AServiceName: string);
+begin
+  Self.Create;
+  FServiceName := AServiceName;
+end;
+
 procedure TServiceEntry.NotImplemented;
 begin
   raise EServiceEntryException.Create(eServiceEntryFunctionNotImplemented);
@@ -225,6 +233,13 @@ end;
 procedure TServiceEntry.Refresh;
 begin
   Invalidate;
+end;
+
+
+procedure TServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
+begin
+  AImageList := nil;
+  AIndex := -1;
 end;
 
 
@@ -305,6 +320,8 @@ might not be wise. Such decendants should just override and return raw values.
 function TServiceEntry.GetDisplayName: string;
 begin
   Result := GetRawDisplayName; //TODO: Expand
+  if Result = '' then
+    Result := Self.ServiceName;
 end;
 
 procedure TServiceEntry.SetDisplayName(const AValue: string);
@@ -320,6 +337,16 @@ end;
 procedure TServiceEntry.SetDescription(const AValue: string);
 begin
   SetRawDescription(AValue);
+end;
+
+{
+_Effective_ display name is even more abstract. It doesn't have to related
+to SCM's DisplayName at all. It's what the descendants consider the service
+shoud be displayed as.
+}
+function TServiceEntry.GetEffectiveDisplayName: string;
+begin
+  Result := GetDisplayName;
 end;
 
 {
@@ -474,12 +501,12 @@ end;
 //Points to the "actual place with code to run".
 //Returns either the EXE name or the DLL name, depending on which is more specific,
 //with environment strings expanded.
-function TServiceEntry.GetEffectiveImagePath: string;
+function TServiceEntry.GetImageFilename: string;
 begin
   if Self.ServiceType = SERVICE_WIN32_SHARE_PROCESS then
-    Result := ExpandEnvironmentStrings(Self.ServiceDll)
+    Result := ExpandEnvironmentStrings(Self.GetRawServiceDll)
   else
-    Result := ExpandEnvironmentStrings(Self.ImagePath)
+    Result := ExpandEnvironmentStrings(Self.GetRawImagePath)
 {
 There's also this way used before. May return to it if checking by type fails:
       if (pos('svchost.exe', Self.Config.lpBinaryPathName)>0)
@@ -606,6 +633,23 @@ begin
   FillChar(Self.FStatus, 0, SizeOf(Self.FStatus));
   FStatus.dwCurrentState := SERVICE_STOPPED; //we don't know better
   FStatus.dwControlsAccepted := 0; //assume nothing is accepted
+end;
+
+//Allows the outside observer to update service status fields. This often
+//happens as a result of sending controls to the service.
+//The function is virtual so the descendants can choose to ignore such updates.
+procedure TServiceEntry.UpdateStatus(const AStatus: SERVICE_STATUS_PROCESS);
+begin
+  Self.FStatus := AStatus;
+  Self.FQueryFlags := Self.FQueryFlags + [qfStatus];
+end;
+
+procedure TServiceEntry.UpdateStatus(const AStatus: SERVICE_STATUS);
+begin
+  //SERVICE_STATUS_PROCESS which we keep starts with SERVICE_STATUS
+  LPSERVICE_STATUS(@Self.FStatus)^ := AStatus;
+  //Do not set the qfStatus flag: we still don't have some fields. But keep it
+  //if it's set.
 end;
 
 function TServiceEntry.GetCurrentState: dword;

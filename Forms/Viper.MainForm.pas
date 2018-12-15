@@ -5,8 +5,9 @@ interface
 uses
   Windows, WinSvc, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
-  Generics.Collections, IniFiles, ServiceHelper, SvcEntry, SvcCat, Viper.ServiceList,
-  Viper.TriggerList, Viper.DependencyList, Viper.ServiceTriggerList, Viper.RichEditEx;
+  Generics.Collections, IniFiles, ServiceHelper, SvcEntry, OsSvcEntry, SvcCat,
+  Viper.ServiceList, Viper.TriggerList, Viper.DependencyList, Viper.ServiceTriggerList,
+  Viper.RichEditEx;
 
 type
   //Folder node data contains only a single pointer.
@@ -28,7 +29,7 @@ type
     ntMax = 255               //values higher than this are objects
   );
 
-  TExtServiceEntry = class(TServiceEntry)
+  TExtServiceEntry = class(TOsServiceEntry)
     Info: TServiceInfo;
     function GetEffectiveDisplayName: string; override;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); override;
@@ -1385,7 +1386,7 @@ begin
 end;
 
 procedure TMainForm.ReloadTriggers;
-var service: TServiceEntry;
+var service: TOsServiceEntry;
 begin
   service := FDetailsPaneFocusedService;
   if service = nil then

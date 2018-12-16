@@ -9,14 +9,17 @@ uses SvcEntry, SysUtils, Classes, Windows, WinSvc, ServiceHelper,
 
 type
   TServiceQueriedBit = (
-    qbDescriptionQueried,
-    qbConfigQueried,
-    qbImageInformationQueried,
-    qbLaunchProtectionQueried,
+    qbDescription,
+    qbConfig,
+    qbImageInformation,
+    qbLaunchProtection,
     qbTriggers,
-    qbDelayedAutostartQueried,
+    qbDelayedAutostart,
     qbSidType,
-    qbRequiredPrivileges
+    qbRequiredPrivileges,
+    qbFailureActionsFlag,
+    qbPreshutdownInfo,
+    qbPreferredNode
   );
   TServiceQueriedData = set of TServiceQueriedBit;
 
@@ -58,6 +61,12 @@ type
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
 
+  //Helper functions
+  protected
+    function SetQueryBit(const ABit: TServiceQueriedBit): boolean; inline;
+    function QueryConfig2(const ALevel: dword; out AData: PByte): boolean; inline;
+    procedure ChangeConfig2(const ALevel: dword; const AData: pointer); inline;
+
   //Security
   protected
     FLaunchProtection: cardinal;
@@ -65,11 +74,11 @@ type
     FSidType: dword;
     FRequiredPrivileges: TArray<string>;
   public
-    procedure SetStartType(const Value: dword); override;
+    procedure SetStartType(const AValue: dword); override;
     function GetLaunchProtection: cardinal; override;
     procedure SetLaunchProtection(const AValue: cardinal); override;
     function GetDelayedAutostart: boolean; override;
-    procedure SetDelayedAutostart(const Value: boolean); override;
+    procedure SetDelayedAutostart(const AValue: boolean); override;
     function GetSidType: dword; override;
     procedure SetSidType(const AValue: dword); override;
     function GetRequiredPrivileges: TArray<string>; override;
@@ -84,6 +93,9 @@ type
 
   //Additional properties
   protected
+    FFailureActionsOnNonCrashFailures: boolean;
+    FPreshutdownTimeout: dword;
+    FPreferredNode: integer;
     function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; override;
     procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); override;
     function GetFailureActionsOnNonCrashFailures: boolean; override;
@@ -156,6 +168,51 @@ begin
   Result := Self.FHandle;
 end;
 
+{
+Sets the given cache bit if it's missing and returns true. Returns false if the
+bit was already set.
+Use this to test for whether you should requery cached info. Note that the bit
+should be set immediately after testing, not after you retrieve the info.
+This way if you fail to retreive it, you're not going to stuck querying it again
+and again.
+}
+function TOsServiceEntry.SetQueryBit(const ABit: TServiceQueriedBit): boolean;
+begin
+  Result := ABit in FQueriedData;
+  if not Result then
+    Self.FQueriedData := Self.FQueriedData + [ABit]; //BEFORE we run potentially exception-throwing code
+end;
+
+{
+Queries the given parameter with QueryServiceConfig2. Returns true + the parameter,
+false if the parameter is unsupported OR otherwise RECOVERABLY unavailable by
+using the default values.
+Throws exception on unrecoverable errors.
+}
+function TOsServiceEntry.QueryConfig2(const ALevel: dword; out AData: PByte): boolean;
+var err: integer;
+begin
+  err := QueryServiceConfig2(Self.Handle, ALevel, AData);
+  case err of
+  ERROR_INVALID_LEVEL, ERROR_INVALID_PARAMETER:
+    Result := false;
+  else
+    ScmCheck(err);
+    Result := true;
+  end;
+end;
+
+{
+Changes the given parameter with ChangeServiceConfig2. Throws if the change is
+impossible.
+We should throw even if the parameter is simply unsupported because the user
+should know they could not set it.
+}
+procedure TOsServiceEntry.ChangeConfig2(const ALevel: dword; const AData: pointer);
+begin
+  ScmCheck(ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, ALevel, AData));
+end;
+
 procedure TOsServiceEntry.UpdateStatus;
 begin
   Self.Status := QueryServiceStatusProcess(Self.Handle);
@@ -163,8 +220,7 @@ end;
 
 function TOsServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
-  if not (qbConfigQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbConfigQueried]; //BEFORE we run potentially exception-throwing code
+  if SetQueryBit(qbConfig) then begin
     FreeConfig; //release older pointer
     try
       FConfig := QueryServiceConfig(Self.Handle);
@@ -197,10 +253,8 @@ end;
 
 function TOsServiceEntry.GetRawDescription: string;
 begin
-  if not (qbDescriptionQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbDescriptionQueried];
+  if SetQueryBit(qbDescription) then
     FDescription := QueryServiceDescription(Self.Handle);
-  end;
   Result := FDescription;
 end;
 
@@ -208,14 +262,15 @@ procedure TOsServiceEntry.SetRawDescription(const AValue: string);
 var buf: SERVICE_DESCRIPTION;
 begin
   buf.lpDescription := PWideChar(AValue);
-  ScmCheck(ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_DESCRIPTION, @buf));
+  Self.ChangeConfig2(SERVICE_CONFIG_DESCRIPTION, @buf);
+  Self.FDescription := AValue;
+  SetQueryBit(qbDescription);
 end;
 
 function TOsServiceEntry.GetImageInformation: TServiceImageInformation;
 var ADllInfo: TServiceDllInformation;
 begin
-  if not (qbImageInformationQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbImageInformationQueried];
+  if SetQueryBit(qbImageInformation) then begin
     Result := inherited; //reads ImagePath and sets the rest to nil
     if (pos('svchost.exe', Result.ImagePath)>0)
     or (pos('lsass.exe', Result.ImagePath)>0) then begin
@@ -235,8 +290,7 @@ end;
 function TOsServiceEntry.GetLaunchProtection: cardinal;
 var tmp: PSERVICE_LAUNCH_PROTECTED;
 begin
-  if not (qbLaunchProtectionQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbLaunchProtectionQueried];
+  if SetQueryBit(qbLaunchProtection) then begin
     try
       tmp := QueryServiceLaunchProtected(Self.Handle);
       if tmp <> nil then begin
@@ -261,58 +315,48 @@ begin
   ChangeServiceLaunchProtected(Self.GetHSC_RW, Self.ServiceName, AValue);
 end;
 
-procedure TOsServiceEntry.SetStartType(const Value: dword);
+procedure TOsServiceEntry.SetStartType(const AValue: dword);
 begin
-  ChangeServiceStartType(Self.GetHSC_RW, Self.ServiceName, Value);
+  ChangeServiceStartType(Self.GetHSC_RW, Self.ServiceName, AValue);
 end;
 
 function TOsServiceEntry.GetDelayedAutostart: boolean;
 var info: LPSERVICE_DELAYED_AUTO_START_INFO;
-  err: integer;
 begin
-  if not (qbDelayedAutostartQueried in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbDelayedAutostartQueried];
-    err := QueryServiceConfig2(Self.Handle, LPSERVICE_DELAYED_AUTO_START_INFO, PByte(info));
-    case err of
-    ERROR_INVALID_LEVEL, ERROR_INVALID_PARAMETER:
-      Self.FDelayedAutostart := false;
-    else
-      ScmCheck(err);
+  if SetQueryBit(qbDelayedAutostart) then begin
+    if QueryConfig2(SERVICE_CONFIG_DELAYED_AUTO_START_INFO, PByte(info)) then begin
       Self.FDelayedAutostart := (info <> nil) and info.fDelayedAutostart;
       FreeMem(info);
-    end;
+    end else
+      Self.FDelayedAutostart := false;
   end;
   Result := Self.FDelayedAutostart;
 end;
 
 //Enables/disables delayed autostart; throws if it's not supported
-procedure TOsServiceEntry.SetDelayedAutostart(const Value: boolean);
+procedure TOsServiceEntry.SetDelayedAutostart(const AValue: boolean);
 var info: SERVICE_DELAYED_AUTO_START_INFO;
   res: integer;
 begin
   //Any BOOL!=0 is supposed to be equal to TRUE, Delphi uses DWORD(-1),
   //but Win10 requires this to be exactly 1 or fails.
   dword(info.fDelayedAutostart) := 1;
-  res := ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, @info);
-  if res <> 0 then
-    RaiseLastOsError(res);
+  Self.ChangeConfig2(SERVICE_CONFIG_DELAYED_AUTO_START_INFO, @info);
+  Self.FDelayedAutostart := AValue;
+  SetQueryBit(qbDelayedAutostart);
 end;
 
+
 function TOsServiceEntry.GetSidType: dword;
-var tmp: SERVICE_SID_INFO;
+var tmp: LPSERVICE_SID_INFO;
   err: integer;
 begin
-  if not (qbSidType in FQueriedData) then begin
-    FQueriedData := FQueriedData + [qbSidType];
-    err := QueryServiceConfig2(Self.Handle, SERVICE_CONFIG_SERVICE_SID_INFO, PByte(tmp));
-    case err of
-    ERROR_INVALID_LEVEL, ERROR_INVALID_PARAMETER:
-      Self.FSidType := SERVICE_SID_TYPE_NONE
-    else
-      ScmCheck(err);
+  if SetQueryBit(qbSidType) then begin
+    if QueryConfig2(SERVICE_CONFIG_SERVICE_SID_INFO, PByte(tmp)) then begin
       Self.FSidType := tmp.dwServiceSidType;
       FreeMem(tmp);
-    end;
+    end else
+      Self.FSidType := SERVICE_SID_TYPE_NONE
   end;
   Result := Self.FSidType;
 end;
@@ -321,20 +365,27 @@ procedure TOsServiceEntry.SetSidType(const AValue: dword);
 var tmp: SERVICE_SID_INFO;
 begin
   tmp.dwServiceSidType := AValue;
-  ScmCheck(ChangeServiceConfig2(Self.GetHSC_RW, Self.ServiceName, SERVICE_CONFIG_SERVICE_SID_INFO, @tmp));
+  Self.ChangeConfig2(SERVICE_CONFIG_SERVICE_SID_INFO, @tmp);
   Self.FSidType := AValue;
-  Self.FQueriedData := Self.FQueriedData + qbSidType;
+  SetQueryBit(qbSidType);
 end;
 
 
 function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO;
 begin
-  if not (qbTriggers in Self.FQueriedData) then begin
-    Self.FQueriedData := Self.FQueriedData + [qbTriggers];
+  if SetQueryBit(qbTriggers) then begin
     FreeTriggers(); //in case the pointer is somehow present
     Self.FTriggers := QueryServiceTriggers(Self.Handle);
   end;
   Result := Self.FTriggers;
+end;
+
+procedure TOsServiceEntry.SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO);
+begin
+  Self.ChangeConfig2(SERVICE_CONFIG_TRIGGER_INFO, ATriggers);
+  FreeTriggers;
+  Self.FTriggers := CopyServiceTriggers(ATriggers);
+  SetQueryBit(qbTriggers);
 end;
 
 procedure TOsServiceEntry.FreeTriggers;
@@ -343,6 +394,79 @@ begin
     FreeMem(Self.FTriggers);
     Self.FTriggers := nil;
   end;
+end;
+
+
+function TOsServiceEntry.GetFailureActionsOnNonCrashFailures: boolean;
+var tmp: LPSERVICE_FAILURE_ACTIONS_FLAG;
+begin
+  if SetQueryBit(qbFailureActionsFlag) then begin
+    if QueryConfig2(SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, PByte(tmp)) then begin
+      Self.FFailureActionsOnNonCrashFailures := tmp.fFailureActionsOnNonCrashFailures;
+      FreeMem(tmp);
+    end else
+      Self.FFailureActionsOnNonCrashFailures := false
+  end;
+  Result := Self.FFailureActionsOnNonCrashFailures;
+end;
+
+procedure TOsServiceEntry.SetFailureActionsOnNonCrashFailures(const AValue: boolean);
+var tmp: SERVICE_FAILURE_ACTIONS_FLAG;
+begin
+  tmp.fFailureActionsOnNonCrashFailures := AValue;
+  Self.ChangeConfig2(SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, @tmp);
+  Self.FFailureActionsOnNonCrashFailures := AValue;
+  SetQueryBit(qbFailureActionsFlag);
+end;
+
+function TOsServiceEntry.GetPreshutdownTimeout: dword;
+var tmp: LPSERVICE_PRESHUTDOWN_INFO;
+begin
+  if SetQueryBit(qbPreshutdownInfo) then begin
+    if QueryConfig2(SERVICE_CONFIG_PRESHUTDOWN_INFO, PByte(tmp)) then begin
+      Self.FPreshutdownTimeout := tmp.dwPreshutdownTimeout;
+      FreeMem(tmp);
+    end else
+      Self.FPreshutdownTimeout := inherited;
+  end;
+  Result := Self.FPreshutdownTimeout;
+end;
+
+procedure TOsServiceEntry.SetPreshutdownTimeout(const AValue: dword);
+var tmp: SERVICE_PRESHUTDOWN_INFO;
+begin
+  tmp.dwPreshutdownTimeout := AValue;
+  Self.ChangeConfig2(SERVICE_CONFIG_PRESHUTDOWN_INFO, @tmp);
+  Self.FPreshutdownTimeout := AValue;
+  SetQueryBit(qbPreshutdownInfo);
+end;
+
+function TOsServiceEntry.GetPreferredNode: integer;
+var tmp: LPSERVICE_PREFERRED_NODE_INFO;
+begin
+  if SetQueryBit(qbPreferredNode) then begin
+    if QueryConfig2(SERVICE_CONFIG_PREFERRED_NODE, PByte(tmp)) then begin
+      Self.FPreferredNode := tmp.usPreferredNode;
+      if tmp.fDelete then
+        Self.FPreferredNode := SvcEntry.PREFERRED_NODE_DISABLED;
+      FreeMem(tmp);
+    end else
+      Self.FPreferredNode := inherited;
+  end;
+  Result := Self.FPreferredNode;
+end;
+
+procedure TOsServiceEntry.SetPreferredNodeInfo(const ANode: integer);
+var tmp: SERVICE_PREFERRED_NODE_INFO;
+begin
+  tmp.fDelete := (ANode = SvcEntry.PREFERRED_NODE_DISABLED);
+  if tmp.fDelete then
+    tmp.usPreferredNode := 0
+  else
+    tmp.usPreferredNode := ANode;
+  Self.ChangeConfig2(SERVICE_CONFIG_PREFERRED_NODE, @tmp);
+  Self.FPreferredNode := ANode;
+  SetQueryBit(qbPreferredNode)
 end;
 
 

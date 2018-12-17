@@ -183,8 +183,8 @@ and again.
 }
 function TOsServiceEntry.SetQueryBit(const ABit: TServiceQueriedBit): boolean;
 begin
-  Result := ABit in FQueriedData;
-  if not Result then
+  Result := not (ABit in FQueriedData);
+  if Result then
     Self.FQueriedData := Self.FQueriedData + [ABit]; //BEFORE we run potentially exception-throwing code
 end;
 

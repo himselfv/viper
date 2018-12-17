@@ -17,6 +17,7 @@ type
     qbDelayedAutostart,
     qbSidType,
     qbRequiredPrivileges,
+    qbFailureActions,
     qbFailureActionsFlag,
     qbPreshutdownInfo,
     qbPreferredNode
@@ -94,11 +95,13 @@ type
 
   //Additional properties
   protected
+    FFailureActions: LPSERVICE_FAILURE_ACTIONS;
     FFailureActionsOnNonCrashFailures: boolean;
     FPreshutdownTimeout: dword;
     FPreferredNode: integer;
     function GetFailureActions: LPSERVICE_FAILURE_ACTIONS; override;
     procedure SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS); override;
+    procedure FreeFailureActions;
     function GetFailureActionsOnNonCrashFailures: boolean; override;
     procedure SetFailureActionsOnNonCrashFailures(const AValue: boolean); override;
     function GetPreshutdownTimeout: dword; override;
@@ -147,6 +150,7 @@ end;
 destructor TOsServiceEntry.Destroy;
 begin
   FreeTriggers;
+  FreeFailureActions;
   if Self.FConfig <> nil then begin
     FreeMem(Self.FConfig);
     Self.FConfig := nil;
@@ -385,6 +389,30 @@ begin
   SetQueryBit(qbSidType);
 end;
 
+function TOsServiceEntry.GetRequiredPrivileges: TArray<string>;
+var tmp: LPSERVICE_REQUIRED_PRIVILEGES_INFO;
+begin
+  if SetQueryBit(qbRequiredPrivileges) then begin
+    if QueryConfig2(SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO, PByte(tmp)) then begin
+      Self.FRequiredPrivileges := SplitNullSeparatedList(tmp.pmszRequiredPrivileges);
+      FreeMem(tmp);
+    end else
+      SetLength(Self.FRequiredPrivileges, 0);
+  end;
+  Result := Self.FRequiredPrivileges;
+end;
+
+procedure TOsServiceEntry.SetRequiredPrivileges(const AValue: TArray<string>);
+var tmp: LPSERVICE_REQUIRED_PRIVILEGES_INFO;
+  tmp_string: string;
+begin
+  tmp_string := JoinNullSeparatedList(AValue); //to keep it alive until function end
+  tmp.pmszRequiredPrivileges := PWideChar(tmp_string);
+  Self.ChangeConfig2(SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO, @tmp);
+  Self.FRequiredPrivileges := AValue;
+  SetQueryBit(qbRequiredPrivileges);
+end;
+
 
 function TOsServiceEntry.GetTriggers: PSERVICE_TRIGGER_INFO;
 begin
@@ -411,6 +439,35 @@ begin
   end;
 end;
 
+
+function TOsServiceEntry.GetFailureActions: LPSERVICE_FAILURE_ACTIONS;
+var tmp: LPSERVICE_FAILURE_ACTIONS;
+begin
+  if SetQueryBit(qbFailureActions) then begin
+    FreeFailureActions(); //in case the pointer is somehow present
+    if QueryConfig2(SERVICE_CONFIG_FAILURE_ACTIONS, PByte(tmp)) then begin
+      Self.FFailureActions := tmp;
+    end else
+      Self.FFailureActions := CreateEmptyFailureActions();
+  end;
+  Result := Self.FFailureActions;
+end;
+
+procedure TOsServiceEntry.SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS);
+begin
+  Self.ChangeConfig2(SERVICE_CONFIG_FAILURE_ACTIONS, AValue);
+  FreeFailureActions;
+  Self.FFailureActions := CopyFailureActions(AValue);
+  SetQueryBit(qbFailureActions);
+end;
+
+procedure TOsServiceEntry.FreeFailureActions;
+begin
+  if Self.FFailureActions <> nil then begin
+    FreeMem(Self.FFailureActions);
+    Self.FFailureActions := nil;
+  end;
+end;
 
 function TOsServiceEntry.GetFailureActionsOnNonCrashFailures: boolean;
 var tmp: LPSERVICE_FAILURE_ACTIONS_FLAG;

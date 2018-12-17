@@ -101,8 +101,9 @@ function OpenService2(hSC: SC_HANDLE; const AServiceName: string;
   dwServiceAccess: cardinal = SERVICE_ALL_ACCESS): IAutoService; overload;
 
 
-function ServiceExists(const AServiceName: string): boolean;
+{ Enumeration and status }
 
+function ServiceExists(const AServiceName: string): boolean;
 
 type
   PEnumServiceStatusProcessA = ^TEnumServiceStatusProcessA;
@@ -121,6 +122,8 @@ function EnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD;
 function ShEnumServicesStatusEx(hSC: SC_HANDLE; ServiceTypes, ServiceState: DWORD; GroupName: PChar;
   out Services: PEnumServiceStatusProcess; out ServicesReturned: cardinal): boolean;
 
+function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
+
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS; overload;
 function QueryServiceStatus(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS; overload;
 function QueryServiceStatus(const AServiceName: string): SERVICE_STATUS; overload;
@@ -128,6 +131,9 @@ function QueryServiceStatus(const AServiceName: string): SERVICE_STATUS; overloa
 function QueryServiceStatusProcess(hSvc: SC_HANDLE): SERVICE_STATUS_PROCESS; overload;
 function QueryServiceStatusProcess(hSC: SC_HANDLE; const AServiceName: string): SERVICE_STATUS_PROCESS; overload;
 function QueryServiceStatusProcess(const AServiceName: string): SERVICE_STATUS_PROCESS; overload;
+
+
+{ Basic configuration }
 
 //Result has to be freed
 function QueryServiceConfig(hSvc: SC_HANDLE): LPQUERY_SERVICE_CONFIG; overload;
@@ -140,20 +146,12 @@ function ChangeServiceConfig(hSC: SC_HANDLE; const AServiceName: string;
   const AConfig: QUERY_SERVICE_CONFIG; const lpdwTagId: PDword;
   const lpPassword: PWideChar): integer; overload;
 
-const
-  SERVICE_CONFIG_LAUNCH_PROTECTED = 12; //Since windows 8
+procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
+procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
+procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
 
-const
-  SERVICE_LAUNCH_PROTECTED_NONE = 0;
-  SERVICE_LAUNCH_PROTECTED_WINDOWS = 1;
-  SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT = 2;
-  SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT = 3;
 
-type
-  PSERVICE_LAUNCH_PROTECTED = ^SERVICE_LAUNCH_PROTECTED;
-  SERVICE_LAUNCH_PROTECTED = record
-    dwLaunchProtected: DWORD;
-  end;
+{ Additional service configuration  }
 
 //Result has to be freed
 function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; out lpData: PByte): integer; overload;
@@ -165,9 +163,12 @@ function ChangeServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; lpInfo: po
 function ChangeServiceConfig2(hSC: SC_HANDLE; const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer; overload;
 function ChangeServiceConfig2(const AServiceName: string; dwInfoLevel: cardinal; lpInfo: pointer): integer; overload;
 
+//Description
 function QueryServiceDescription(hSvc: SC_HANDLE): string; overload;
 function QueryServiceDescription(hSC: SC_HANDLE; const AServiceName: string): string; overload;
 
+
+{ Triggers }
 
 const // New triggers from WinSvc.h
   SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT                 = 6;
@@ -229,9 +230,14 @@ procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_T
 procedure DeleteServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of PSERVICE_TRIGGER); overload;
 procedure ChangeServiceTrigger(hSvc: SC_HANDLE; const OldTrigger: SERVICE_TRIGGER; const NewTrigger: SERVICE_TRIGGER); overload;
 
-function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED; overload;
-function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED; overload;
 
+{ Failure actions }
+
+function CreateEmptyFailureActions(): LPSERVICE_FAILURE_ACTIONS;
+function CopyFailureActions(const ASource: LPSERVICE_FAILURE_ACTIONS): LPSERVICE_FAILURE_ACTIONS;
+
+
+{ Service registry key }
 
 const
   sHkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
@@ -262,6 +268,8 @@ function QueryServiceServiceDllEx(const AServiceName: string): TServiceDllInform
 procedure ChangeServiceServiceDllEx(const AServiceName: string; const ADllInfo: TServiceDllInformation);
 
 
+{ Service control }
+
 procedure StartService(hSvc: SC_HANDLE); overload;
 procedure StartService(hSC: SC_HANDLE; const AServiceName: string); overload;
 procedure StartService(const AServiceName: string); overload;
@@ -281,17 +289,29 @@ function ContinueService(hSC: SC_HANDLE; const AServiceName: string): SERVICE_ST
 function ContinueService(const AServiceName: string): SERVICE_STATUS; overload;
 
 
-procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
-procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
-procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
+{ Launch protection }
 
+const
+  SERVICE_CONFIG_LAUNCH_PROTECTED = 12; //Since windows 8
+
+const
+  SERVICE_LAUNCH_PROTECTED_NONE = 0;
+  SERVICE_LAUNCH_PROTECTED_WINDOWS = 1;
+  SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT = 2;
+  SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT = 3;
+
+type
+  PSERVICE_LAUNCH_PROTECTED = ^SERVICE_LAUNCH_PROTECTED;
+  SERVICE_LAUNCH_PROTECTED = record
+    dwLaunchProtected: DWORD;
+  end;
+
+function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED; overload;
+function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED; overload;
 procedure ChangeServiceLaunchProtected(hSvc: SC_HANDLE; dwLaunchProtection: DWORD); overload;
 procedure ChangeServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string; dwLaunchProtection: DWORD); overload;
 procedure ChangeServiceLaunchProtected(const AServiceName: string; dwLaunchProtection: DWORD); overload;
-
 procedure OverwriteServiceLaunchProtection(const AServiceName: string; dwLaunchProtection: DWORD);
-
-function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
 
 
 implementation
@@ -510,6 +530,28 @@ begin
   end;
 end;
 
+//Returns the list of services dependent on a given service. The list has to be freed.
+function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
+var bytesNeeded: cardinal;
+begin
+  Result := nil;
+  bytesNeeded := 0;
+
+  if WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, 0, bytesNeeded, ServiceCount) then begin
+    Result := nil;
+    exit;
+  end;
+
+  if GetLastError <> ERROR_MORE_DATA then
+    RaiseLastOsError();
+
+  GetMem(Result, bytesNeeded);
+  if not WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, bytesNeeded, bytesNeeded, ServiceCount) then
+   //We could've adjusted again but risk going into an endless loop
+    RaiseLastOsError();
+end;
+
+
 
 function QueryServiceStatus(hSvc: SC_HANDLE): SERVICE_STATUS;
 begin
@@ -634,6 +676,37 @@ begin
     Result := ChangeServiceConfig(hSvc, AConfig, lpdwTagId, lpPassword);
   finally
     CloseServiceHandle(hSvc);
+  end;
+end;
+
+
+procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
+begin
+  if not WinSvc.ChangeServiceConfig(hSvc, SERVICE_NO_CHANGE, dwStartType,
+    SERVICE_NO_CHANGE, nil, nil, nil, nil, nil, nil, nil) then
+    RaiseLastOsError();
+end;
+
+procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
+var hSvc: SC_HANDLE;
+begin
+  hSvc := OpenService(hSC, AServiceName, SERVICE_CHANGE_CONFIG);
+  if hSvc = 0 then RaiseLastOsError() else
+  try
+    ChangeServiceStartType(hSvc, dwStartType);
+  finally
+    CloseServiceHandle(hSvc);
+  end;
+end;
+
+procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
+var hSC: SC_HANDLE;
+begin
+  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
+  try
+    ChangeServiceStartType(hSC, AServiceName, dwStartType);
+  finally
+    CloseServiceHandle(hSC);
   end;
 end;
 
@@ -1096,16 +1169,70 @@ begin
 end;
 
 
-function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED;
+{ Failure actions }
+{
+A SERVICE_FAILURE_ACTIONS structure is a memory block with additional SC_ACTION
+structures after the end, then any strings the block references.
+SCM always uses 3 SC_ACTION slots and doesn't support more than 3 actions,
+so we try to always have at least 3.
+
+A LPSERVICE_FAILURE_ACTIONS allocated in our app has to be freed with a call
+to FreeMem;
+}
+
+//Allocates new SERVICE_FAILURE_ACTIONS structure with 3 standard action slots
+//and no actions.
+//The result has to be freed.
+function CreateEmptyFailureActions(): LPSERVICE_FAILURE_ACTIONS;
 begin
-  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED));
+  GetMem(Result, SizeOf(Result) + 3*SizeOf(SC_ACTION));
+  Result.dwResetPeriod := 0;
+  Result.lpRebootMsg := nil;
+  Result.lpCommand := nil;
+  Result.cActions := 0;
+  Result.lpsaActions := LPSC_ACTION(Result+1);
 end;
 
-function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED;
+function CopyFailureActions(const ASource: LPSERVICE_FAILURE_ACTIONS): LPSERVICE_FAILURE_ACTIONS;
+var LSlotCount: integer;
+  LTotalMem: NativeUInt;
+  i: integer;
+  ptr: PByte;
 begin
-  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_LAUNCH_PROTECTED));
+  //Allocate 3 slots, but more if somehow needed
+  LSlotCount := ASource.cActions;
+  if LSlotCount < 3 then
+    LSlotCount := 3;
+  LTotalMem := SizeOf(Result^) + LSlotCount*SizeOf(SC_ACTION)
+    + (StrLen(ASource.lpRebootMsg)+1)*SizeOf(Char)
+    + (StrLen(ASource.lpCommand)+1)*SizeOf(Char);
+  Result.dwResetPeriod := 0;
+  Result.cActions := ASource.cActions;
+  Result.lpsaActions := LPSC_ACTION(Result+1);
+  for i := 1 to Result.cActions do begin
+    Result.lpsaActions[i-1] := ASource.lpsaActions[i-1];
+  end;
+  ptr := PByte(Result+1)+SizeOf(SC_ACTION)*Result.cActions;
+  if ASource.lpRebootMsg = nil then
+    Result.lpRebootMsg := nil
+  else begin
+    i := StrLen(ASource.lpRebootMsg);
+    Result.lpRebootMsg := PChar(ptr);
+    StrLCopy(Result.lpRebootMsg, ASource.lpRebootMsg, i); //adds +1 term null
+    Inc(ptr, (i+1)*SizeOf(char));
+  end;
+  if ASource.lpCommand = nil then
+    Result.lpCommand := nil
+  else begin
+    i := StrLen(ASource.lpCommand);
+    Result.lpCommand := PChar(ptr);
+    StrLCopy(Result.lpCommand, ASource.lpCommand, i); //adds +1 term null
+    Inc(ptr, (i+1)*SizeOf(char));
+  end;
 end;
 
+
+{ Service registry key }
 
 function GetServiceKey(const AServiceName: string): string;
 begin
@@ -1395,34 +1522,16 @@ begin
 end;
 
 
-procedure ChangeServiceStartType(hSvc: SC_HANDLE; dwStartType: DWORD); overload;
+{ Launch protection }
+
+function QueryServiceLaunchProtected(hSvc: SC_HANDLE): PSERVICE_LAUNCH_PROTECTED;
 begin
-  if not WinSvc.ChangeServiceConfig(hSvc, SERVICE_NO_CHANGE, dwStartType,
-    SERVICE_NO_CHANGE, nil, nil, nil, nil, nil, nil, nil) then
-    RaiseLastOsError();
+  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSvc, SERVICE_CONFIG_LAUNCH_PROTECTED));
 end;
 
-procedure ChangeServiceStartType(hSC: SC_HANDLE; const AServiceName: string; dwStartType: DWORD); overload;
-var hSvc: SC_HANDLE;
+function QueryServiceLaunchProtected(hSC: SC_HANDLE; const AServiceName: string): PSERVICE_LAUNCH_PROTECTED;
 begin
-  hSvc := OpenService(hSC, AServiceName, SERVICE_CHANGE_CONFIG);
-  if hSvc = 0 then RaiseLastOsError() else
-  try
-    ChangeServiceStartType(hSvc, dwStartType);
-  finally
-    CloseServiceHandle(hSvc);
-  end;
-end;
-
-procedure ChangeServiceStartType(const AServiceName: string; dwStartType: DWORD); overload;
-var hSC: SC_HANDLE;
-begin
-  hSC := OpenSCManager(SC_MANAGER_ALL_ACCESS);
-  try
-    ChangeServiceStartType(hSC, AServiceName, dwStartType);
-  finally
-    CloseServiceHandle(hSC);
-  end;
+  Result := PSERVICE_LAUNCH_PROTECTED(QueryServiceConfig2(hSC, AServiceName, SERVICE_CONFIG_LAUNCH_PROTECTED));
 end;
 
 procedure ChangeServiceLaunchProtected(hSvc: SC_HANDLE; dwLaunchProtection: DWORD);
@@ -1480,31 +1589,6 @@ begin
     RegCloseKey(hk);
   end;
 end;
-
-
-//Returns the list of services dependent on a given service. The list has to be freed.
-function EnumDependentServices(hSvc: SC_HANDLE; dwServiceState: DWORD; out ServiceCount: cardinal): LPENUM_SERVICE_STATUS;
-var bytesNeeded: cardinal;
-begin
-  Result := nil;
-  bytesNeeded := 0;
-
-  if WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, 0, bytesNeeded, ServiceCount) then begin
-    Result := nil;
-    exit;
-  end;
-
-  if GetLastError <> ERROR_MORE_DATA then
-    RaiseLastOsError();
-
-  GetMem(Result, bytesNeeded);
-  if not WinSvc.EnumDependentServices(hSvc, dwServiceState, Result^, bytesNeeded, bytesNeeded, ServiceCount) then
-   //We could've adjusted again but risk going into an endless loop
-    RaiseLastOsError();
-end;
-
-
-
 
 
 end.

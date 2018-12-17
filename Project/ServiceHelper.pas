@@ -259,6 +259,7 @@ type
 //the DLL to load.
 function QueryServiceServiceDll(const AServiceName: string): string; overload; inline;
 function QueryServiceServiceDllEx(const AServiceName: string): TServiceDllInformation; overload;
+procedure ChangeServiceServiceDllEx(const AServiceName: string; const ADllInfo: TServiceDllInformation);
 
 
 procedure StartService(hSvc: SC_HANDLE); overload;
@@ -640,14 +641,13 @@ end;
 //This version returns the error code and leaves error raising to clients
 function QueryServiceConfig2(hSvc: SC_HANDLE; dwInfoLevel: cardinal; out lpData: PByte): integer;
 var lastSize, bufSize: cardinal;
-  err: integer;
 begin
   bufSize := 0;
   lastSize := 0;
   lpData := nil;
   while not WinSvc.QueryServiceConfig2(hSvc, dwInfoLevel, lpData, lastSize, @bufSize) do begin
     Result := GetLastError();
-    case err of
+    case Result of
       ERROR_INSUFFICIENT_BUFFER: begin
         if bufSize <= lastSize then //avoid infinite cycle
           exit; //with this error
@@ -1158,12 +1158,21 @@ begin
   end;
 end;
 
+function RegSetValueSz(hKey: HKEY; ValueName: string; Value: string): cardinal; inline;
+begin
+  Result := RegSetValueEx(hkey, PChar(ValueName), 0, REG_SZ, PChar(Value), SizeOf(char)*(Length(Value)+1));
+end;
+
+function RegSetValueExpandSz(hKey: HKEY; ValueName: string; Value: string): cardinal; inline;
+begin
+  Result := RegSetValueEx(hkey, PChar(ValueName), 0, REG_EXPAND_SZ, PChar(Value), SizeOf(char)*(Length(Value)+1));
+end;
+
 function RegQueryValueDword(hKey: HKEY; ValueName: string; out Value: dword): cardinal;
 var sz: cardinal;
   valType: cardinal;
 begin
   sz := SizeOf(Value);
-
   Result := RegQueryValueEx(hKey, PChar(ValueName), nil, @valType, @Value, @sz);
   if Result = 0 then begin
     if valType <> REG_DWORD then
@@ -1171,6 +1180,17 @@ begin
   end;
 end;
 
+function RegSetValueDword(hKey: HKEY; ValueName: string; Value: dword): cardinal; inline;
+begin
+  Result := RegSetValueEx(hkey, PChar(ValueName), 0, REG_DWORD, PChar(@Value), SizeOf(dword));
+end;
+
+
+const
+  sRegParameters = 'Parameters';
+  sRegServiceDll = 'ServiceDll';
+  sRegServiceDllUnloadOnStop = 'ServiceDllUnloadOnStop';
+  sRegServiceMain = 'ServiceMain';
 
 function QueryServiceServiceDll(const AServiceName: string): string;
 begin
@@ -1183,16 +1203,16 @@ begin
   Result.ServiceDll := '';
   Result.ServiceDllUnloadOnStop := false;
   Result.ServiceMain := '';
-  if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)+'\Parameters'),
+  if RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)+'\'+sRegParameters),
     0, KEY_QUERY_VALUE, hk) <> 0
   then
     exit;
   try
-    if RegQueryValueSz(hk, 'ServiceDll', Result.ServiceDll) <> 0 then
+    if RegQueryValueSz(hk, sRegServiceDll, Result.ServiceDll) <> 0 then
       Result.ServiceDll := '';
-    if RegQueryValueDword(hk, 'ServiceDllUnloadOnStop', PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
+    if RegQueryValueDword(hk, sRegServiceDllUnloadOnStop, PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
       Result.ServiceDllUnloadOnStop := false;
-    if RegQueryValueSz(hk, 'ServiceMain', Result.ServiceMain) <> 0 then
+    if RegQueryValueSz(hk, sRegServiceMain, Result.ServiceMain) <> 0 then
       Result.ServiceMain := '';
 
     //Fallback: these parameters can also be in the root key of the service
@@ -1203,13 +1223,63 @@ begin
         0, KEY_QUERY_VALUE, hk) <> 0
       then
         exit;
-      if RegQueryValueSz(hk, 'ServiceDll', Result.ServiceDll) <> 0 then
+      if RegQueryValueSz(hk, sRegServiceDll, Result.ServiceDll) <> 0 then
         Result.ServiceDll := '';
-      if RegQueryValueDword(hk, 'ServiceDllUnloadOnStop', PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
+      if RegQueryValueDword(hk, sRegServiceDllUnloadOnStop, PDword(@Result.ServiceDllUnloadOnStop)^) <> 0 then
         Result.ServiceDllUnloadOnStop := false;
-      if RegQueryValueSz(hk, 'ServiceMain', Result.ServiceMain) <> 0 then
+      if RegQueryValueSz(hk, sRegServiceMain, Result.ServiceMain) <> 0 then
         Result.ServiceMain := '';
     end;
+  finally
+    RegCloseKey(hk);
+  end;
+end;
+
+procedure ChangeServiceServiceDllEx(const AServiceName: string; const ADllInfo: TServiceDllInformation);
+var hk: HKEY;
+  err: integer;
+begin
+  CheckOSError(
+    RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)+'\'+sRegParameters),
+    0, KEY_QUERY_VALUE, hk));
+  try
+    if ADllInfo.ServiceDll <> '' then
+      CheckOsError(RegSetValueExpandSz(hk, sRegServiceDll, ADllInfo.ServiceDll))
+    else
+      CheckOsError(RegDeleteValue(hk, PChar(sRegServiceDll)));
+    CheckOsError(RegSetValueDword(hk, sRegServiceDllUnloadOnStop, dword(ADllInfo.ServiceDllUnloadOnStop)));
+    if ADllInfo.ServiceMain <> '' then
+      CheckOsError(RegSetValueSz(hk, sRegServiceMain, ADllInfo.ServiceMain))
+    else
+      CheckOsError(RegDeleteValue(hk, PChar(sRegServiceMain)));
+
+    {
+    Fallback: What do we do if there are compatibility keys in the top level key?
+    1. Delete them and only use the main ones.
+       Pros: Clear strategy.
+       Cons: Someone may rely on them. Deleting them requires additional privileges.
+    2. Update them to match the main ones.
+       Cons: Never saw these params set in BOTH places. Will this work?
+    3. Only update in the place where they are already present.
+       But what if different params are present at different places?
+       What if some params are present at both?
+    I'm going to do it the simplest now (1), but maybe 3 is better.
+    }
+
+    RegCloseKey(hk);
+    hk := HKEY_LOCAL_MACHINE; //so that accidental Close() does nothing
+    CheckOsError(RegOpenKeyEx(HKEY_LOCAL_MACHINE, PChar(GetServiceKey(AServiceName)),
+      0, KEY_QUERY_VALUE, hk));
+
+    err := RegDeleteValue(hk, PChar(sRegServiceDll));
+    if (err <> 0) and (err <> ERROR_FILE_NOT_FOUND) then
+      RaiseLastOsError(err);
+    err := RegDeleteValue(hk, PChar(sRegServiceDllUnloadOnStop));
+    if (err <> 0) and (err <> ERROR_FILE_NOT_FOUND) then
+      RaiseLastOsError(err);
+    err := RegDeleteValue(hk, PChar(sRegServiceMain));
+    if (err <> 0) and (err <> ERROR_FILE_NOT_FOUND) then
+      RaiseLastOsError(err);
   finally
     RegCloseKey(hk);
   end;

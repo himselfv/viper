@@ -45,7 +45,6 @@ type
     FImageInformation: TServiceImageInformation;
     function GetHandle: SC_HANDLE; inline;
     function GetConfig: LPQUERY_SERVICE_CONFIG; override;
-    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
     procedure FreeConfig;
     function GetRawDescription: string; override;
     procedure SetRawDescription(const AValue: string); override;
@@ -57,6 +56,7 @@ type
     constructor CreateFromEnum(const S: PEnumServiceStatusProcess);
     destructor Destroy; override;
     procedure Invalidate; override;
+    procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
     property Handle: SC_HANDLE read GetHandle;
     property Description: string read GetDescription;
     property Config: LPQUERY_SERVICE_CONFIG read GetConfig; //CAN be nil if not accessible to this user
@@ -88,8 +88,9 @@ type
   protected
     FTriggers: PSERVICE_TRIGGER_INFO;
     function GetTriggers: PSERVICE_TRIGGER_INFO; override;
-    procedure SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO); override;
     procedure FreeTriggers;
+  public
+    procedure SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO); override;
 
   //Additional properties
   protected
@@ -287,6 +288,22 @@ begin
   Result := FImageInformation;
 end;
 
+procedure TOsServiceEntry.SetImageInformation(const AValue: TServiceImageInformation);
+var ADllInfo: TServiceDllInformation;
+begin
+  inherited; //Writes ImagePath through Config and ignores the rest
+  //Writing is rare so we don't second-guess and just pass all the properties for writing
+  //TODO: NO! Writing requires priveleges. Avoid writing where possible.
+  //  But we need to check whether the params are any different because otherwise
+  //  we need to delete those keys.
+  ADllInfo.ServiceDll := AValue.ServiceDll;
+  ADllInfo.ServiceDllUnloadOnStop := AValue.ServiceDllUnloadOnStop;
+  ADllInfo.ServiceMain := AValue.ServiceMain;
+  ChangeServiceServiceDllEx(Self.ServiceName, ADllInfo);
+  Self.FImageInformation := AValue;
+  Self.SetQueryBit(qbImageInformation)
+end;
+
 function TOsServiceEntry.GetLaunchProtection: cardinal;
 var tmp: PSERVICE_LAUNCH_PROTECTED;
 begin
@@ -336,7 +353,6 @@ end;
 //Enables/disables delayed autostart; throws if it's not supported
 procedure TOsServiceEntry.SetDelayedAutostart(const AValue: boolean);
 var info: SERVICE_DELAYED_AUTO_START_INFO;
-  res: integer;
 begin
   //Any BOOL!=0 is supposed to be equal to TRUE, Delphi uses DWORD(-1),
   //but Win10 requires this to be exactly 1 or fails.
@@ -349,7 +365,6 @@ end;
 
 function TOsServiceEntry.GetSidType: dword;
 var tmp: LPSERVICE_SID_INFO;
-  err: integer;
 begin
   if SetQueryBit(qbSidType) then begin
     if QueryConfig2(SERVICE_CONFIG_SERVICE_SID_INFO, PByte(tmp)) then begin

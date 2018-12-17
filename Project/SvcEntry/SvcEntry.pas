@@ -86,9 +86,13 @@ type
     property Dependencies: TArray<string> read GetDependencies;
 
   //Start type
+  protected
+    procedure SetRawStartType(const AStartType: dword; AIsInteractiveProcess: boolean);
   public
     function GetStartType: dword; inline;
     procedure SetStartType(const AValue: dword); virtual;
+    function GetIsInteractiveProcess: boolean; inline;
+    procedure SetIsInteractiveProcess(const AValue: boolean);
     function GetDelayedAutostart: boolean; virtual;
     procedure SetDelayedAutostart(const AValue: boolean); virtual;
     function GetStartTypeEx: dword; inline;
@@ -267,6 +271,22 @@ begin
   NotImplemented;
 end;
 
+//Returns the QUERY_SERVICE_CONFIG structure with all fields set to "Don't change".
+//Useful for filling just one or two fields.
+function ServiceConfigNoChange: QUERY_SERVICE_CONFIG;
+begin
+  Result.dwServiceType := SERVICE_NO_CHANGE;
+  Result.dwStartType := SERVICE_NO_CHANGE;
+  Result.dwErrorControl := SERVICE_NO_CHANGE;
+  Result.lpBinaryPathName := nil;
+  Result.lpLoadOrderGroup := nil;
+  Result.dwTagId := SERVICE_NO_CHANGE;
+  Result.lpDependencies := nil;
+  Result.lpServiceStartName := nil;
+  Result.lpDisplayName := nil;
+end;
+
+
 function TServiceEntry.GetServiceType: dword;
 var LConfig: LPQUERY_SERVICE_CONFIG;
 begin
@@ -277,12 +297,10 @@ begin
     Result := SERVICE_WIN32; //default type
 end;
 
-
 {
 Raw display name and description do not substitute @dllname,index type resource
 references.
 }
-
 function TServiceEntry.GetRawDisplayName: string;
 var LConfig: LPQUERY_SERVICE_CONFIG;
 begin
@@ -295,9 +313,11 @@ end;
 
 //Sets service display name.
 procedure TServiceEntry.SetRawDisplayName(const AValue: string);
+var LConfig: QUERY_SERVICE_CONFIG;
 begin
-  //Can be implemented via SetConfig but we are lazy.
-  NotImplemented;
+  LConfig := ServiceConfigNoChange;
+  LConfig.lpDisplayName := PChar(AValue);
+  SetConfig(LConfig, nil);
 end;
 
 function TServiceEntry.GetRawDescription: string;
@@ -363,9 +383,11 @@ begin
 end;
 
 procedure TServiceEntry.SetDependencyList(const AValue: string);
+var LConfig: QUERY_SERVICE_CONFIG;
 begin
-  //Can be implemeneted via SetConfig
-  NotImplemented;
+  LConfig := ServiceConfigNoChange;
+  LConfig.lpDependencies := PChar(AValue);
+  SetConfig(LConfig, nil);
   Self.FQueryFlags := Self.FQueryFlags - [qfDependencies]; //don't forget
 end;
 
@@ -466,9 +488,13 @@ begin
 end;
 
 procedure TServiceEntry.SetImageInformation(const AValue: TServiceImageInformation);
+var LConfig: QUERY_SERVICE_CONFIG;
 begin
   //ImagePath can be set via Config
-  NotImplemented;
+  LConfig := ServiceConfigNoChange;
+  LConfig.lpBinaryPathName := PChar(AValue.ImagePath);
+  SetConfig(LConfig, nil);
+  //The rest we cannot handle without descendants
 end;
 
 function TServiceEntry.GetImageInformationCached: TServiceImageInformation;
@@ -542,10 +568,38 @@ begin
     Result := SERVICE_DEMAND_START; ///can't tell so assume default
 end;
 
+procedure TServiceEntry.SetRawStartType(const AStartType: dword; AIsInteractiveProcess: boolean);
+var LConfig: QUERY_SERVICE_CONFIG;
+begin
+  LConfig := ServiceConfigNoChange;
+  LConfig.dwStartType := AStartType;
+  if AIsInteractiveProcess then
+    LConfig.dwStartType := LConfig.dwStartType or SERVICE_INTERACTIVE_PROCESS;
+  SetConfig(LConfig, nil);
+end;
+
 //Sets the raw autostart value
 procedure TServiceEntry.SetStartType(const AValue: dword);
 begin
-  NotImplemented;
+  //Have to preserve the existing INTERACTIVE_PROCESS flag
+  SetRawStartType(AValue, Self.GetIsInteractiveProcess);
+end;
+
+function TServiceEntry.GetIsInteractiveProcess: boolean;
+var LConfig: LPQUERY_SERVICE_CONFIG;
+begin
+  //SERVICE_INTERACTIVE_PROCESS flag is stored together with StartType
+  LConfig := Config;
+  if LConfig <> nil then
+    Result := (LConfig.dwStartType and SERVICE_INTERACTIVE_PROCESS) <> 0
+  else
+    Result := false;
+end;
+
+procedure TServiceEntry.SetIsInteractiveProcess(const AValue: boolean);
+begin
+  //Have to preserve the existing StartType
+  SetRawStartType(Self.GetStartType, AValue);
 end;
 
 function TServiceEntry.GetDelayedAutostart: boolean;

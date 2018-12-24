@@ -8,6 +8,7 @@ function ExpandEnvironmentStrings(const AString: string): string;
 function SplitNullSeparatedList(AList: PChar): TArray<string>;
 function JoinNullSeparatedList(const AList: TArray<string>): string;
 procedure CopyNullSeparatedList(const AList: PChar; out ACopy: string); overload;
+function CopyNullSeparatedList(const AList: PChar): string; overload; inline;
 
 
 implementation
@@ -72,5 +73,12 @@ begin
   SetLength(ACopy, NativeUInt(ptr)-NativeUint(AList));
   Move(AList^, ACopy[1], SizeOf(char)*Length(ACopy));
 end;
+
+function CopyNullSeparatedList(const AList: PChar): string;
+begin
+  Result := '';
+  CopyNullSeparatedList(AList, Result);
+end;
+
 
 end.

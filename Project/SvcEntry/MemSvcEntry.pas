@@ -24,7 +24,18 @@ type
     function GetConfig: LPQUERY_SERVICE_CONFIG; override;
     function GetRawDescription: string; override;
     procedure SetRawDescription(const AValue: string); override;
+    procedure SetCBinaryPathName(const AValue: string); inline;
+    procedure SetCLoadOrderGroup(const AValue: string); inline;
+    procedure SetCDependencies(const AValue: string); inline;
+    procedure SetCServiceStartName(const AValue: string); inline;
+    procedure SetCDisplayName(const AValue: string); inline;
   public
+    //These properly set the stored strings, updating the Config structure
+    property CBinaryPathName: string write SetCBinaryPathName;
+    property CLoadOrderGroup: string write SetCLoadOrderGroup;
+    property CDependencies: string write SetCDependencies;
+    property CServiceStartName: string write SetCServiceStartName;
+    property CDisplayName: string write SetCDisplayName;
     procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
 
   public
@@ -117,29 +128,20 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/nf-winsvc-changeserv
     Self.FConfig.dwStartType := AValue.dwStartType;
   if AValue.dwErrorControl <> SERVICE_NO_CHANGE then
     Self.FConfig.dwErrorControl := AValue.dwErrorControl;
-  if AValue.lpBinaryPathName <> nil then begin
-    Self.FBinaryPathName := AValue.lpBinaryPathName;
-    Self.FConfig.lpBinaryPathName := PWideChar(Self.FBinaryPathName);
-  end;
-  if AValue.lpLoadOrderGroup <> nil then begin
-    Self.FLoadOrderGroup := AValue.lpLoadOrderGroup;
-    Self.FConfig.lpLoadOrderGroup := PWideChar(Self.FLoadOrderGroup);
-  end;
+  if AValue.lpBinaryPathName <> nil then
+    Self.CBinaryPathName := AValue.lpBinaryPathName;
+  if AValue.lpLoadOrderGroup <> nil then
+    Self.CLoadOrderGroup := AValue.lpLoadOrderGroup;
   //AValue.dwTagId: Ignore dwTagId.
   if AValue.lpDependencies <> nil then begin
     //We need a string-typed copy but simply assining will copy until first #00
-    CopyNullSeparatedList(AValue.lpDependencies, Self.FDependencies);
-    Self.FConfig.lpDependencies := PWideChar(Self.FDependencies);
+    Self.CDependencies :=  CopyNullSeparatedList(AValue.lpDependencies);
   end;
-  if AValue.lpServiceStartName <> nil then begin
-    Self.FServiceStartName := AValue.lpServiceStartName;
-    Self.FConfig.lpServiceStartName := PWideChar(Self.FServiceStartName);
-  end;
+  if AValue.lpServiceStartName <> nil then
+    Self.CDisplayName := AValue.lpServiceStartName;
   //APassword: Ignore the password.
-  if AValue.lpDisplayName <> nil then begin
-    Self.FDisplayName := AValue.lpDisplayName;
-    Self.FConfig.lpDisplayName := PWideChar(Self.FDisplayName);
-  end;
+  if AValue.lpDisplayName <> nil then
+    Self.CDisplayName := AValue.lpDisplayName;
 end;
 
 function TMemServiceEntry.GetRawDescription: string;
@@ -150,6 +152,39 @@ end;
 procedure TMemServiceEntry.SetRawDescription(const AValue: string);
 begin
   FDescription := AValue;
+end;
+
+{ The following functions set the member fields of AConfig while storing the
+ data locally }
+
+procedure TMemServiceEntry.SetCBinaryPathName(const AValue: string);
+begin
+  Self.FBinaryPathName := AValue;
+  Self.FConfig.lpBinaryPathName := PWideChar(Self.FBinaryPathName);
+end;
+
+procedure TMemServiceEntry.SetCLoadOrderGroup(const AValue: string);
+begin
+  Self.FLoadOrderGroup := AValue;
+  Self.FConfig.lpLoadOrderGroup := PWideChar(Self.FLoadOrderGroup);
+end;
+
+procedure TMemServiceEntry.SetCDependencies(const AValue: string);
+begin
+  Self.FDependencies := AValue;
+  Self.FConfig.lpDependencies := PWideChar(Self.FDependencies);
+end;
+
+procedure TMemServiceEntry.SetCServiceStartName(const AValue: string);
+begin
+  Self.FServiceStartName := AValue;
+  Self.FConfig.lpServiceStartName := PWideChar(Self.FServiceStartName);
+end;
+
+procedure TMemServiceEntry.SetCDisplayName(const AValue: string);
+begin
+  Self.FDisplayName := AValue;
+  Self.FConfig.lpDisplayName := PWideChar(Self.FDisplayName);
 end;
 
 function TMemServiceEntry.GetDelayedAutostart: boolean;

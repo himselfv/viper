@@ -295,14 +295,14 @@ begin
 
   i_pos := pos('\', KeyPath);
   if i_pos <= 0 then begin
-    Result := false;
-    exit;
+    ServiceName := KeyPath;
+    Subkey := '';
+  end else begin
+    ServiceName := Copy(KeyPath, 1, i_pos-1);
+    Delete(KeyPath, 1, i_pos); //with the "\"
+    Subkey := KeyPath;
   end;
 
-  ServiceName := Copy(KeyPath, 1, i_pos-1);
-  Delete(KeyPath, 1, i_pos); //with the "\"
-
-  Subkey := KeyPath;
   Result := true;
 end;
 

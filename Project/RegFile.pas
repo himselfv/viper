@@ -47,14 +47,35 @@ type
         REG_MULTI_SZ
         REG_QWORD:  hex string
     }
-    //Use these setters
-    procedure SetDwordValue(const val: dword); inline;
-    procedure SetStringValue(const val: string); inline;
-    procedure SetOtherValue(const pb: PByte; cb: cardinal); inline;
-    property AsDword: dword write SetDwordValue;
-    property AsString: string write SetStringValue;
+    //Set the Data in the respective format, ignoring the DataType
+    function GetDwordData: dword; inline;
+    function GetStringData: string; inline;
+    function GetOtherData: TBytes; inline;
+    procedure SetDwordData(const val: dword); inline;
+    procedure SetStringData(const val: string); inline;
+    procedure SetOtherData(const pb: PByte; cb: cardinal); inline;
+    property DataAsDword: dword read GetDwordData write SetDwordData;
+    property DataAsString: string read GetStringData write SetStringData;
+
+    //Sets the DataType and the Data // verifies the DataType and retrieves the Data
+    procedure AssertType(const ADataType: integer); inline;
+    function GetDwordValue: dword; inline;
+    function GetStringValue: string; inline;
+    function GetExpandStrValue: string; inline;
+    function GetMultiStrValue: TArray<string>; inline;
+    procedure SetDwordValue(const AValue: dword); inline;
+    procedure SetStringValue(const AValue: string); inline;
+    procedure SetExpandStrValue(const AValue: string); inline;
+    procedure SetMultiStrValue(const AValue: TArray<string>); inline;
+    property DwordValue: dword read GetDwordValue write SetDwordValue;
+    property StringValue: string read GetStringValue write SetStringValue;
+    property ExpandStrValue: string read GetExpandStrValue write SetExpandStrValue;
+    property MultiStrValue: TArray<string> read GetMultiStrValue write SetMultiStrValue;
+
+    //Convert the Data to the given format
     //Read any data as TBytes
     function GetAsBytes: TBytes;
+
     //Export
     function ExportToString: string;
   end;
@@ -64,7 +85,7 @@ type
     Delete: boolean;
     Entries: TArray<TRegFileEntry>;
     procedure Clear;
-    procedure AddValueEntry(const Entry: TRegFileEntry);
+    procedure AddEntry(const Entry: TRegFileEntry);
     //Shortcuts
     procedure AddStringValue(const Name: string; DataType: integer; const Data: string);
     procedure AddDwordValue(const Name: string; DataType: integer; const Data: dword);
@@ -73,6 +94,7 @@ type
     procedure ExportToStrings(sl: TStrings);
     function ExportToString: string;
   end;
+  PRegFileKey = ^TRegFileKey;
 
   TRegFile = class(TList<TRegFileKey>)
   protected
@@ -88,6 +110,8 @@ type
 
   ERegFileFormatError = class(Exception);
 
+resourcestring
+  eInvalidEntryDataType = 'Invalid REG entry data type';
 
 //Convert binary data to hex string and back
 function RegBinToHex(pb: PByte; cb: cardinal): AnsiString;
@@ -124,7 +148,7 @@ procedure GetAbsoluteKeyPath(const KeyPath: string; out AbsolutePath: string; ou
 
 
 implementation
-uses UniStrUtils;
+uses UniStrUtils, WinApiHelper;
 {
 Short registry format description.
 Overall format:
@@ -244,23 +268,134 @@ begin
   end;
 end;
 
+
+{ Gets or sets the Data in the respective format. Does not verify the DataType.
+ Throws if the interpretation is impossible. }
+
+function TRegFileEntry.GetDwordData: dword;
+begin
+  Result := StrToInt('$'+Self.Data);
+end;
+
+function TRegFileEntry.GetStringData: string;
+begin
+  Result := Self.Data;
+end;
+
+function TRegFileEntry.GetOtherData: TBytes;
+begin
+  Result := RegHexToBin(AnsiString(Self.Data));
+end;
+
 //Sets TRegFileEntry value in dword format
-procedure TRegFileEntry.SetDwordValue(const val: dword);
+procedure TRegFileEntry.SetDwordData(const val: dword);
 begin
   Self.Data := IntToHex(val, 8);
 end;
 
-procedure TRegFileEntry.SetStringValue(const val: string);
+procedure TRegFileEntry.SetStringData(const val: string);
 begin
   //Do not escape the string here, we'll do it on writing
   Self.Data := val;
 end;
 
-procedure TRegFileEntry.SetOtherValue(const pb: PByte; cb: cardinal);
+procedure TRegFileEntry.SetOtherData(const pb: PByte; cb: cardinal);
 begin
   //All the other values are simply presented as hex
   Self.Data := string(RegBinToHex(pb, cb));
 end;
+
+{ Sets the DataType and the Data // verifies the DataType and retrieves the Data }
+
+procedure TRegFileEntry.AssertType(const ADataType: integer);
+begin
+  if Self.DataType <> ADataType then
+    raise EConvertError.Create(eInvalidEntryDataType);
+end;
+
+function TRegFileEntry.GetDwordValue: dword;
+begin
+  AssertType(REG_DWORD);
+  Result := Self.DataAsDword;
+end;
+
+//Each of GetStringValue, GetExpandStrValue read both, but Set* sets the appropriate type.
+function TRegFileEntry.GetStringValue: string;
+var LData: TBytes;
+begin
+  case Self.DataType of
+    REG_SZ: Result := Self.DataAsString;
+    REG_EXPAND_SZ: begin
+      LData := Self.GetOtherData;
+      //Can't deal with half chars
+      if Length(LData) mod SizeOf(char) <> 0 then
+        SetLength(LData, Length(LData) - Length(LData) mod SizeOf(char));
+      //Empty string
+      if Length(LData) <= SizeOf(Char) then
+        Result := ''
+      else begin
+        //Add forced term null
+        SetLength(LData, Length(LData)+SizeOf(PChar)); //no half chars so ok
+        PChar(LData[Length(LData)-SizeOf(PChar)])^ := #00;
+        //convert
+        Result := PChar(@LData[0]);
+      end;
+    end
+
+  else
+    raise EConvertError.Create(eInvalidEntryDataType);
+  end;
+end;
+
+function TRegFileEntry.GetExpandStrValue: string;
+begin
+  Result := GetStringValue;
+end;
+
+function TRegFileEntry.GetMultiStrValue: TArray<string>;
+var LMerged: TBytes;
+begin
+  AssertType(REG_MULTI_SZ);
+  SetLength(Result, 0);
+  LMerged := Self.GetOtherData;
+  if Length(LMerged) <= SizeOf(Char) then exit; //empty
+
+  Result := SplitNullSeparatedList(PChar(@LMerged[1]));
+end;
+
+procedure TRegFileEntry.SetDwordValue(const AValue: dword);
+begin
+  Self.DataType := REG_DWORD;
+  Self.DataAsDword := AValue;
+end;
+
+procedure TRegFileEntry.SetStringValue(const AValue: string);
+begin
+  Self.DataType := REG_SZ;
+  Self.DataAsString := AValue;
+end;
+
+procedure TRegFileEntry.SetExpandStrValue(const AValue: string);
+begin
+  Self.DataType := REG_EXPAND_SZ;
+  Self.DataAsString := AValue;
+end;
+
+procedure TRegFileEntry.SetMultiStrValue(const AValue: TArray<string>);
+var LMerged: string;
+  i: integer;
+begin
+  Self.DataType := REG_MULTI_SZ;
+  SetLength(LMerged, 0);
+  for i := 0 to Length(AValue)-1 do
+    LMerged := LMerged + AValue[i] + #00;
+  //Final additional #00 is provided by the string
+  //But we have to have at least one base #00 + also avoid nil
+  if Length(LMerged) <= 0 then
+    LMerged := ''#00;
+  Self.SetOtherData(@LMerged[1], (Length(LMerged)+1)*SizeOf(Char));
+end;
+
 
 //Compiles the exported string that represents this name=value pair in the .reg file
 function TRegFileEntry.ExportToString: string;
@@ -293,7 +428,7 @@ begin
   SetLength(Self.Entries, 0);
 end;
 
-procedure TRegFileKey.AddValueEntry(const Entry: TRegFileEntry);
+procedure TRegFileKey.AddEntry(const Entry: TRegFileEntry);
 begin
   SetLength(Self.Entries, Length(Self.Entries)+1);
   Self.Entries[Length(Self.Entries)-1] := Entry;
@@ -305,7 +440,7 @@ begin
   Entry.Name := Name;
   Entry.DataType := DataType;
   Entry.SetStringValue(Data);
-  Self.AddValueEntry(Entry);
+  Self.AddEntry(Entry);
 end;
 
 procedure TRegFileKey.AddDwordValue(const Name: string; DataType: integer; const Data: dword);
@@ -314,7 +449,7 @@ begin
   Entry.Name := Name;
   Entry.DataType := DataType;
   Entry.SetDwordValue(Data);
-  Self.AddValueEntry(Entry);
+  Self.AddEntry(Entry);
 end;
 
 procedure TRegFileKey.AddOtherValue(const Name: string; DataType: integer; const Data: PByte; const Size: integer);
@@ -322,8 +457,8 @@ var Entry: TRegFileEntry;
 begin
   Entry.Name := Name;
   Entry.DataType := DataType;
-  Entry.SetOtherValue(Data, Size);
-  Self.AddValueEntry(Entry);
+  Entry.SetOtherData(Data, Size);
+  Self.AddEntry(Entry);
 end;
 
 //Appends the exported set of string that represents this section in the .reg file

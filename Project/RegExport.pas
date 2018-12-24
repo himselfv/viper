@@ -317,7 +317,7 @@ begin
       if self.FilterValue(ARegistry, Name) then
         continue;
       ValueEntry := Self.ExportValue(ARegistry, Name);
-      KeyEntry.AddValueEntry(ValueEntry);
+      KeyEntry.AddEntry(ValueEntry);
     end;
     Self.FRegFile.Add(KeyEntry);
 
@@ -355,12 +355,12 @@ begin
   //Read and convert the data depending on its type
   //Both the read method and the text representation might differ
   case Result.DataType of
-  REG_SZ:    Result.AsString := ARegistry.ReadString(AName);
-  REG_DWORD: Result.AsDword := ARegistry.ReadInteger(AName);
+  REG_SZ:    Result.DataAsString := ARegistry.ReadString(AName);
+  REG_DWORD: Result.DataAsDword := ARegistry.ReadInteger(AName);
   else //Everything else is stored as hex
     SetLength(Buf, ValueInfo.DataSize);
     ARegistry.GetData(AName, @Buf[0], ValueInfo.DataSize, ValueInfo.DataType);
-    Result.SetOtherValue(@Buf[0], ValueInfo.DataSize);
+    Result.SetOtherData(@Buf[0], ValueInfo.DataSize);
   end;
 end;
 

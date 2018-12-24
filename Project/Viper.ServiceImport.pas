@@ -56,7 +56,8 @@ const
 type
   TImportService = class(TMemServiceEntry)
   protected
-    FKeys: TList<TRegFileKey>;
+    FRootKey: TRegFileKey;
+    FKeys: TList<TRegFileKey>; //except for root
   public
     constructor Create;
     destructor Destroy; override;
@@ -93,7 +94,8 @@ type
   protected
     FFile: TRegFile;
     FServices: TImportServiceList;
-    procedure LoadServiceBasicInfo(AService: TImportService; AKey: TRegFileKey);
+    procedure ParseBasicEntry(AService: TImportService; AEntry: TRegFileEntry);
+    procedure ParseParametersEntry(AService: TImportService; AEntry: TRegFileEntry);
   public
     procedure LoadFromFile(const AFilename: string);
   end;
@@ -140,6 +142,7 @@ begin
   inherited;
 end;
 
+
 procedure TImportServiceList.ValueNotify(const Value: TImportService; Action: TCollectionNotification);
 begin
   case Action of
@@ -160,10 +163,12 @@ end;
 procedure TServiceImportForm.FormCreate(Sender: TObject);
 begin
   FFile := TRegFile.Create;
+  FServices := TImportServiceList.Create;
 end;
 
 procedure TServiceImportForm.FormDestroy(Sender: TObject);
 begin
+  FreeAndNil(FServices);
   FreeAndNil(FFile);
 end;
 
@@ -171,34 +176,6 @@ procedure TServiceImportForm.FormShow(Sender: TObject);
 begin
   pcPages.ActivePage := Self.tsServices;
 end;
-
-//Loads the registry export file
-procedure TServiceImportForm.LoadFromFile(const AFilename: string);
-var key: TRegFileKey;
-  ServiceName: string;
-  Subkey: string;
-  Service: TImportService;
-begin
-  FFile.LoadFromFile(AFilename);
-  FServices.Clear;
-
-  for key in FFile do begin
-    if key.Delete then
-      continue; //we don't support deletion commands here
-    ServiceName := '';
-    Subkey := '';
-    if not SplitServiceRegistryPath(key.Name, ServiceName, Subkey) then
-      continue;
-    Service := Self.FServices.Get(ServiceName);
-
-    if Subkey = '' then
-      LoadServiceBasicInfo(Service, key)
-    else
-      //All the other keys should be stored as is
-      Service.Keys.Add(key);
-  end;
-
-
 
 
 {
@@ -219,16 +196,105 @@ Next we have to analyze the file contents:
 
 We probably need some kind of "import service structure" with the flag set
 and everything.
+
+Rules of thumb for now:
+
+- Ignore keys and params "marked for deletion" - they don't contain anything useful
+
+- Likewise ignore params that we can't parse, but for starters we throw on that,
+  and then may catch and ignore.
+
 }
+
+//Loads the registry export file
+procedure TServiceImportForm.LoadFromFile(const AFilename: string);
+var key: TRegFileKey;
+  entry: TRegFileEntry;
+  ServiceName: string;
+  Subkey: string;
+  Service: TImportService;
+begin
+  FFile.LoadFromFile(AFilename);
+  FServices.Clear;
+
+  for key in FFile do begin
+    if key.Delete then
+      continue; //we don't support deletion commands here
+    ServiceName := '';
+    Subkey := '';
+    if not SplitServiceRegistryPath(key.Name, ServiceName, Subkey) then
+      continue;
+    Service := Self.FServices.Get(ServiceName);
+
+    if Subkey = '' then begin
+      for entry in key.Entries do
+        ParseBasicEntry(Service, entry);
+    end else
+    if Subkey = 'Parameters' then begin
+      for entry in key.Entries do
+        ParseParametersEntry(Service, entry);
+    end else
+      //All the other keys should be stored as is
+      Service.Keys.Add(key);
+  end;
+
+
+
+
 
 //  ReloadServices; //TODO
 end;
 
 //Parses the service top level key and extracts params we know how to handle.
-procedure TServiceImportForm.LoadServiceBasicInfo(AService: TImportService; AKey: TRegFileKey);
+procedure TServiceImportForm.ParseBasicEntry(AService: TImportService; AEntry: TRegFileEntry);
+begin
+  //QueryServiceConfig() parameters
+
+  if AEntry.Name = 'Type' then begin
+    AService.FConfig.dwServiceType := AEntry.DwordValue;
+  end else
+  if AEntry.Name = 'Start' then begin
+    AService.FConfig.dwStartType := AEntry.DwordValue;
+  end else
+  if AEntry.Name = 'ErrorControl' then begin
+    AService.FConfig.dwErrorControl := AEntry.DwordValue;
+  end else
+  if AEntry.Name = 'ImagePath' then begin
+    AService.CBinaryPathName := AEntry.StringValue;
+  end else
+  if AEntry.Name = 'Group' then begin
+    AService.CLoadOrderGroup := AEntry.StringValue;
+  end else
+  if AEntry.Name = 'Tag' then begin
+    AService.FConfig.dwTagId := AEntry.DwordValue;
+  end else
+  if AEntry.Name = 'DependOnService' then begin
+//    AService.FDependencies := AEntry.StringValue
+  //TODO
+  end else
+  if AEntry.Name = 'DependOnGroup' then begin
+  //TODO
+  end else
+  if AEntry.Name = 'ObjectName' then begin
+    AService.CServiceStartName := AEntry.StringValue;
+  end else
+  //TODO: What to do with Password? We need it to re-set the ObjectName read from the registry,
+  //but there's no Password in the registry.
+  //And we can only avoid passing it by also writing in the registry, so this possibility
+  //should be optional.
+  if AEntry.Name = 'DisplayName' then begin
+    AService.CDisplayName := AEntry.StringValue;
+  end else
+
+  //TODO: Other properties
+
+  //Add the rest as a root key to the service object
+  AService.FRootKey.AddEntry(AEntry);
+end;
+
+procedure TServiceImportForm.ParseParametersEntry(AService: TImportService; AEntry: TRegFileEntry);
 begin
 
- //TODO: Add the rest as a root key to the service object
 end;
 
 

@@ -1204,30 +1204,36 @@ begin
   if LSlotCount < 3 then
     LSlotCount := 3;
   LTotalMem := SizeOf(Result^) + LSlotCount*SizeOf(SC_ACTION)
-    + (StrLen(ASource.lpRebootMsg)+1)*SizeOf(Char)
-    + (StrLen(ASource.lpCommand)+1)*SizeOf(Char);
-  Result.dwResetPeriod := 0;
-  Result.cActions := ASource.cActions;
-  Result.lpsaActions := LPSC_ACTION(Result+1);
-  for i := 1 to Result.cActions do begin
-    Result.lpsaActions[i-1] := ASource.lpsaActions[i-1];
-  end;
-  ptr := PByte(Result+1)+SizeOf(SC_ACTION)*Result.cActions;
-  if ASource.lpRebootMsg = nil then
-    Result.lpRebootMsg := nil
-  else begin
-    i := StrLen(ASource.lpRebootMsg);
-    Result.lpRebootMsg := PChar(ptr);
-    StrLCopy(Result.lpRebootMsg, ASource.lpRebootMsg, i); //adds +1 term null
-    Inc(ptr, (i+1)*SizeOf(char));
-  end;
-  if ASource.lpCommand = nil then
-    Result.lpCommand := nil
-  else begin
-    i := StrLen(ASource.lpCommand);
-    Result.lpCommand := PChar(ptr);
-    StrLCopy(Result.lpCommand, ASource.lpCommand, i); //adds +1 term null
-    Inc(ptr, (i+1)*SizeOf(char));
+    + NativeUint(StrLen(ASource.lpRebootMsg)+1)*SizeOf(Char)
+    + NativeUint(StrLen(ASource.lpCommand)+1)*SizeOf(Char);
+  GetMem(Result, LTotalMem);
+  try
+    Result.dwResetPeriod := 0;
+    Result.cActions := ASource.cActions;
+    Result.lpsaActions := LPSC_ACTION(Result+1);
+    for i := 1 to Result.cActions do begin
+      Result.lpsaActions[i-1] := ASource.lpsaActions[i-1];
+    end;
+    ptr := PByte(Result+1)+SizeOf(SC_ACTION)*Result.cActions;
+    if ASource.lpRebootMsg = nil then
+      Result.lpRebootMsg := nil
+    else begin
+      i := StrLen(ASource.lpRebootMsg);
+      Result.lpRebootMsg := PChar(ptr);
+      StrLCopy(Result.lpRebootMsg, ASource.lpRebootMsg, i); //adds +1 term null
+      Inc(ptr, (i+1)*SizeOf(char));
+    end;
+    if ASource.lpCommand = nil then
+      Result.lpCommand := nil
+    else begin
+      i := StrLen(ASource.lpCommand);
+      Result.lpCommand := PChar(ptr);
+      StrLCopy(Result.lpCommand, ASource.lpCommand, i); //adds +1 term null
+      Inc(ptr, (i+1)*SizeOf(char));
+    end;
+  except
+    FreeMem(Result);
+    raise;
   end;
 end;
 

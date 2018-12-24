@@ -303,13 +303,13 @@ begin
   Delete(KeyPath, 1, i_pos); //with the "\"
 
   Subkey := KeyPath;
+  Result := true;
 end;
 
 //Tries to decode the trigger section name in the default format
 //Returns false on failure
 function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string;
   out Index: integer): boolean;
-var i_pos: integer;
 begin
   if not SplitServiceRegistryPath(SectionName, ServiceName, SectionName) then begin
     ServiceName := '';

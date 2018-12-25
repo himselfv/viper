@@ -25,6 +25,7 @@ uses
   SvcEntry in 'SvcEntry\SvcEntry.pas',
   OsSvcEntry in 'SvcEntry\OsSvcEntry.pas',
   MemSvcEntry in 'SvcEntry\MemSvcEntry.pas',
+  RegFileSvcEntry in 'SvcEntry\RegFileSvcEntry.pas',
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',

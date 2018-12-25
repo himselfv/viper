@@ -34,7 +34,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, ComCtrls, VirtualTrees, Generics.Collections,
-  WinSvc, RegFile, MemSvcEntry;
+  RegFile, RegFileSvcEntry;
 
 type
   //The list of all params which may or may not be available for the service
@@ -54,21 +54,7 @@ const
   RequiredServiceParams = [spImagePath];
 
 type
-  TImportService = class(TMemServiceEntry)
-  protected
-    FRootKey: TRegFileKey;
-    FKeys: TList<TRegFileKey>; //except for root
-  public
-    constructor Create;
-    destructor Destroy; override;
-    property Keys: TList<TRegFileKey> read FKeys;
-  end;
-  TImportServiceList = class(TDictionary<string, TImportService>)
-  protected
-    procedure ValueNotify(const Value: TImportService; Action: TCollectionNotification); override;
-  public
-    function Get(const AServiceName: string): TImportService;
-  end;
+  TImportServiceList = TRegFileServiceList;
 
   TServiceImportForm = class(TForm)
     pcPages: TPageControl;
@@ -94,8 +80,6 @@ type
   protected
     FFile: TRegFile;
     FServices: TImportServiceList;
-    procedure ParseBasicEntry(AService: TImportService; AEntry: TRegFileEntry);
-    procedure ParseParametersEntry(AService: TImportService; AEntry: TRegFileEntry);
   public
     procedure LoadFromFile(const AFilename: string);
   end;
@@ -123,40 +107,6 @@ begin
   finally
     FreeAndNil(Form);
   end;
-end;
-
-
-{
-Temporary storage for service information loaded from the reg file
-}
-
-constructor TImportService.Create;
-begin
-  inherited;
-  FKeys := TList<TRegFileKey>.Create;
-end;
-
-destructor TImportService.Destroy;
-begin
-  FreeAndNil(FKeys);
-  inherited;
-end;
-
-
-procedure TImportServiceList.ValueNotify(const Value: TImportService; Action: TCollectionNotification);
-begin
-  case Action of
-    cnRemoved: Value.Free;
-  end;
-end;
-
-function TImportServiceList.Get(const AServiceName: string): TImportService;
-begin
-  if Self.TryGetValue(AServiceName, Result) then
-    exit;
-  Result := TImportService.Create;
-  Result.ServiceName := AServiceName;
-  Self.Add(AServiceName, Result);
 end;
 
 
@@ -209,10 +159,9 @@ Rules of thumb for now:
 //Loads the registry export file
 procedure TServiceImportForm.LoadFromFile(const AFilename: string);
 var key: TRegFileKey;
-  entry: TRegFileEntry;
   ServiceName: string;
   Subkey: string;
-  Service: TImportService;
+  Service: TRegFileServiceEntry;
 begin
   FFile.LoadFromFile(AFilename);
   FServices.Clear;
@@ -224,109 +173,15 @@ begin
     Subkey := '';
     if not SplitServiceRegistryPath(key.Name, ServiceName, Subkey) then
       continue;
+
     Service := Self.FServices.Get(ServiceName);
 
-    if Subkey = '' then begin
-      for entry in key.Entries do
-        ParseBasicEntry(Service, entry);
-    end else
-    if Subkey = 'Parameters' then begin
-      for entry in key.Entries do
-        ParseParametersEntry(Service, entry);
-    end else
-      //All the other keys should be stored as is
-      Service.Keys.Add(key);
+
   end;
 
 
 //  ReloadServices; //TODO
 end;
-
-//Parses the service top level key and extracts params we know how to handle.
-procedure TServiceImportForm.ParseBasicEntry(AService: TImportService; AEntry: TRegFileEntry);
-var tmp_str: string;
-begin
-  //QueryServiceConfig() parameters
-
-  if AEntry.Name = 'Type' then begin
-    AService.FConfig.dwServiceType := AEntry.DwordValue;
-  end else
-  if AEntry.Name = 'Start' then begin
-    AService.FConfig.dwStartType := AEntry.DwordValue;
-  end else
-  if AEntry.Name = 'ErrorControl' then begin
-    AService.FConfig.dwErrorControl := AEntry.DwordValue;
-  end else
-  if AEntry.Name = 'ImagePath' then begin
-    AService.CBinaryPathName := AEntry.StringValue;
-  end else
-  if AEntry.Name = 'Group' then begin
-    AService.CLoadOrderGroup := AEntry.StringValue;
-  end else
-  if AEntry.Name = 'Tag' then begin
-    AService.FConfig.dwTagId := AEntry.DwordValue;
-  end else
-  if AEntry.Name = 'DependOnService' then begin
-    for tmp_str in AEntry.MultiStrValue do
-      AService.AddCDependency(tmp_str);
-  end else
-  if AEntry.Name = 'DependOnGroup' then begin
-    for tmp_str in AEntry.MultiStrValue do
-      AService.AddCDependency(SC_GROUP_IDENTIFIER+tmp_str);
-  end else
-  if AEntry.Name = 'ObjectName' then begin
-    AService.CServiceStartName := AEntry.StringValue;
-  end else
-  //TODO: What to do with TagId?
-  //TODO: What to do with Password? We need it to re-set the ObjectName read from the registry,
-  //but there's no Password in the registry.
-  //And we can only avoid passing it by also writing in the registry, so this possibility
-  //should be optional.
-  if AEntry.Name = 'DisplayName' then begin
-    AService.CDisplayName := AEntry.StringValue;
-  end else
-
-  //QueryServiceConfig2() / extended properties
-
-  if AEntry.Name = 'Description' then begin
-    AService.Description := AEntry.StringValue;
-  end else
-
-  //TODO: FailureActions
-
-  if AEntry.Name = 'FailureActionsOnNonCrashFailures' then begin
-    AService.FailureActionsOnNonCrashFailures := AEntry.DwordValue <> 0;
-  end else
-  if AEntry.Name = 'DelayedAutoStart' then begin
-    AService.DelayedAutostart := AEntry.DwordValue <> 0;
-  end else
-  if AEntry.Name = 'ServiceSidType' then begin
-    AService.SidType := AEntry.DwordValue;
-  end else
-  if AEntry.Name = 'RequiredPrivileges' then begin
-    AService.RequiredPrivileges := AEntry.MultiStrValue;
-  end else
-  if AEntry.Name = 'PreshutdownTimeout' then begin
-    AService.PreshutdownTimeout := AEntry.DwordValue;
-    //TODO: This entry NOT existing might have the active meaning that the timeout is not set.
-    //Though this may be true for other properties too.
-  end else
-
-  //TODO: Triggers
-
-  if AEntry.Name = 'PreferredNode' then begin
-    AService.PreferredNode := AEntry.DwordValue;
-  end else
-
-  //Add the rest as a root key to the service object
-  AService.FRootKey.AddEntry(AEntry);
-end;
-
-procedure TServiceImportForm.ParseParametersEntry(AService: TImportService; AEntry: TRegFileEntry);
-begin
-
-end;
-
 
 
 end.

@@ -28,6 +28,24 @@ type
     ServiceMain: string;
   end;
 
+  //Bits of info about the service available independently
+  TServiceQueryBit = (
+    qbDescription,
+    qbConfig,
+    qbImageInformation,
+    qbLaunchProtection,
+    qbTriggers,
+    qbDelayedAutostart,
+    qbSidType,
+    qbRequiredPrivileges,
+    qbFailureActions,
+    qbFailureActionsFlag,
+    qbPreshutdownInfo,
+    qbPreferredNode
+  );
+  TServiceQueryBits = set of TServiceQueryBit;
+
+  //Locally cached bits
   TServiceEntryQueryFlag = (
     qfStatus,
     qfImageInformation,

@@ -12,6 +12,13 @@ type
     constructor Create;
     destructor Destroy; override;
 
+  //This is not required, but we keep track of what data has been modified.
+  //If you access fields outside the inherited API and need this, set manually.
+  protected
+    FQueriedBits: TServiceQueryBits;
+  public
+    procedure SetQueryBit(const ABit: TServiceQueryBit);
+
   protected
     FConfig: QUERY_SERVICE_CONFIG;
     //FConfig contains pointers to these. Please remember to update it if you change these!
@@ -118,6 +125,11 @@ begin
   inherited Destroy;
 end;
 
+procedure TMemServiceEntry.SetQueryBit(const ABit: TServiceQueryBit);
+begin
+  Self.FQueriedBits := Self.FQueriedBits + [ABit];
+end;
+
 function TMemServiceEntry.GetConfig: LPQUERY_SERVICE_CONFIG;
 begin
   Result := @Self.FConfig;
@@ -125,6 +137,7 @@ end;
 
 procedure TMemServiceEntry.SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar);
 begin
+  SetQueryBit(qbConfig);
 {
 Empty arguments must be handled in exactly the same way as ChangeServiceConfig!
 https://docs.microsoft.com/en-us/windows/desktop/api/winsvc/nf-winsvc-changeserviceconfiga
@@ -158,6 +171,7 @@ end;
 
 procedure TMemServiceEntry.SetRawDescription(const AValue: string);
 begin
+  SetQueryBit(qbDescription);
   FDescription := AValue;
 end;
 
@@ -212,6 +226,7 @@ end;
 
 procedure TMemServiceEntry.SetDelayedAutostart(const AValue: boolean);
 begin
+  SetQueryBit(qbDelayedAutostart);
   Self.FDelayedAutostart := AValue;
 end;
 
@@ -222,6 +237,7 @@ end;
 
 procedure TMemServiceEntry.SetImageInformation(const AValue: TServiceImageInformation);
 begin
+  SetQueryBit(qbImageInformation);
   Self.FImageInformation := AValue;
 end;
 
@@ -232,6 +248,7 @@ end;
 
 procedure TMemServiceEntry.SetSidType(const AValue: dword);
 begin
+  SetQueryBit(qbSidType);
   Self.FSidType := AValue;
 end;
 
@@ -242,6 +259,7 @@ end;
 
 procedure TMemServiceEntry.SetRequiredPrivileges(const AValue: TArray<string>);
 begin
+  SetQueryBit(qbRequiredPrivileges);
   Self.FRequiredPrivileges := AValue;
 end;
 
@@ -252,6 +270,7 @@ end;
 
 procedure TMemServiceEntry.SetLaunchProtection(const AValue: cardinal);
 begin
+  SetQueryBit(qbLaunchProtection);
   Self.FLaunchProtection := AValue;
 end;
 
@@ -264,6 +283,7 @@ end;
 
 procedure TMemServiceEntry.SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO);
 begin
+  SetQueryBit(qbTriggers);
   FreeTriggers;
   if ANewTriggers = nil then
     exit; //already cleared our copy!
@@ -286,6 +306,7 @@ end;
 procedure TMemServiceEntry.SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS);
 var i: integer;
 begin
+  SetQueryBit(qbFailureActions);
   Self.FFailureActions.FHeader := AValue^;
   for i := 0 to Length(Self.FFailureActions.FActions)-1 do begin
     //Even though cAction can indicate any number of actions, in reality there can be at most 3.
@@ -308,6 +329,7 @@ end;
 
 procedure TMemServiceEntry.SetFailureActionsOnNonCrashFailures(const AValue: boolean);
 begin
+  SetQueryBit(qbFailureActionsFlag);
   Self.FFailureActionsOnNonCrashFailures := AValue;
 end;
 
@@ -318,6 +340,7 @@ end;
 
 procedure TMemServiceEntry.SetPreshutdownTimeout(const AValue: dword);
 begin
+  SetQueryBit(qbPreshutdownInfo);
   Self.FPreshutdownTimeout := AValue;
 end;
 
@@ -326,8 +349,9 @@ begin
   Result := Self.FPreferredNode;
 end;
 
-procedure TMemServiceEntry.SetPreferredNodeInfo(const ANode: integer);
+procedure TMemServiceEntry.SetPreferredNode(const ANode: integer);
 begin
+  SetQueryBit(qbPreferredNode);
   Self.FPreferredNode := ANode;
 end;
 

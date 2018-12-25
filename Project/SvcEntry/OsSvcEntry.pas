@@ -8,21 +8,7 @@ uses SvcEntry, SysUtils, Classes, Windows, WinSvc, ServiceHelper,
   Generics.Collections;
 
 type
-  TServiceQueriedBit = (
-    qbDescription,
-    qbConfig,
-    qbImageInformation,
-    qbLaunchProtection,
-    qbTriggers,
-    qbDelayedAutostart,
-    qbSidType,
-    qbRequiredPrivileges,
-    qbFailureActions,
-    qbFailureActionsFlag,
-    qbPreshutdownInfo,
-    qbPreferredNode
-  );
-  TServiceQueriedData = set of TServiceQueriedBit;
+  TServiceQueriedData = TServiceQueryBits;
 
   {
   Actual registered service on a live system
@@ -64,7 +50,7 @@ type
 
   //Helper functions
   protected
-    function SetQueryBit(const ABit: TServiceQueriedBit): boolean; inline;
+    function SetQueryBit(const ABit: TServiceQueryBit): boolean; inline;
     function QueryConfig2(const ALevel: dword; out AData: PByte): boolean; inline;
     procedure ChangeConfig2(const ALevel: dword; const AData: pointer); inline;
 
@@ -181,7 +167,7 @@ should be set immediately after testing, not after you retrieve the info.
 This way if you fail to retreive it, you're not going to stuck querying it again
 and again.
 }
-function TOsServiceEntry.SetQueryBit(const ABit: TServiceQueriedBit): boolean;
+function TOsServiceEntry.SetQueryBit(const ABit: TServiceQueryBit): boolean;
 begin
   Result := not (ABit in FQueriedData);
   if Result then

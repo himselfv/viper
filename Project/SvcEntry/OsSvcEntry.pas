@@ -107,7 +107,7 @@ type
     function GetPreshutdownTimeout: dword; override;
     procedure SetPreshutdownTimeout(const AValue: dword); override;
     function GetPreferredNode: integer; override;
-    procedure SetPreferredNodeInfo(const ANode: integer); override;
+    procedure SetPreferredNode(const ANode: integer); override;
 
   end;
 
@@ -528,7 +528,7 @@ begin
   Result := Self.FPreferredNode;
 end;
 
-procedure TOsServiceEntry.SetPreferredNodeInfo(const ANode: integer);
+procedure TOsServiceEntry.SetPreferredNode(const ANode: integer);
 var tmp: SERVICE_PREFERRED_NODE_INFO;
 begin
   tmp.fDelete := (ANode = SvcEntry.PREFERRED_NODE_DISABLED);

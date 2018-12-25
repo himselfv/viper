@@ -88,7 +88,7 @@ type
     function GetPreshutdownTimeout: dword; override;
     procedure SetPreshutdownTimeout(const AValue: dword); override;
     function GetPreferredNode: integer; override;
-    procedure SetPreferredNodeInfo(const ANode: integer); override;
+    procedure SetPreferredNode(const ANode: integer); override;
 
   end;
 
@@ -98,7 +98,13 @@ uses WinApiHelper, ServiceHelper;
 constructor TMemServiceEntry.Create;
 begin
   inherited Create;
+  //By default all configuration fields are set to nil/SC_NO_CHANGE => we don't know them
+  //When returning the config we'll substitute default values
   FillChar(Self.FConfig, 0, SizeOf(Self.FConfig));
+  FConfig.dwServiceType := SERVICE_NO_CHANGE;
+  FConfig.dwStartType := SERVICE_NO_CHANGE;
+  FConfig.dwErrorControl := SERVICE_NO_CHANGE;
+  FConfig.dwTagId := SERVICE_NO_CHANGE;
   //Each instance will override this class var but whatever:
   FEmptyTriggers.cTriggers := 0;
   FEmptyTriggers.pTriggers := nil;

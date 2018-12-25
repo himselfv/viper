@@ -173,7 +173,11 @@ type
     function GetPreshutdownTimeout: dword; virtual;
     procedure SetPreshutdownTimeout(const AValue: dword); virtual;
     function GetPreferredNode: integer; virtual;
-    procedure SetPreferredNodeInfo(const ANode: integer); virtual;
+    procedure SetPreferredNode(const ANode: integer); virtual;
+    property FailureActionsOnNonCrashFailures: boolean read GetFailureActionsOnNonCrashFailures
+      write SetFailureActionsOnNonCrashFailures;
+    property PreshutdownTimeout: dword read GetPreshutdownTimeout write SetPreshutdownTimeout;
+    property PreferredNode: integer read GetPreferredNode write SetPreferredNode;
 
 
   end;
@@ -837,7 +841,7 @@ end;
 
 //Overwrites LPSERVICE_FAILURE_ACTIONS contents for this service with the given
 //information.
-//The passed structure is owned and should be freed by the caller.
+//The passed structure remains owned and should be freed by the caller.
 procedure TServiceEntry.SetFailureActions(const AValue: LPSERVICE_FAILURE_ACTIONS);
 begin
   NotImplemented;
@@ -870,7 +874,8 @@ begin
 end;
 
 //Sets the preferred node or deletes this setting
-procedure TServiceEntry.SetPreferredNodeInfo(const ANode: integer);
+//Pass SvcEntry.PREFERRED_NODE_DISABLED to delete the setting.
+procedure TServiceEntry.SetPreferredNode(const ANode: integer);
 begin
   NotImplemented;
 end;

@@ -277,6 +277,7 @@ begin
   if AEntry.Name = 'ObjectName' then begin
     AService.CServiceStartName := AEntry.StringValue;
   end else
+  //TODO: What to do with TagId?
   //TODO: What to do with Password? We need it to re-set the ObjectName read from the registry,
   //but there's no Password in the registry.
   //And we can only avoid passing it by also writing in the registry, so this possibility
@@ -285,7 +286,37 @@ begin
     AService.CDisplayName := AEntry.StringValue;
   end else
 
-  //TODO: Other properties
+  //QueryServiceConfig2() / extended properties
+
+  if AEntry.Name = 'Description' then begin
+    AService.Description := AEntry.StringValue;
+  end else
+
+  //TODO: FailureActions
+
+  if AEntry.Name = 'FailureActionsOnNonCrashFailures' then begin
+    AService.FailureActionsOnNonCrashFailures := AEntry.DwordValue <> 0;
+  end else
+  if AEntry.Name = 'DelayedAutoStart' then begin
+    AService.DelayedAutostart := AEntry.DwordValue <> 0;
+  end else
+  if AEntry.Name = 'ServiceSidType' then begin
+    AService.SidType := AEntry.DwordValue;
+  end else
+  if AEntry.Name = 'RequiredPrivileges' then begin
+    AService.RequiredPrivileges := AEntry.MultiStrValue;
+  end else
+  if AEntry.Name = 'PreshutdownTimeout' then begin
+    AService.PreshutdownTimeout := AEntry.DwordValue;
+    //TODO: This entry NOT existing might have the active meaning that the timeout is not set.
+    //Though this may be true for other properties too.
+  end else
+
+  //TODO: Triggers
+
+  if AEntry.Name = 'PreferredNode' then begin
+    AService.PreferredNode := AEntry.DwordValue;
+  end else
 
   //Add the rest as a root key to the service object
   AService.FRootKey.AddEntry(AEntry);

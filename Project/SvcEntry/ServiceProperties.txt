@@ -78,7 +78,6 @@ SERVICE_CONFIG_PRESHUTDOWN_INFO:
   PreshutdownTimeout		dword		PreshutdownTimeout
 
 
-
   {
   SERVICE_CONFIG_TRIGGER_INFO
     \Triggers

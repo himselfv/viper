@@ -34,7 +34,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, ComCtrls, VirtualTrees, Generics.Collections,
-  RegFile, MemSvcEntry;
+  WinSvc, RegFile, MemSvcEntry;
 
 type
   //The list of all params which may or may not be available for the service
@@ -107,7 +107,7 @@ function ImportRegFile(AOwner: TComponent; const AFilename: string): TModalResul
 
 
 implementation
-uses RegExport, TriggerExport;
+uses RegExport, TriggerExport, WinApiHelper;
 
 {$R *.dfm}
 
@@ -239,14 +239,12 @@ begin
   end;
 
 
-
-
-
 //  ReloadServices; //TODO
 end;
 
 //Parses the service top level key and extracts params we know how to handle.
 procedure TServiceImportForm.ParseBasicEntry(AService: TImportService; AEntry: TRegFileEntry);
+var tmp_str: string;
 begin
   //QueryServiceConfig() parameters
 
@@ -269,11 +267,12 @@ begin
     AService.FConfig.dwTagId := AEntry.DwordValue;
   end else
   if AEntry.Name = 'DependOnService' then begin
-//    AService.FDependencies := AEntry.StringValue
-  //TODO
+    for tmp_str in AEntry.MultiStrValue do
+      AService.AddCDependency(tmp_str);
   end else
   if AEntry.Name = 'DependOnGroup' then begin
-  //TODO
+    for tmp_str in AEntry.MultiStrValue do
+      AService.AddCDependency(SC_GROUP_IDENTIFIER+tmp_str);
   end else
   if AEntry.Name = 'ObjectName' then begin
     AService.CServiceStartName := AEntry.StringValue;

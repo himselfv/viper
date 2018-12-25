@@ -36,6 +36,7 @@ type
     property CDependencies: string write SetCDependencies;
     property CServiceStartName: string write SetCServiceStartName;
     property CDisplayName: string write SetCDisplayName;
+    procedure AddCDependency(const ADependency: string);
     procedure SetConfig(const AValue: QUERY_SERVICE_CONFIG; const APassword: PChar); override;
 
   public
@@ -185,6 +186,17 @@ procedure TMemServiceEntry.SetCDisplayName(const AValue: string);
 begin
   Self.FDisplayName := AValue;
   Self.FConfig.lpDisplayName := PWideChar(Self.FDisplayName);
+end;
+
+//Adds a dependency by storing it in the CDependency null-list
+procedure TMemServiceEntry.AddCDependency(const ADependency: string);
+var AList: TArray<string>;
+begin
+  //The slow and reusing way
+  AList := SplitNullSeparatedList(PChar(Self.FDependencies));
+  SetLength(AList, Length(AList)+1);
+  AList[Length(AList)-1] := ADependency;
+  SetCDependencies(JoinNullSeparatedList(AList));
 end;
 
 function TMemServiceEntry.GetDelayedAutostart: boolean;

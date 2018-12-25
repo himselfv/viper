@@ -336,7 +336,7 @@ begin
       else begin
         //Add forced term null
         SetLength(LData, Length(LData)+SizeOf(PChar)); //no half chars so ok
-        PChar(LData[Length(LData)-SizeOf(PChar)])^ := #00;
+        PChar(@LData[Length(LData)-SizeOf(PChar)])^ := #00;
         //convert
         Result := PChar(@LData[0]);
       end;
@@ -360,7 +360,7 @@ begin
   LMerged := Self.GetOtherData;
   if Length(LMerged) <= SizeOf(Char) then exit; //empty
 
-  Result := SplitNullSeparatedList(PChar(@LMerged[1]));
+  Result := SplitNullSeparatedList(PChar(@LMerged[0]));
 end;
 
 procedure TRegFileEntry.SetDwordValue(const AValue: dword);

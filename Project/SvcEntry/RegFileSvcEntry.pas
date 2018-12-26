@@ -96,7 +96,7 @@ begin
     Self.FKeys := TRegFileKeys.Create(AKeys); //make own copy
 
   i := 0;
-  while i < AKeys.Count-1 do begin
+  while i < AKeys.Count do begin
     AKey := AKeys[i];
 
     if AKey.Delete then begin
@@ -273,7 +273,9 @@ begin
   if APath[1] = '\' then
     Delete(APath, 1, 1);
 
+  //TODO: A flag for CreateTriggerFromSection to delete the parsed entries (leaving the unrecognized ones)
   LTrigger := CreateTriggerFromSection(AKey^);
+  Result := true;
 end;
 
 

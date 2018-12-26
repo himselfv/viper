@@ -236,7 +236,7 @@ begin
 
     try
       for i := 0 to reg.Count-1 do begin
-        rk := reg[i];
+        rk := reg[i]^;
 
         if rk.Delete then begin
           Status := Status + [sfMalformedFile];
@@ -555,7 +555,7 @@ begin
     //but we are going to ignore them
     if regf.Count < 1 then
       exit;
-    Result := CreateTriggerFromSection(regf[0]);
+    Result := CreateTriggerFromSection(regf[0]^);
   finally
     FreeAndNil(regf);
   end;

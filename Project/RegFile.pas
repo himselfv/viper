@@ -84,8 +84,11 @@ type
     Name: string;
     Delete: boolean;
     Entries: TArray<TRegFileEntry>;
+    constructor Create(const AFrom: TRegFileKey);
     procedure Clear;
     procedure AddEntry(const Entry: TRegFileEntry);
+    procedure DeleteEntry(const AIndex: integer);
+    function EntryCount: integer; inline;
     //Shortcuts
     procedure AddStringValue(const Name: string; DataType: integer; const Data: string);
     procedure AddDwordValue(const Name: string; DataType: integer; const Data: dword);
@@ -96,7 +99,17 @@ type
   end;
   PRegFileKey = ^TRegFileKey;
 
-  TRegFile = class(TList<TRegFileKey>)
+  TRegFileKeys = class(TList<PRegFileKey>)
+  protected
+    procedure Notify(const Item: PRegFileKey; Action: TCollectionNotification); override;
+  public
+    constructor Create; overload;
+    constructor Create(const AFrom: TRegFileKeys); overload;
+    procedure Add(const AKey: TRegFileKey); overload;
+    function GetKey(const AName: string): PRegFileKey;
+  end;
+
+  TRegFile = class(TRegFileKeys)
   protected
     function ParseNameValue(const line: string; out re: TRegFileEntry): boolean;
   public
@@ -423,6 +436,14 @@ begin
 end;
 
 
+//Creates a copy of the given TRegFileKey. Dynamic arrays in Delphi do not COW
+//so simply assigning is not enough if you want to edit your copy
+constructor TRegFileKey.Create(const AFrom: TRegFileKey);
+begin
+  Self := AFrom;
+  Self.Entries := Copy(AFrom.Entries);
+end;
+
 procedure TRegFileKey.Clear;
 begin
   SetLength(Self.Entries, 0);
@@ -432,6 +453,19 @@ procedure TRegFileKey.AddEntry(const Entry: TRegFileEntry);
 begin
   SetLength(Self.Entries, Length(Self.Entries)+1);
   Self.Entries[Length(Self.Entries)-1] := Entry;
+end;
+
+procedure TRegFileKey.DeleteEntry(const AIndex: integer);
+var i: integer;
+begin
+  for i := AIndex+1 to Length(Self.Entries)-1 do
+    Self.Entries[i-1] := Self.Entries[i];
+  SetLength(Self.Entries, Length(Self.Entries)-1);
+end;
+
+function TRegFileKey.EntryCount: integer;
+begin
+  Result := Length(Self.Entries);
 end;
 
 procedure TRegFileKey.AddStringValue(const Name: string; DataType: integer; const Data: string);
@@ -606,6 +640,53 @@ begin
     Inc(pc);
   end;
 end;
+
+
+constructor TRegFileKeys.Create;
+begin
+  inherited;
+end;
+
+//Creates a copy of the given TRegFileKeys
+constructor TRegFileKeys.Create(const AFrom: TRegFileKeys);
+var LKey: PRegFileKey;
+begin
+  inherited Create;
+  for LKey in AFrom do
+    Self.Add(TRegFileKey.Create(LKey^));
+end;
+
+procedure TRegFileKeys.Notify(const Item: PRegFileKey; Action: TCollectionNotification);
+begin
+  case Action of
+    cnRemoved: Dispose(Item);
+  end;
+end;
+
+//Adds a copy of the given key structure
+procedure TRegFileKeys.Add(const AKey: TRegFileKey);
+var LPKey: PRegFileKey;
+begin
+  New(LPKey);
+  LPKey^ := AKey;
+  Self.Add(LPKey);
+end;
+
+//Finds and returns a key for the given name (path)
+function TRegFileKeys.GetKey(const AName: string): PRegFileKey;
+var i: integer;
+begin
+  Result := nil;
+  for i := 0 to Self.Count-1 do
+    if Self[i]^.Name = AName then begin
+      Result := Self[i];
+      exit;
+    end;
+  New(Result);
+  Result^.Name := AName;
+  Self.Add(Result);
+end;
+
 
 constructor TRegFile.Create;
 begin

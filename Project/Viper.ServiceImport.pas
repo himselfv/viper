@@ -37,23 +37,6 @@ uses
   RegFile, RegFileSvcEntry;
 
 type
-  //The list of all params which may or may not be available for the service
-  TImportServiceParam = (
-    //Minimal set:
-    spImagePath,
-    spType,             //Driver or Service
-    spStartType,        //Includes DelayedAutostart
-    //The rest can be grouped arbitrarily as we need
-    spOtherBasicInfo,
-    spTriggers
-  );
-  TImportServiceParams = set of TImportServiceParam;
-
-const
-  //A minimal set of service params which allows us to create the service
-  RequiredServiceParams = [spImagePath];
-
-type
   TImportServiceList = TRegFileServiceList;
 
   TServiceImportForm = class(TForm)
@@ -91,7 +74,7 @@ function ImportRegFile(AOwner: TComponent; const AFilename: string): TModalResul
 
 
 implementation
-uses RegExport, TriggerExport, WinApiHelper;
+uses RegExport, TriggerExport;
 
 {$R *.dfm}
 
@@ -128,6 +111,60 @@ begin
 end;
 
 
+type
+  TRegFileServices = class(TDictionary<string, TRegFileKeys>)
+  protected
+    procedure ValueNotify(const Value: TRegFileKeys; Action: TCollectionNotification); override;
+  public
+    function Get(const AServiceName: string): TRegFileKeys;
+    procedure AddKeys(var AKeys: TRegFileKeys);
+  end;
+
+function TRegFileServices.Get(const AServiceName: string): TRegFileKeys;
+begin
+  if Self.TryGetValue(AServiceName, Result) then exit;
+  Result := TRegFileKeys.Create;
+  Self.Add(AServiceName, Result);
+end;
+
+procedure TRegFileServices.ValueNotify(const Value: TRegFileKeys; Action: TCollectionNotification);
+begin
+  case Action of
+    cnRemoved: Value.Destroy;
+  end;
+end;
+
+{
+Parses all keys in the list and groups them by the target service, based on their
+registry path.
+Leaves only the keys which do not belong to any service in AKeys.
+}
+procedure TRegFileServices.AddKeys(var AKeys: TRegFileKeys);
+var i: integer;
+  ServiceName: string;
+  Subkey: string;
+  Key: PRegFileKey;
+begin
+  i := 0;
+  while i < AKeys.Count do begin
+    ServiceName := '';
+    Subkey := '';
+    if not SplitServiceRegistryPath(AKeys[i].Name, ServiceName, Subkey)
+    or (ServiceName = '') then begin
+      Inc(i);
+      continue;
+    end;
+
+    //Move the key to the service's personal key list
+    Key := AKeys[i];
+    AKeys.Extract(Key);
+    Key.Name := Subkey; //trim the base part from the name
+    Self.Get(ServiceName).Add(Key);
+    //Don't increment the i
+  end;
+end;
+
+
 {
 Next we have to analyze the file contents:
 
@@ -158,27 +195,26 @@ Rules of thumb for now:
 
 //Loads the registry export file
 procedure TServiceImportForm.LoadFromFile(const AFilename: string);
-var key: TRegFileKey;
+var SvcList: TRegFileServices;
   ServiceName: string;
-  Subkey: string;
   Service: TRegFileServiceEntry;
 begin
   FFile.LoadFromFile(AFilename);
-  FServices.Clear;
 
-  for key in FFile do begin
-    if key.Delete then
-      continue; //we don't support deletion commands here
-    ServiceName := '';
-    Subkey := '';
-    if not SplitServiceRegistryPath(key.Name, ServiceName, Subkey) then
-      continue;
+  //Split keys by services
+  SvcList := TRegFileServices.Create;
+  try
+    SvcList.AddKeys(TRegFileKeys(FFile));
+    //TODO: If anything is left in FFile, that's unparsable keys - tell the user
 
-    Service := Self.FServices.Get(ServiceName);
-
-
+    for ServiceName in SvcList.Keys do begin
+      Service := Self.FServices.Get(ServiceName);
+      //Pass TRegFileKeys as is to avoid copying:
+      Service.LoadFromKeys(SvcList.ExtractPair(ServiceName).Value, {owns=}true);
+    end;
+  finally
+    FreeAndNil(SvcList);
   end;
-
 
 //  ReloadServices; //TODO
 end;

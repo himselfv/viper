@@ -22,7 +22,6 @@ type
   protected
     FConfig: QUERY_SERVICE_CONFIG;
     //FConfig contains pointers to these. Please remember to update it if you change these!
-    FBinaryPathName: string;
     FLoadOrderGroup: string;
     FDependencies: string;
     FServiceStartName: string;
@@ -180,8 +179,9 @@ end;
 
 procedure TMemServiceEntry.SetCBinaryPathName(const AValue: string);
 begin
-  Self.FBinaryPathName := AValue;
-  Self.FConfig.lpBinaryPathName := PWideChar(Self.FBinaryPathName);
+  SetQueryBit(qbImageInformation);
+  Self.FImageInformation.ImagePath := AValue;
+  Self.FConfig.lpBinaryPathName := PWideChar(Self.FImageInformation.ImagePath);
 end;
 
 procedure TMemServiceEntry.SetCLoadOrderGroup(const AValue: string);
@@ -239,6 +239,7 @@ procedure TMemServiceEntry.SetImageInformation(const AValue: TServiceImageInform
 begin
   SetQueryBit(qbImageInformation);
   Self.FImageInformation := AValue;
+  Self.FConfig.lpBinaryPathName := PChar(Self.FImageInformation.ImagePath);
 end;
 
 function TMemServiceEntry.GetSidType: dword;

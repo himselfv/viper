@@ -200,10 +200,10 @@ end;
 //and applies them to registry
 //The registry object needs not to be opened on any particular key
 procedure WriteToRegistry(reg: TRegistry; const file_: TRegFile);
-var key: TRegFileKey;
+var key: PRegFileKey;
 begin
   for key in file_ do
-    WriteToRegistry(reg, key);
+    WriteToRegistry(reg, key^);
 end;
 
 //Processes the instructions contained in this RegFileKey (adding and deleting keys)

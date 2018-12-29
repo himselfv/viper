@@ -461,7 +461,7 @@ begin
   data := TDataItemListBuilder.Create;
   try
     i := 0;
-    while i < Length(rk.Entries)-1 do begin
+    while i < Length(rk.Entries) do begin
       re := rk.Entries[i];
       if re.DataType = REG_DELETE then begin
         Inc(i);
@@ -516,6 +516,8 @@ begin
     //This shall be determined by the presence of the three properties:
     //  Type, Action and GUID.
     if not haveType or not haveAction or (st.pTriggerSubtype = nil) then begin
+      //TODO: We might've already deleted some matched entries, sorry.
+      //  Should've kept a list of what to delete and only deleted if we return true.
       Result := nil;
       exit;
     end;

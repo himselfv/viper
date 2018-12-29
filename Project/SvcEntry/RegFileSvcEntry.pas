@@ -289,6 +289,7 @@ begin
 
   //Parse the trigger params and delete them from the key
   LTrigger := CreateTriggerFromSectionVar(AKey^);
+  Result := LTrigger <> nil;
 
   //We could simply AddTrigger but let's be more efficient
   SetLength(FMyTriggers, Length(FMyTriggers)+1);
@@ -318,6 +319,10 @@ begin
     SetLength(trigData, trigHead.cTriggers);
     for i := 0 to trigHead.cTriggers-1 do
       trigData[i] := Self.FMyTriggers[i]^;
+    if trigHead.cTriggers > 0 then
+      trigHead.pTriggers := @trigData[0]
+    else
+      trigHead.pTriggers := nil;
     Self.SetTriggers(@trigHead);
   finally
     FreeMyTriggers; //since we need to free them anyway

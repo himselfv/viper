@@ -283,12 +283,16 @@ begin
 end;
 
 procedure TMemServiceEntry.SetTriggers(const ANewTriggers: PSERVICE_TRIGGER_INFO);
+var LNewTriggers: PSERVICE_TRIGGER_INFO;
 begin
   SetQueryBit(qbTriggers);
+  if ANewTriggers <> nil then
+    LNewTriggers := CopyServiceTriggers(ANewTriggers);
+    //copy before freeing the old ones in case that's them!
   FreeTriggers;
   if ANewTriggers = nil then
     exit; //already cleared our copy!
-  Self.FTriggers := CopyServiceTriggers(ANewTriggers);
+  Self.FTriggers := LNewTriggers;
 end;
 
 procedure TMemServiceEntry.FreeTriggers;

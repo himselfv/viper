@@ -223,6 +223,7 @@ procedure FreeStandaloneTriggerDataItem(const Tr: SERVICE_TRIGGER_SPECIFIC_DATA_
 
 //There's no way to uniquely identify a trigger entry except by its full contents.
 function IsSameServiceTrigger(const Tr1, Tr2: SERVICE_TRIGGER): boolean;
+function FindServiceTrigger(ATriggers: PSERVICE_TRIGGER; ACount: integer; const Tr: SERVICE_TRIGGER): integer;
 
 //The following functions read, modify and store the trigger list.
 procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_TRIGGER;
@@ -1032,6 +1033,20 @@ begin
   end;
 end;
 
+//Finds the index of the service trigger in the array, by comparing its contents
+//Returns -1 if no identical trigger is found.
+function FindServiceTrigger(ATriggers: PSERVICE_TRIGGER; ACount: integer; const Tr: SERVICE_TRIGGER): integer;
+var i: integer;
+begin
+  Result := -1;
+  for i := 0 to ACount-1 do
+    if IsSameServiceTrigger(ATriggers^, Tr) then begin
+      Result := i;
+      exit;
+    end else
+      Inc(ATriggers);
+end;
+
 
 //Inserts one or more triggers into a set of all triggers for the service
 //UniqueOnly: add only triggers which have no exact equivalents already.
@@ -1040,7 +1055,6 @@ procedure AddServiceTriggers(hSvc: SC_HANDLE; const Triggers: array of SERVICE_T
 var trigHead: PSERVICE_TRIGGER_INFO;
   trigData: array of SERVICE_TRIGGER;
   i, j: integer;
-  found: boolean;
 begin
   if Length(Triggers) <= 0 then exit;
 
@@ -1054,28 +1068,16 @@ begin
     trigHead.pReserved := nil;
   end;
   try
-    //Edit inplace where possible since this is our own copy in our memory
-    trigHead.cTriggers := trigHead.cTriggers + cardinal(Length(Triggers));
-
     //Copy old triggers
-    SetLength(trigData, trigHead.cTriggers);
-    for i := 0 to Length(trigData) - Length(Triggers) - 1 do
+    SetLength(trigData, trigHead.cTriggers + Length(Triggers));
+    for i := 0 to trigHead.cTriggers - 1 do
       trigData[i] := trigHead.pTriggers[i]; //old triggers
 
     //Copy new triggers
     for i := 0 to Length(Triggers)-1 do begin
-      if UniqueOnly then begin
-        found := false;
-        for j := 0 to Length(trigData) - Length(Triggers) - 1 do
-          if IsSameServiceTrigger(trigData[j], Triggers[i]) then begin
-            found := true;
-            break;
-          end;
-        if found then
-          continue;
-      end;
-
-      trigData[Length(trigData) - Length(Triggers) + i] := Triggers[i];
+      if UniqueOnly and (FindServiceTrigger(@trigData[0], trigHead.cTriggers, Triggers[i]) >= 0) then
+        continue;
+      trigData[trigHead.cTriggers + i] := Triggers[i];
     end;
 
     //Rewrite old data pointer

@@ -179,6 +179,7 @@ type
     function GetTriggerCount: integer; inline;
   public
     procedure SetTriggers(const ATriggers: PSERVICE_TRIGGER_INFO); virtual;
+    procedure AddTriggers(const ATriggers: array of PSERVICE_TRIGGER; AUniqueOnly: boolean = false);
     property Triggers: PSERVICE_TRIGGER_INFO read GetTriggers; //can be nil
     property TriggerCount: integer read GetTriggerCount;
 
@@ -842,6 +843,50 @@ begin
     Result := triggers.cTriggers
   else
     Result := 0;
+end;
+
+//Adds triggers to the list of service triggers. The original triggers remains owned by the caller
+procedure TServiceEntry.AddTriggers(const ATriggers: array of PSERVICE_TRIGGER; AUniqueOnly: boolean = false);
+var trigHead: PSERVICE_TRIGGER_INFO;
+  newTrigHead: SERVICE_TRIGGER_INFO;
+  trigData: array of SERVICE_TRIGGER;
+  i, newTrigCount: integer;
+begin
+  if Length(ATriggers) <= 0 then exit;
+
+  trigHead := Self.Triggers;
+  if trigHead <> nil then
+    newTrigHead.cTriggers := trigHead.cTriggers
+  else
+    //We could not get the trigger info struct, but maybe we could still put a new one?
+    //Refer to the local structure and fill it as if there simply were no triggers originally.
+    newTrigHead.cTriggers := 0;
+
+  SetLength(trigData, integer(newTrigHead.cTriggers) + Length(ATriggers));
+  if trigHead <> nil then begin
+    //Copy old triggers
+    for i := 0 to trigHead.cTriggers - 1 do
+      trigData[i] := trigHead.pTriggers[i]; //old triggers
+  end;
+
+  //Copy new triggers
+  newTrigCount := 0;
+  for i := 0 to Length(ATriggers)-1 do begin
+    if AUniqueOnly and (FindServiceTrigger(@trigData[0], newTrigHead.cTriggers, ATriggers[i]^) >= 0) then
+      continue;
+    trigData[trigHead.cTriggers + newTrigCount] := ATriggers[i]^;
+    Inc(newTrigCount);
+  end;
+  newTrigHead.cTriggers := newTrigHead.cTriggers + newTrigCount;
+
+  if newTrigHead.cTriggers > 0 then
+    newTrigHead.pTriggers := @trigData[0]
+  else
+    newTrigHead.pTriggers := nil;
+  newTrigHead.pReserved := nil;
+
+  //Set. The data is copied so our local copies are not needed
+  Self.SetTriggers(trigHead);
 end;
 
 

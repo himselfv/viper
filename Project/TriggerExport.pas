@@ -67,6 +67,7 @@ procedure LoadTriggersFromFile(const AFilename: string; out Triggers: TArray<TRe
 
 function SplitServiceRegistryPath(KeyPath: string; out ServiceName: string; out Subkey: string): boolean;
 function TryDecodeTriggerSectionName(SectionName: string; out ServiceName: string; out Index: integer): boolean;
+function CreateTriggerFromSectionVar(var rk: TRegFileKey): PSERVICE_TRIGGER;
 function CreateTriggerFromSection(rk: TRegFileKey): PSERVICE_TRIGGER;
 
 
@@ -101,7 +102,6 @@ function EnableTrigger(const AServiceName: string; AId: string; ATrigger: PSERVI
 function ReadDisabledTrigger(const AServiceName: string; const AId: string): PSERVICE_TRIGGER;
 procedure WriteDisabledTrigger(const AServiceName: string; const AId: string; ATrigger: PSERVICE_TRIGGER);
 procedure DeleteDisabledTriggers(const AKeyPaths: array of string);
-
 
 
 implementation
@@ -433,8 +433,9 @@ end;
 Tries to parse a single reg file key as a trigger description.
 Returns a new trigger contents or nil, if there was no trigger data in this key.
 NOTE: You have to free the returned PSERVICE_TRIGGER.
+Deletes the entries it managed to parse.
 }
-function CreateTriggerFromSection(rk: TRegFileKey): PSERVICE_TRIGGER;
+function CreateTriggerFromSectionVar(var rk: TRegFileKey): PSERVICE_TRIGGER;
 var st: SERVICE_TRIGGER;
   guid: TGuid;
   haveType: boolean;
@@ -459,27 +460,32 @@ begin
 
   data := TDataItemListBuilder.Create;
   try
-
-    for i := 0 to Length(rk.Entries)-1 do begin
+    i := 0;
+    while i < Length(rk.Entries)-1 do begin
       re := rk.Entries[i];
-      if re.DataType = REG_DELETE then
+      if re.DataType = REG_DELETE then begin
+        Inc(i);
         continue;
+      end;
 
       if SameText(re.Name, 'Type') and TryStrToInt('$'+re.Data, tmp) then begin
         haveType := true;
         st.dwTriggerType := tmp;
+        rk.DeleteEntry(i);
         continue;
       end;
 
       if SameText(re.Name, 'Action') and TryStrToInt('$'+re.Data, tmp) then begin
         haveAction := true;
         st.dwAction := tmp;
+        rk.DeleteEntry(i);
         continue;
       end;
 
       if SameText(re.Name, 'Guid') then begin
         st.pTriggerSubtype := @guid;
         RegHexToBin(AnsiString(re.Data), @guid, SizeOf(guid));
+        rk.DeleteEntry(i);
         continue;
       end;
 
@@ -489,6 +495,7 @@ begin
         pde := data.Get(idx);
         pde.item.dwDataType := tmp;
         pde.haveType := true;
+        rk.DeleteEntry(i);
         continue;
       end;
 
@@ -497,13 +504,13 @@ begin
         pde := data.Get(idx);
         pde.item.pData := RegHexToBin(AnsiString(re.Data), @pde.item.cbData);
         pde.haveData := true;
+        rk.DeleteEntry(i);
         continue;
       end;
 
       //The rest we can't decode
-
+      Inc(i);
     end;
-
 
     //We have to decide whether this is a trigger definition at all.
     //This shall be determined by the presence of the three properties:
@@ -526,11 +533,19 @@ begin
 
     //Now copy the structure to a single flat one which the caller should free
     Result := CopyTrigger(st);
-
   finally
     //Free any temporary memory we've allocated for data items
     FreeAndNil(data);
   end;
+end;
+
+//Same as CreateTriggerFromSectionVar but does not modify the section
+function CreateTriggerFromSection(rk: TRegFileKey): PSERVICE_TRIGGER;
+var rk_local: TRegFileKey;
+begin
+  //Create a copy
+  rk_local := TRegFileKey.Create(rk);
+  Result := CreateTriggerFromSectionVar(rk_local);
 end;
 
 

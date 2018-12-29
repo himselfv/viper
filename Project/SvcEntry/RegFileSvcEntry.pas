@@ -12,7 +12,7 @@ consist of multiple fields which may be available independently.
 }
 
 interface
-uses SysUtils, Generics.Collections, RegFile, SvcEntry, MemSvcEntry;
+uses SysUtils, Generics.Collections, WinSvc, RegFile, SvcEntry, MemSvcEntry;
 
 type
 {
@@ -22,6 +22,9 @@ find appropriate service for each and pass the key to its ParseKey().
   TRegFileServiceEntry = class(TMemServiceEntry)
   protected //Additional parsed keys
     FKeys: TRegFileKeys;
+    FMyTriggers: array of PSERVICE_TRIGGER;
+    procedure FreeMyTriggers;
+    procedure FinalizeTriggers;
   protected
     function ParseBasicEntry(AEntry: TRegFileEntry): boolean;
     function ParseParametersEntry(AEntry: TRegFileEntry): boolean;
@@ -29,6 +32,7 @@ find appropriate service for each and pass the key to its ParseKey().
   public
     constructor Create;
     destructor Destroy; override;
+    procedure Clear;
     procedure LoadFromKeys(const AKeys: TRegFileKeys; const AOwnsKeys: boolean);
     property Keys: TRegFileKeys read FKeys;
   end;
@@ -42,7 +46,7 @@ find appropriate service for each and pass the key to its ParseKey().
 
 
 implementation
-uses WinSvc, WinApiHelper, TriggerExport;
+uses WinApiHelper, TriggerExport;
 
 procedure TRegFileServiceList.ValueNotify(const Value: TRegFileServiceEntry; Action: TCollectionNotification);
 begin
@@ -69,8 +73,15 @@ end;
 
 destructor TRegFileServiceEntry.Destroy;
 begin
+  FreeMyTriggers;
   FreeAndNil(FKeys);
   inherited;
+end;
+
+procedure TRegFileServiceEntry.Clear;
+begin
+  FreeMyTriggers; //if left from the previous loading
+  FreeAndNil(FKeys);
 end;
 
 {
@@ -89,6 +100,8 @@ procedure TRegFileServiceEntry.LoadFromKeys(const AKeys: TRegFileKeys; const AOw
 var i, j: integer;
   AKey: PRegFileKey;
 begin
+  Clear;
+
   FreeAndNil(FKeys); //if we had any
   if AOwnsKeys then
     Self.FKeys := AKeys
@@ -150,7 +163,8 @@ begin
     Inc(i);
   end;
 
-  //TODO: Finalize (triggers etc)
+  //Finalize
+  FinalizeTriggers;
 end;
 
 //Parses the service top level key and extracts params we know how to handle.
@@ -273,9 +287,41 @@ begin
   if APath[1] = '\' then
     Delete(APath, 1, 1);
 
-  //TODO: A flag for CreateTriggerFromSection to delete the parsed entries (leaving the unrecognized ones)
-  LTrigger := CreateTriggerFromSection(AKey^);
+  //Parse the trigger params and delete them from the key
+  LTrigger := CreateTriggerFromSectionVar(AKey^);
+
+  //We could simply AddTrigger but let's be more efficient
+  SetLength(FMyTriggers, Length(FMyTriggers)+1);
+  FMyTriggers[Length(FMyTriggers)-1] := LTrigger;
+
   Result := true;
+end;
+
+//Frees the temporarily allocated trigger structures in MyTriggers
+procedure TRegFileServiceEntry.FreeMyTriggers;
+var i: integer;
+begin
+  for i := 0 to Length(FMyTriggers)-1 do
+    FreeMem(FMyTriggers[i]);
+  SetLength(FMyTriggers, 0);
+end;
+
+procedure TRegFileServiceEntry.FinalizeTriggers;
+var trigHead: SERVICE_TRIGGER_INFO;
+  trigData: array of SERVICE_TRIGGER;
+  i: integer;
+begin
+  try
+    trigHead.cTriggers := Length(Self.FMyTriggers);
+    trigHead.pReserved := nil;
+
+    SetLength(trigData, trigHead.cTriggers);
+    for i := 0 to trigHead.cTriggers-1 do
+      trigData[i] := Self.FMyTriggers[i]^;
+    Self.SetTriggers(@trigHead);
+  finally
+    FreeMyTriggers; //since we need to free them anyway
+  end;
 end;
 
 

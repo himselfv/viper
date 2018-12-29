@@ -262,17 +262,17 @@ function TOsServiceEntry.GetImageInformation: TServiceImageInformation;
 var ADllInfo: TServiceDllInformation;
 begin
   if SetQueryBit(qbImageInformation) then begin
-    Result := inherited; //reads ImagePath and sets the rest to nil
-    if (pos('svchost.exe', Result.ImagePath)>0)
-    or (pos('lsass.exe', Result.ImagePath)>0) then begin
+    FImageInformation := inherited; //reads ImagePath and sets the rest to nil
+    if (pos('svchost.exe', FImageInformation.ImagePath)>0)
+    or (pos('lsass.exe', FImageInformation.ImagePath)>0) then begin
    //^ this is not a surefire way to test it's running svchost.exe, but we don't need one
    // It would be too complicated to check that it really references svchost, and the one
    // from the system dir and not an impostor.
    // We just optimize away unneccessary registry checks.
       ADllInfo := QueryServiceServiceDllEx(Self.ServiceName);
-      Result.ServiceDll := ADllInfo.ServiceDll;
-      Result.ServiceDllUnloadOnStop := ADllInfo.ServiceDllUnloadOnStop;
-      Result.ServiceMain := ADllInfo.ServiceMain;
+      FImageInformation.ServiceDll := ADllInfo.ServiceDll;
+      FImageInformation.ServiceDllUnloadOnStop := ADllInfo.ServiceDllUnloadOnStop;
+      FImageInformation.ServiceMain := ADllInfo.ServiceMain;
     end;
   end;
   Result := FImageInformation;

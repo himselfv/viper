@@ -36,6 +36,7 @@ object ServiceList: TServiceList
     OnBeforeItemErase = vtServicesBeforeItemErase
     OnChange = vtServicesChange
     OnCompareNodes = vtServicesCompareNodes
+    OnDblClick = vtServicesDblClick
     OnFocusChanged = vtServicesFocusChanged
     OnFreeNode = vtServicesFreeNode
     OnGetText = vtServicesGetText
@@ -265,6 +266,10 @@ object ServiceList: TServiceList
       Hint = 'Add or update service information from the registry export file'
       OnExecute = aImportServicesExecute
     end
+    object aEditProperties: TAction
+      Caption = 'Properties'
+      OnExecute = aEditPropertiesExecute
+    end
   end
   object pmServices: TPopupMenu
     OnPopup = pmServicesPopup
@@ -291,12 +296,6 @@ object ServiceList: TServiceList
     object N2: TMenuItem
       Caption = '-'
     end
-    object Jumptobinary1: TMenuItem
-      Action = aJumpToBinary
-    end
-    object Openregistrykey1: TMenuItem
-      Action = aJumpToRegistry
-    end
     object miCopySubmenu: TMenuItem
       Caption = 'Copy'
       object Shortsummary1: TMenuItem
@@ -318,8 +317,18 @@ object ServiceList: TServiceList
         Action = aCopyExecutableFilename
       end
     end
+    object Jumptobinary1: TMenuItem
+      Action = aJumpToBinary
+    end
+    object Openregistrykey1: TMenuItem
+      Action = aJumpToRegistry
+    end
     object N3: TMenuItem
       Caption = '-'
+    end
+    object miEditProperties: TMenuItem
+      Action = aEditProperties
+      Default = True
     end
     object miStartType: TMenuItem
       Caption = 'Start mode'

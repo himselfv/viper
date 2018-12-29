@@ -130,6 +130,9 @@
         <DCCReference Include="Viper.ServiceImport.pas">
             <Form>ServiceImportForm</Form>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.ServiceEdit.pas">
+            <Form>ServiceEditForm</Form>
+        </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>
         <DCCReference Include="ShellUtils.pas"/>

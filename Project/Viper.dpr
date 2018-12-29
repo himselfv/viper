@@ -19,6 +19,7 @@ uses
   Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm},
   Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
   Viper.ServiceImport in 'Viper.ServiceImport.pas' {ServiceImportForm},
+  Viper.ServiceEdit in '..\Forms\Viper.ServiceEdit.pas' {ServiceEditForm},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',

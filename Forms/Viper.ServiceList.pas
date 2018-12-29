@@ -90,6 +90,8 @@ type
     N5: TMenuItem;
     SaveRegFileDialog: TSaveDialog;
     OpenRegFileDialog: TOpenDialog;
+    aEditProperties: TAction;
+    miEditProperties: TMenuItem;
     procedure vtServicesGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtServicesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -138,6 +140,8 @@ type
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure aExportServiceExecute(Sender: TObject);
     procedure aImportServicesExecute(Sender: TObject);
+    procedure aEditPropertiesExecute(Sender: TObject);
+    procedure vtServicesDblClick(Sender: TObject);
 
   protected
     procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
@@ -242,7 +246,7 @@ resourcestring
 
 implementation
 uses StrUtils, Clipbrd, ServiceHelper, ShellUtils, SecEdit, AclHelpers, AccCtrl,
-  RegExport, Viper.StyleSettings, Viper.Log, Viper.ServiceImport;
+  RegExport, Viper.StyleSettings, Viper.Log, Viper.ServiceImport, Viper.ServiceEdit;
 
 {$R *.dfm}
 
@@ -615,6 +619,22 @@ begin
     aCopyServiceSummary.Execute;
 end;
 
+procedure TServiceList.vtServicesDblClick(Sender: TObject);
+var mp: TPoint;
+  node: PVirtualNode;
+  svcs: TServiceEntries;
+begin
+  svcs := Self.GetSelectedServices();
+  if Length(svcs)<>1 then exit;
+
+  //Verify that we've double-clicked the selected service
+  mp := vtServices.ScreenToClient(Mouse.CursorPos);
+  node := Self.vtServices.GetNodeAt(mp.X, mp.Y);
+  if Self.GetServiceEntry(node) <> svcs[0] then exit;
+
+  Self.aEditProperties.Execute;
+end;
+
 procedure TServiceList.vtServicesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   SelectionChanged;
@@ -691,6 +711,8 @@ begin
   aProtectionAntimalwareLight.Visible := Length(services)>0;
   miProtectionType.Visible := aProtectionNone.Visible or aProtectionWindows.Visible
     or aProtectionWindowsLight.Visible or aProtectionAntimalwareLight.Visible;
+
+  aEditProperties.Visible := Length(services)=1;
 
   aEditSecurity.Visible := Length(services)>0;
   aUnlockSecurity.Visible := Length(services)>0;
@@ -1252,6 +1274,17 @@ begin
     MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
   else
     MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
+end;
+
+
+// Properties
+
+procedure TServiceList.aEditPropertiesExecute(Sender: TObject);
+var Service: TServiceEntry;
+begin
+  Service := GetFirstSelectedService();
+  Assert(Service <> nil);
+  TServiceEditForm.EditService(Self, Service);
 end;
 
 

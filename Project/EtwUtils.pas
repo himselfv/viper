@@ -59,7 +59,11 @@ begin
   //It's not a problem if someone is loading these in parallel: the values will be the same
   TdhEnumerateProviders := GetProcAddress(hlib, 'TdhEnumerateProviders');
 
-  if InterlockedCompareExchange64(int64(hTdhDll), hLib, 0) <> 0 then
+{$IFDEF WIN64}
+  if InterlockedCompareExchange64(NativeUInt(hTdhDll), hLib, 0) <> 0 then
+{$ELSE}
+  if InterlockedCompareExchange(Integer(hTdhDll), hLib, 0) <> 0 then
+{$ENDIF}
     FreeLibrary(hLib);
   Result := true;
 end;

@@ -1,0 +1,25 @@
+# Application Experience
+# Processes application compatibility cache requests for applications as they are launched. If disabled, you may not be informed of compatability issues with certain software.
+
+https://www.windows-security.org/windows-service/application-experience
+> Processes application compatibility lookup requests for applications as they start, provides support for computers that are running programs in compatibility mode, reports on compatibility issues, and automatically applies software updates to programs.
+
+Triggered by a Microsoft-Windows-ApplicationExperience-LookupServiceTrigger event. Probably means this is a background check/report, not something that reconfigures the application as it starts -- because it's already running.
+
+> The Application Experience service must be active for application compatibility software updates to be applied. You cannot customize this service; the operating system uses it internally. This service does not use any network, Internet, or Active Directory Domain Services (AD DS) resources.
+
+> If you disable the Application Experience service, the service continues to run, but no calls are made to the service. You cannot stop the actual process.
+
+On Windows 7, it's in the "Application-Experience-Infrastructure" package, together with shimeng.dll and apphelp.dll, so may be related to PcaSvc.
+While the PcaSvc itself is in another package: "Application-Experience-Program Compatibility Assistant".
+
+> AELookupSvc creates a work item to perform a compatibility check for every new process.
+> AELookupSvc caches new processes to prevent an unnecessary compatibility check the next time that process or program starts. Some executable files, like CMD.EXE never get cached.
+https://www.itprotoday.com/windows-server/q-handle-leaks-may-occur-aelookupsvc-application-experience-lookup-service-windows
+
+KB902196
+> This service is part of an infrastructure that automatically applies software updates to programs to make sure that they run on newly released service packs and newly released versions of the Windows operating system.
+> Part of the Application Compatibility Administrator. Reports on compatibility issues and automatically applies software updates to programs.
+https://www.betaarchive.com/wiki/index.php/Microsoft_KB_Archive/902196
+
+> The related checks can be disabled though Group Policy settings for program compatibility. When this setting is disabled, the service will continue to run, but no calls will be made to the service.

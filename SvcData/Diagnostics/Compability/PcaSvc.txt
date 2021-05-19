@@ -2,3 +2,6 @@
 # This service provides support for the Program Compatibility Assistant (PCA).
 # Program Compability Assistant Service
 Disabling does not affect explicitly enforced shims (i.e. AppLocale or shims configred in the environment variables)
+
+> The Program Compatibility Assistant Service attempts to find software and driver updates that improve the compatibility of applications with Windows 7. The Program Compatibility Assistant Service runs automatically when it detects that an older program is attempting to run in Windows 7 and is encountering problems.
+https://www.windows-security.org/windows-service/program-compatibility-assistant-service

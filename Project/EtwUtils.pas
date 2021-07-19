@@ -60,7 +60,7 @@ begin
   TdhEnumerateProviders := GetProcAddress(hlib, 'TdhEnumerateProviders');
 
 {$IFDEF WIN64}
-  if InterlockedCompareExchange64(NativeUInt(hTdhDll), hLib, 0) <> 0 then
+  if InterlockedCompareExchange64(Int64(hTdhDll), hLib, 0) <> 0 then
 {$ELSE}
   if InterlockedCompareExchange(Integer(hTdhDll), hLib, 0) <> 0 then
 {$ENDIF}

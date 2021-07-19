@@ -1232,6 +1232,7 @@ begin
       Log('Trying '+Service.ServiceName+'...');
       if Service.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE then begin
         Log('Resetting launch protection for '+Service.ServiceName+'...');
+        Log(GetServiceKey(Service.ServiceName));
         OverwriteServiceLaunchProtection(Service.ServiceName, SERVICE_LAUNCH_PROTECTED_NONE);
         hadLaunchProt := true;
         continue; //Launch protection reset requires reboot, do not touch ownership or we'll fail with ACCESS_DENIED
@@ -1304,7 +1305,7 @@ var Service: TServiceEntry;
 begin
   Service := GetFirstSelectedService();
   Assert(Service <> nil);
-  RegeditAtKey('HKEY_LOCAL_MACHINE'+GetServiceKey(Service.ServiceName));
+  RegeditAtKey('HKEY_LOCAL_MACHINE\'+GetServiceKey(Service.ServiceName));
 end;
 
 resourcestring

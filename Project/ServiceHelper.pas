@@ -243,8 +243,12 @@ function CopyFailureActions(const ASource: LPSERVICE_FAILURE_ACTIONS): LPSERVICE
 const
   sHkeyLocalMachine = 'HKEY_LOCAL_MACHINE';
   sScmHKEY = sHkeyLocalMachine;
-  sScmBasePath = '\System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+  sScmBasePath = 'System\CurrentControlSet\services'; //Base Services key in HKEY_LOCAL_MACHINE
+                                                      //WITHOUT starting \
   sTriggersSubkey = 'TriggerInfo';
+
+  //Note: Delphi's TRegistry requires starting \ to indicate absolute paths.
+  //  Meanwhile RegOpenKeyEx requires NO \. Windows <= 7 forgives \s though.
 
 //Returns the base key for this service's configuration, relative to HKEY_LOCAL_MACHINE
 function GetServiceKey(const AServiceName: string): string; inline;
@@ -1253,7 +1257,7 @@ begin
   try
     Result.RootKey := HKEY_LOCAL_MACHINE;
     Result.Access := KEY_READ;
-    if not Result.OpenKey(GetServiceKey(AServiceName), false) then
+    if not Result.OpenKey('\'+GetServiceKey(AServiceName), false) then
       RaiseLastOsError();
   except
     FreeAndNil(Result);

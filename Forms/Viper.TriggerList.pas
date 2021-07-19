@@ -964,7 +964,7 @@ begin
       //All triggers are exported under their full registry path + their real index
       SectionFromTrigger(
         Trigger.Data^,
-        sScmHKEY+GetTriggerKey(Trigger.ServiceName, Trigger.Index)
+        sScmHKEY+'\'+GetTriggerKey(Trigger.ServiceName, Trigger.Index)
       ).ExportToStrings(sl);
 
     sl.SaveToFile(SaveTriggersDialog.FileName);

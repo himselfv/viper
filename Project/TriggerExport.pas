@@ -148,7 +148,7 @@ end;
 //Exports a single trigger with the proper KeyName for the given service and index
 function SectionFromTrigger(const tr: TRegTriggerEntry): TRegFileKey;
 begin
-  Result := SectionFromTrigger(tr.Trigger^, sScmHKEY+GetTriggerKey(tr.ServiceName, tr.Index));
+  Result := SectionFromTrigger(tr.Trigger^, sScmHKEY+'\'+GetTriggerKey(tr.ServiceName, tr.Index));
 end;
 
 //Exports a number of triggers together to a given TRegFile
@@ -283,15 +283,15 @@ begin
     Delete(KeyPath, 1, Length(sScmHKEY))
     //This leaves us with initial \
   else
-  if (Length(KeyPath) > 0) and (KeyPath[1] <> '\') then
-    //sScmBasePath requires initial \
-    KeyPath := '\' + KeyPath;
+  //sScmBasePath contains NO initial \s
+  while (Length(KeyPath) > 0) and (KeyPath[1] = '\') do
+    Delete(KeyPath, 1, 1);
 
   if not KeyPath.StartsWith(sScmBasePath) then begin
     Result := false;
     exit;
   end;
-  Delete(KeyPath, 1, 1+Length(sScmBasePath)); //with the "\"
+  Delete(KeyPath, 1, Length(sScmBasePath));
 
   i_pos := pos('\', KeyPath);
   if i_pos <= 0 then begin
@@ -615,7 +615,7 @@ end;
 Disable / enable triggers
 }
 const
-  sDisabledServicesKey = '\Software\Viper\DisabledServices'; //in HKLM
+  sDisabledServicesKey = 'Software\Viper\DisabledServices'; //in HKLM
 
 function GetDisabledServiceKey(const AServiceName: string): string;
 begin
@@ -658,13 +658,13 @@ begin
     reg := TRegistry.Create;
     try
       reg.RootKey := HKEY_LOCAL_MACHINE;
-      if not reg.OpenKeyReadOnly(GetDisabledTriggersKey(AServiceName)) then
+      if not reg.OpenKeyReadOnly('\'+GetDisabledTriggersKey(AServiceName)) then
         exit; //no disabled ones
 
       subkeys := TStringList.Create;
       reg.GetKeyNames(subkeys);
       for subkey in subkeys do begin
-        if not reg.OpenKeyReadOnly(GetDisabledTriggerKey(AServiceName, subkey)) then
+        if not reg.OpenKeyReadOnly('\'+GetDisabledTriggerKey(AServiceName, subkey)) then
           continue; //cannot read, don't complain
         trig := CreateTriggerFromRegistryKey(reg);
         //if loaded, store
@@ -693,7 +693,7 @@ begin
   reg := TRegistry.Create;
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    if not reg.OpenKeyReadOnly(GetDisabledTriggerKey(AServiceName, AId)) then begin
+    if not reg.OpenKeyReadOnly('\'+GetDisabledTriggerKey(AServiceName, AId)) then begin
       Result := nil;
       exit;
     end;
@@ -713,7 +713,7 @@ begin
     WriteTriggerToRegistryKey(
       reg,
       ATrigger,
-      sHkeyLocalMachine + GetDisabledTriggerKey(AServiceName, AId)
+      sHkeyLocalMachine + '\' + GetDisabledTriggerKey(AServiceName, AId)
     );
   finally
     FreeAndNil(reg);
@@ -731,7 +731,7 @@ begin
     WriteTriggerToRegistryKey(
       reg,
       ATrigger,
-      sHkeyLocalMachine + GetNewDisabledTriggerKey(AServiceName)
+      sHkeyLocalMachine + '\' + GetNewDisabledTriggerKey(AServiceName)
     );
 
     //Delete the live version
@@ -755,7 +755,7 @@ begin
   reg := TRegistry.Create;
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    KeyPath := GetDisabledTriggerKey(AServiceName, AId);
+    KeyPath := '\'+GetDisabledTriggerKey(AServiceName, AId);
 
     if ATrigger <> nil then
       trig := ATrigger

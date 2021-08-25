@@ -51,8 +51,6 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     OnGetNodeDataSize = vtTasksGetNodeDataSize
     OnHeaderClick = vtTasksHeaderClick
     OnInitNode = vtTasksInitNode
-    ExplicitWidth = 478
-    ExplicitHeight = 293
     Columns = <
       item
         Position = 0
@@ -74,11 +72,19 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
       end
       item
         Position = 4
-        WideText = 'URI'
+        WideText = 'Source'
       end
       item
         Position = 5
-        WideText = 'Source'
+        WideText = 'GUID'
+      end
+      item
+        Position = 6
+        WideText = 'Buckets'
+      end
+      item
+        Position = 7
+        WideText = 'Presence'
       end>
   end
   object pnlBottom: TPanel

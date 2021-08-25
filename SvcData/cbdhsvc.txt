@@ -1,0 +1,3 @@
+Possibly related to the clipboard history functionality + clipboard sharing between PCs which depends on that.
+
+Some report that Edge clipboard won't function without this.

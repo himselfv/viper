@@ -57,6 +57,29 @@ type
     N1: TMenuItem;
     Enable1: TMenuItem;
     Disable1: TMenuItem;
+    MainMenu: TMainMenu;
+    aExit: TAction;
+    aOpenSchedulerRegistry: TAction;
+    aOpenSchedulerFolder: TAction;
+    aOpenSchedulerMMC: TAction;
+    aJumpToRegPlain: TAction;
+    aJumpToRegTree: TAction;
+    aJumpToSystem32Tasks: TAction;
+    miFile: TMenuItem;
+    miTools: TMenuItem;
+    HKLMScheduleTaskCache1: TMenuItem;
+    System32Tasks1: TMenuItem;
+    taskschedmmc1: TMenuItem;
+    Exit1: TMenuItem;
+    RegistryPlainkey1: TMenuItem;
+    RegistryTreekey1: TMenuItem;
+    System32Taskskey1: TMenuItem;
+    N2: TMenuItem;
+    Copy1: TMenuItem;
+    aReload1: TMenuItem;
+    Refresh1: TMenuItem;
+    N3: TMenuItem;
+    N4: TMenuItem;
     procedure vtTasksGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtTasksInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -77,6 +100,13 @@ type
     procedure aStopExecute(Sender: TObject);
     procedure aEnableExecute(Sender: TObject);
     procedure aDisableExecute(Sender: TObject);
+    procedure Exit1Click(Sender: TObject);
+    procedure aOpenSchedulerRegistryExecute(Sender: TObject);
+    procedure aOpenSchedulerFolderExecute(Sender: TObject);
+    procedure aOpenSchedulerMMCExecute(Sender: TObject);
+    procedure aJumpToRegPlainExecute(Sender: TObject);
+    procedure aJumpToRegTreeExecute(Sender: TObject);
+    procedure aJumpToSystem32TasksExecute(Sender: TObject);
 
   protected //Task nodes
     procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -125,7 +155,7 @@ var
   ScheduledTasksMainForm: TScheduledTasksMainForm;
 
 implementation
-uses ActiveX, ComObj;
+uses ActiveX, ComObj, ShellUtils, WinApiHelper;
 
 {$R *.dfm}
 
@@ -164,6 +194,13 @@ const
   sRegSchedule = '\Software\Microsoft\Windows NT\CurrentVersion\Schedule';
   sRegTasksRoot = sRegSchedule+'\Taskcache';
   sRegTasksFlat = sRegTasksRoot+'\Tasks';
+  sRegTasksTree = sRegTasksRoot+'\Tree';
+  sSystem32TasksFolder = '%SystemRoot%\System32\Tasks';
+
+function GetSystem32TasksFolder: string;
+begin
+  Result := ExpandEnvironmentStrings(sSystem32TasksFolder);
+end;
 
 
 function TaskStateToStr(const AState: TASK_STATE): string;
@@ -243,6 +280,11 @@ end;
 procedure TScheduledTasksMainForm.FormShow(Sender: TObject);
 begin
   Reload;
+end;
+
+procedure TScheduledTasksMainForm.Exit1Click(Sender: TObject);
+begin
+  Self.Close;
 end;
 
 procedure TScheduledTasksMainForm.vtTasksGetNodeDataSize(
@@ -593,15 +635,15 @@ var KeyNames: TStringList;
   TaskData: PNdTaskData;
   AGuid: string;
 begin
-  if not FReg.OpenKey(sRegTasksRoot+'\Tree'+APath, false) then
-    raise Exception.Create('Cannot open '+sRegTasksRoot+'\Tree');
+  if not FReg.OpenKey(sRegTasksTree+APath, false) then
+    raise Exception.Create('Cannot open '+sRegTasksTree);
 
   KeyNames := TStringList.Create;
   try
     FReg.GetKeyNames(KeyNames);
     for i := 0 to KeyNames.Count-1 do begin
       ATaskPath := APath+'\'+KeyNames[i];
-      FReg.OpenKey(sRegTasksRoot+'\Tree'+ATaskPath, false);
+      FReg.OpenKey(sRegTasksTree+ATaskPath, false);
 
       {
       Registry folders represent either Folders or Tasks.
@@ -655,27 +697,44 @@ Task selection and details
 
 procedure TScheduledTasksMainForm.vtTasksFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
-var SelNode: PVirtualNode;
+var SelNodes: TTaskDataArray;
   SelData: PNdTaskData;
-  CanStart, CanStop, CanEdit: boolean;
+  CanStart, CanStop, CanEnable, CanDisable: boolean;
 begin
+  SelNodes := Self.GetSelectedTasks();
+
   CanStart := false;
   CanStop := false;
-  CanEdit := false;
-  for SelNode in vtTasks.SelectedNodes() do begin
-    SelData := Self.GetNodeData(SelNode);
-    CanEdit := CanEdit or (SelData.Task <> nil);
-    if SelData.Task <> nil then begin
-      CanStop := SelData.Task.State = TASK_STATE_RUNNING;
-      CanStart := (SelData.Task.State <> TASK_STATE_DISABLED) and not CanStop;
-      //Note:
-      //1. Some tasks can be started multiple times but for now we don't support this.
-      //   We'd have to check for either that OR "State != RUNNING".
-      //2. Tasks without AllowDemandStart can't be started normally. For now we don't care.
-      //   We'd have to check for AllowDemandStart and perhaps have a "Force-Start"
-      //   that circumvents that.
-    end;
+  CanEnable := false;
+  CanDisable := false;
+  for SelData in SelNodes do begin
+    if SelData.Task = nil then continue; //Can't do anything with these atm
+
+    if SelData.Task.State = TASK_STATE_RUNNING then
+      CanStop := true;
+    if (SelData.Task.State <> TASK_STATE_DISABLED) and (SelData.Task.State <> TASK_STATE_RUNNING) then
+      CanStart := true;
+    //Note:
+    //1. Some tasks can be started multiple times but for now we don't support this.
+    //   We'd have to check for either that OR "State != RUNNING".
+    //2. Tasks without AllowDemandStart can't be started normally. For now we don't care.
+    //   We'd have to check for AllowDemandStart and perhaps have a "Force-Start"
+    //   that circumvents that.
+    if not SelData.Task.Enabled then
+      CanEnable := true
+    else
+      CanDisable := true;
   end;
+
+  aStart.Visible := CanStart;
+  aStop.Visible := CanStop;
+  aEnable.Visible := CanEnable;
+  aDisable.Visible := CanDisable;
+
+  aJumpToRegPlain.Visible := Length(SelNodes) = 1;
+  aJumpToRegTree.Visible := Length(SelNodes) = 1;
+  aJumpToSystem32Tasks.Visible := Length(SelNodes) = 1;
+
 
   ReloadFocusedProps;
 end;
@@ -786,11 +845,57 @@ begin
 end;
 
 
+{
+Common actions
+}
+procedure TScheduledTasksMainForm.aOpenSchedulerRegistryExecute(
+  Sender: TObject);
+begin
+  RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksRoot);
+end;
+
+procedure TScheduledTasksMainForm.aOpenSchedulerFolderExecute(Sender: TObject);
+begin
+  ExplorerAtFile(GetSystem32TasksFolder());
+end;
+
+procedure TScheduledTasksMainForm.aOpenSchedulerMMCExecute(Sender: TObject);
+begin
+  ShellOpen(ExpandEnvironmentStrings('%SystemRoot%\System32\taskschd.msc'))
+end;
+
+
+{
+Task jumps
+}
+procedure TScheduledTasksMainForm.aJumpToRegPlainExecute(Sender: TObject);
+var Data: PNdTaskData;
+begin
+  Data := Self.GetFocusedTask;
+  if (Data = nil) or (Data.GUID='') then exit;
+  RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksFlat+'\'+Data.GUID);
+end;
+
+procedure TScheduledTasksMainForm.aJumpToRegTreeExecute(Sender: TObject);
+var Data: PNdTaskData;
+begin
+  Data := Self.GetFocusedTask;
+  if (Data = nil) or (Data.Path ='') then exit;
+  RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksTree+NormalizeTaskPath(Data.Path));
+end;
+
+procedure TScheduledTasksMainForm.aJumpToSystem32TasksExecute(Sender: TObject);
+var Data: PNdTaskData;
+begin
+  Data := Self.GetFocusedTask;
+  if (Data = nil) or (Data.Path ='') then exit;
+  ExplorerAtFile(GetSystem32TasksFolder()+NormalizeTaskPath(Data.Path));
+end;
+
 
 {
 Task actions
 }
-
 procedure TScheduledTasksMainForm.aStartExecute(Sender: TObject);
 var Tasks: TTaskDataArray;
   Data: PNdTaskData;

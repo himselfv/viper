@@ -10,6 +10,7 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  Menu = MainMenu
   OldCreateOrder = False
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -45,7 +46,7 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes]
     TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
     TreeOptions.PaintOptions = [toShowDropmark, toThemeAware, toUseBlendedImages]
-    TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect]
+    TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect, toRightClickSelect]
     OnCompareNodes = vtTasksCompareNodes
     OnFocusChanged = vtTasksFocusChanged
     OnFreeNode = vtTasksFreeNode
@@ -120,7 +121,7 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     Left = 24
     Top = 32
     object aReload: TAction
-      Caption = 'aReload'
+      Caption = 'Refresh'
       ShortCut = 116
       OnExecute = aReloadExecute
     end
@@ -144,6 +145,39 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
       Caption = 'Disable'
       OnExecute = aDisableExecute
     end
+    object aExit: TAction
+      Caption = 'Exit'
+    end
+    object aOpenSchedulerRegistry: TAction
+      Category = 'Links'
+      Caption = 'HKLM\Schedule\TaskCache'
+      OnExecute = aOpenSchedulerRegistryExecute
+    end
+    object aOpenSchedulerFolder: TAction
+      Category = 'Links'
+      Caption = 'System32\Tasks'
+      OnExecute = aOpenSchedulerFolderExecute
+    end
+    object aOpenSchedulerMMC: TAction
+      Category = 'Links'
+      Caption = 'taskschd.mmc'
+      OnExecute = aOpenSchedulerMMCExecute
+    end
+    object aJumpToRegPlain: TAction
+      Category = 'Tasks'
+      Caption = 'Open registry key'
+      OnExecute = aJumpToRegPlainExecute
+    end
+    object aJumpToRegTree: TAction
+      Category = 'Tasks'
+      Caption = 'Open registry key (Tree)'
+      OnExecute = aJumpToRegTreeExecute
+    end
+    object aJumpToSystem32Tasks: TAction
+      Category = 'Tasks'
+      Caption = 'Jump to System32\Tasks'
+      OnExecute = aJumpToSystem32TasksExecute
+    end
   end
   object pmPopup: TPopupMenu
     Left = 24
@@ -154,6 +188,21 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     object Stop1: TMenuItem
       Action = aStop
     end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object Copy1: TMenuItem
+      Caption = 'Copy'
+    end
+    object RegistryPlainkey1: TMenuItem
+      Action = aJumpToRegPlain
+    end
+    object RegistryTreekey1: TMenuItem
+      Action = aJumpToRegTree
+    end
+    object System32Taskskey1: TMenuItem
+      Action = aJumpToSystem32Tasks
+    end
     object N1: TMenuItem
       Caption = '-'
     end
@@ -162,6 +211,41 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     end
     object Disable1: TMenuItem
       Action = aDisable
+    end
+    object N4: TMenuItem
+      Caption = '-'
+    end
+    object aReload1: TMenuItem
+      Action = aReload
+    end
+  end
+  object MainMenu: TMainMenu
+    Left = 72
+    Top = 32
+    object miFile: TMenuItem
+      Caption = 'File'
+      object Refresh1: TMenuItem
+        Action = aReload
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object Exit1: TMenuItem
+        Action = aExit
+        OnClick = Exit1Click
+      end
+    end
+    object miTools: TMenuItem
+      Caption = 'Tools'
+      object HKLMScheduleTaskCache1: TMenuItem
+        Action = aOpenSchedulerRegistry
+      end
+      object System32Tasks1: TMenuItem
+        Action = aOpenSchedulerFolder
+      end
+      object taskschedmmc1: TMenuItem
+        Action = aOpenSchedulerMMC
+      end
     end
   end
 end

@@ -32,6 +32,7 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     Width = 640
     Height = 305
     Align = alClient
+    BorderWidth = 1
     Header.AutoSizeIndex = 0
     Header.Font.Charset = DEFAULT_CHARSET
     Header.Font.Color = clWindowText
@@ -39,6 +40,7 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     Header.Font.Name = 'Tahoma'
     Header.Font.Style = []
     Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+    PopupMenu = pmPopup
     TabOrder = 0
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes]
     TreeOptions.MiscOptions = [toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
@@ -85,6 +87,14 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
       item
         Position = 7
         WideText = 'Presence'
+      end
+      item
+        Position = 8
+        WideText = 'LastRunTime'
+      end
+      item
+        Position = 9
+        WideText = 'NextRunTime'
       end>
   end
   object pnlBottom: TPanel
@@ -113,6 +123,45 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
       Caption = 'aReload'
       ShortCut = 116
       OnExecute = aReloadExecute
+    end
+    object aStart: TAction
+      Category = 'Tasks'
+      Caption = 'Start'
+      OnExecute = aStartExecute
+    end
+    object aStop: TAction
+      Category = 'Tasks'
+      Caption = 'Stop'
+      OnExecute = aStopExecute
+    end
+    object aEnable: TAction
+      Category = 'Tasks'
+      Caption = 'Enable'
+      OnExecute = aEnableExecute
+    end
+    object aDisable: TAction
+      Category = 'Tasks'
+      Caption = 'Disable'
+      OnExecute = aDisableExecute
+    end
+  end
+  object pmPopup: TPopupMenu
+    Left = 24
+    Top = 88
+    object Start1: TMenuItem
+      Action = aStart
+    end
+    object Stop1: TMenuItem
+      Action = aStop
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object Enable1: TMenuItem
+      Action = aEnable
+    end
+    object Disable1: TMenuItem
+      Action = aDisable
     end
   end
 end

@@ -2,10 +2,14 @@ unit ScheduledTasks.MainForm;
 
 interface
 
+//{$DEFINE TASK_SUPPORT_MULTISTART}
+{ Some tasks support multiple instances but for now we don't support that.
+ This marks some places in the code which need to be enabled/disabled when we do. }
+
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, VirtualTrees, Actions, ActnList, taskschd, StdCtrls, ExtCtrls,
-  Registry;
+  Registry, Vcl.Menus;
 
 type
   TTaskPresenceFlag = (
@@ -28,6 +32,14 @@ type
   end;
   PNdTaskData = ^TNdTaskData;
 
+  TNodeList = TArray<PVirtualNode>;
+  PNodeList = ^TNodeList;
+
+  TNodeDataArray = array of pointer;
+  PNodeDataArray = ^TNodeDataArray;
+
+  TTaskDataArray = array of PNdTaskData;
+
   TScheduledTasksMainForm = class(TForm)
     vtTasks: TVirtualStringTree;
     alActions: TActionList;
@@ -35,6 +47,16 @@ type
     pnlBottom: TPanel;
     mmDetails: TMemo;
     Splitter1: TSplitter;
+    aStart: TAction;
+    aStop: TAction;
+    aDisable: TAction;
+    aEnable: TAction;
+    pmPopup: TPopupMenu;
+    Start1: TMenuItem;
+    Stop1: TMenuItem;
+    N1: TMenuItem;
+    Enable1: TMenuItem;
+    Disable1: TMenuItem;
     procedure vtTasksGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtTasksInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -51,21 +73,44 @@ type
     procedure vtTasksHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
     procedure vtTasksCompareNodes(Sender: TBaseVirtualTree; Node1,
       Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
-  protected
-    FTaskScheduler: ITaskService;
-    function GetNodeData(Node: PVirtualNode): PNdTaskData;
+    procedure aStartExecute(Sender: TObject);
+    procedure aStopExecute(Sender: TObject);
+    procedure aEnableExecute(Sender: TObject);
+    procedure aDisableExecute(Sender: TObject);
+
+  protected //Task nodes
+    procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Data: Pointer; var Abort: Boolean);
+    procedure Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure FindTaskByPath_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+    procedure FindTaskByGuid_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   public
     procedure Clear;
     procedure Reload;
+    procedure RefreshTasks(const ATasks: TTaskDataArray); overload;
+    function AddOrphanTask(): PVirtualNode;
+    function GetNodeData(Node: PVirtualNode): PNdTaskData;
+    function GetFocusedTask: PNdTaskData;
+    function GetSelectedNodes: TNodeList;
+    function GetSelectedTasks: TTaskDataArray;
+    function FindTaskByPath(const APath: string): PVirtualNode;
+    function FindTaskByGuid(const AGuid: string): PVirtualNode;
+
+  protected //API loading
+    FTaskScheduler: ITaskService;
     procedure AddFolder(APath: string); overload;
     procedure AddFolder(AFolder: ITaskFolder); overload;
     function AddTask(ATask: IRegisteredTask): PVirtualNode;
-    function AddOrphanTask(): PVirtualNode;
-    function FindTaskByPath(const APath: string): PVirtualNode;
-    procedure FindTaskByPath_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    function FindTaskByGuid(const AGuid: string): PVirtualNode;
-    procedure FindTaskByGuid_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-  protected
+
+  protected //Registry loading
+    FReg: TRegistry;
+    procedure LoadRegistryFlat;
+    procedure LoadRegistryFlatTask(const AGuid: string);
+    procedure LoadRegistryBucket(const ABucket: string);
+    procedure LoadRegistryTree;
+    procedure LoadRegistryTreePath(const APath: string);
+
+  protected //Property panel
     procedure ReloadFocusedProps;
     procedure ClearProps;
     procedure AddProp(const AName: string; const AValue: string); overload;
@@ -73,13 +118,7 @@ type
     procedure AddPropHex(const AName: string; const AValue: integer); overload;
     procedure AddProp(const AName: string; const AValue: TDatetime); overload;
     procedure AddProp(const AName: string; const AValue: boolean); overload;
-  protected
-    FReg: TRegistry;
-    procedure LoadRegistryFlat;
-    procedure LoadRegistryFlatTask(const AGuid: string);
-    procedure LoadRegistryBucket(const ABucket: string);
-    procedure LoadRegistryTree;
-    procedure LoadRegistryTreePath(const APath: string);
+
   end;
 
 var
@@ -233,6 +272,42 @@ begin
   Result := PNdTaskData(vtTasks.GetNodeData(Node));
 end;
 
+function TScheduledTasksMainForm.GetFocusedTask: PNdTaskData;
+begin
+  if vtTasks.FocusedNode = nil then
+    Result := nil
+  else
+    Result := PNdTaskData(vtTasks.GetNodeData(vtTasks.FocusedNode));
+end;
+
+function TScheduledTasksMainForm.GetSelectedNodes: TNodeList;
+begin
+  SetLength(Result, 0);
+  vtTasks.IterateSubtree(nil, Iterate_AddNodeToArray, @Result, [vsSelected]);
+end;
+
+procedure TScheduledTasksMainForm.Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var entries: PNodeList absolute Data;
+begin
+  SetLength(entries^, Length(entries^)+1);
+  entries^[Length(entries^)-1] := Node;
+end;
+
+function TScheduledTasksMainForm.GetSelectedTasks: TTaskDataArray;
+begin
+  SetLength(Result, 0);
+  vtTasks.IterateSubtree(nil, Iterate_AddNodeDataToArray, @Result, [vsSelected]);
+end;
+
+procedure TScheduledTasksMainForm.Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var entries: PNodeDataArray absolute Data;
+begin
+  SetLength(entries^, Length(entries^)+1);
+  entries^[Length(entries^)-1] := Sender.GetNodeData(Node);
+end;
+
 procedure TScheduledTasksMainForm.vtTasksGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -248,6 +323,8 @@ begin
     5: CellText := NodeData.GUID;
     6: CellText := NodeData.Buckets;
     7: CellText := TaskPresenceToStr(NodeData.Presence);
+    8: if NodeData.Task <> nil then CellText := DatetimeToStr(NodeData.Task.LastRunTime) else CellText := '';
+    9: if NodeData.Task <> nil then CellText := DatetimeToStr(NodeData.Task.NextRunTime) else CellText := '';
   end;
 end;
 
@@ -274,6 +351,11 @@ begin
     Sender.Treeview.SortTree(Sender.SortColumn, Sender.SortDirection);
 end;
 
+
+{
+Task reloading
+}
+
 procedure TScheduledTasksMainForm.aReloadExecute(Sender: TObject);
 begin
   Self.Reload;
@@ -284,6 +366,8 @@ begin
   vtTasks.Clear;
 end;
 
+//Refreshes all tasks data
+//Eventually this should work in a way that doesn't break current selection in the UI
 procedure TScheduledTasksMainForm.Reload;
 begin
   Self.Clear;
@@ -306,6 +390,13 @@ begin
   finally
     vtTasks.EndUpdate;
   end;
+end;
+
+//Refreshes all the task data only for the given tasks. Does not reload the task list.
+procedure TScheduledTasksMainForm.RefreshTasks(const ATasks: TTaskDataArray);
+begin
+  //For now we just reload everything
+  Self.Reload;
 end;
 
 //The path should not end with \, unless its a single \
@@ -384,119 +475,9 @@ begin
 end;
 
 
-procedure TScheduledTasksMainForm.vtTasksFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
-begin
-  ReloadFocusedProps;
-end;
-
-procedure TScheduledTasksMainForm.ReloadFocusedProps;
-var NodeData: PNdTaskData;
-  Task: IRegisteredTask;
-  TaskDef: ITaskDefinition;
-begin
-  ClearProps;
-  if vtTasks.FocusedNode = nil then
-    exit;
-  NodeData := Self.GetNodeData(vtTasks.FocusedNode);
-
-  AddProp('GUID', NodeData.GUID);
-  AddProp('Presence', TaskPresenceToStr(NodeData.Presence));
-
-  Task := NodeData.Task;
-  if Task = nil then begin
-    AddProp('COM access', 'NO COM ACCESS');
-  end else begin
-    AddProp('LastRunTime', Task.LastRunTime);
-    AddPropHex('LastTaskResult', Task.LastTaskResult);
-    AddProp('NextRunTime', Task.NextRunTime);
-    AddProp('XmlText', Task.XML);
-
-    TaskDef := Task.Definition;
-  {
-    if SameText(Task.XML, TaskDef.XmlText) then
-      AddProp('Def.XmlText', 'Same as XmlText')
-    else
-      AddProp('Def.XmlText', TaskDef.XmlText);
-
-    Definition.XmlText is somewhat different from Task.XML:
-     - It has (resourcename.dll,resourceid) strings expanded
-     - It has [CDATA] blocks expanded
-    I dunno the reason for this but lets print out the more raw version.
-  }
-
-    AddProp('Description', TaskDef.RegistrationInfo.Description);
-    AddProp('Author', TaskDef.RegistrationInfo.Author);
-    AddProp('Version', TaskDef.RegistrationInfo.Version);
-    AddProp('Date', TaskDef.RegistrationInfo.Date);
-    AddProp('Documentation', TaskDef.RegistrationInfo.Documentation);
-    AddProp('URI', TaskDef.RegistrationInfo.URI);
-    AddProp('Source', TaskDef.RegistrationInfo.Source);
-  //  AddProp('Reg.XmlText', TaskDef.RegistrationInfo.XmlText); //Not supported
-
-    AddProp('AllowDemandStart', TaskDef.Settings.AllowDemandStart);
-    AddProp('RestartInterval', TaskDef.Settings.RestartInterval);
-    AddProp('RestartCount', TaskDef.Settings.RestartCount);
-    AddProp('AllowHardTerminate', TaskDef.Settings.AllowHardTerminate);
-    AddProp('Priority', TaskDef.Settings.Priority);
-    AddProp('Network.Name', TaskDef.Settings.NetworkSettings.Name);
-    AddProp('Network.Id', TaskDef.Settings.NetworkSettings.Id);
-
-  { AddProp('', );
-    TaskDef.Settings.MultipleInstances;
-    TaskDef.Settings.StopIfGoingOnBatteries;
-    TaskDef.Settings.DisallowStartIfOnBatteries;
-    TaskDef.Settings.StartWhenAvailable;
-    TaskDef.Settings.RunOnlyIfNetworkAvailable;
-    TaskDef.Settings.ExecutionTimeLimit;
-    TaskDef.Settings.DeleteExpiredTaskAfter;
-    TaskDef.Settings.Compatibility;
-    TaskDef.Settings.Enabled;
-    TaskDef.Settings.Hidden;
-    TaskDef.Settings.RunOnlyIfIdle;
-    TaskDef.Settings.WakeToRun;}
-
-    AddProp('PrincipalId', TaskDef.Principal.Id);
-    AddProp('PrincipalDisplayName', TaskDef.Principal.DisplayName);
-    AddProp('UserId', TaskDef.Principal.UserId);
-    AddProp('GroupId', TaskDef.Principal.GroupId);
-    AddProp('RunLevel', TaskRunLevelToStr(TaskDef.Principal.RunLevel));
-    AddProp('LogonType', TaskLogonTypeToStr(TaskDef.Principal.LogonType));
-  end;
-end;
-
-procedure TScheduledTasksMainForm.ClearProps;
-begin
-  mmDetails.Clear;
-end;
-
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: string);
-begin
-  mmDetails.Lines.Add(AName + ' = ' + AValue);
-end;
-
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: integer);
-begin
-  AddProp(AName, IntToStr(AValue));
-end;
-
-procedure TScheduledTasksMainForm.AddPropHex(const AName: string; const AValue: integer);
-begin
-  AddProp(AName, '0x'+IntToHex(AValue, 8));
-end;
-
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: TDatetime);
-begin
-  AddProp(AName, DateTimeToStr(AValue));
-end;
-
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: boolean);
-begin
-  AddProp(AName, BoolToStr(AValue, true));
-end;
-
-
 {
+Task registry reloading.
+
 The tasks are duplicated in the registry in two places,
 and either one can IN THEORY contain tasks not mentioned elsewhere.
 
@@ -665,6 +646,213 @@ begin
   finally
     FreeAndNil(KeyNames);
   end;
+end;
+
+
+{
+Task selection and details
+}
+
+procedure TScheduledTasksMainForm.vtTasksFocusChanged(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var SelNode: PVirtualNode;
+  SelData: PNdTaskData;
+  CanStart, CanStop, CanEdit: boolean;
+begin
+  CanStart := false;
+  CanStop := false;
+  CanEdit := false;
+  for SelNode in vtTasks.SelectedNodes() do begin
+    SelData := Self.GetNodeData(SelNode);
+    CanEdit := CanEdit or (SelData.Task <> nil);
+    if SelData.Task <> nil then begin
+      CanStop := SelData.Task.State = TASK_STATE_RUNNING;
+      CanStart := (SelData.Task.State <> TASK_STATE_DISABLED) and not CanStop;
+      //Note:
+      //1. Some tasks can be started multiple times but for now we don't support this.
+      //   We'd have to check for either that OR "State != RUNNING".
+      //2. Tasks without AllowDemandStart can't be started normally. For now we don't care.
+      //   We'd have to check for AllowDemandStart and perhaps have a "Force-Start"
+      //   that circumvents that.
+    end;
+  end;
+
+  ReloadFocusedProps;
+end;
+
+procedure TScheduledTasksMainForm.ReloadFocusedProps;
+var NodeData: PNdTaskData;
+  Task: IRegisteredTask;
+  TaskDef: ITaskDefinition;
+begin
+  ClearProps;
+  if vtTasks.FocusedNode = nil then
+    exit;
+  NodeData := Self.GetNodeData(vtTasks.FocusedNode);
+
+  AddProp('GUID', NodeData.GUID);
+  AddProp('Presence', TaskPresenceToStr(NodeData.Presence));
+
+  Task := NodeData.Task;
+  if Task = nil then begin
+    AddProp('COM access', 'NO COM ACCESS');
+  end else begin
+    AddProp('LastRunTime', Task.LastRunTime);
+    AddPropHex('LastTaskResult', Task.LastTaskResult);
+    AddProp('NextRunTime', Task.NextRunTime);
+    AddProp('XmlText', Task.XML);
+
+    TaskDef := Task.Definition;
+  {
+    if SameText(Task.XML, TaskDef.XmlText) then
+      AddProp('Def.XmlText', 'Same as XmlText')
+    else
+      AddProp('Def.XmlText', TaskDef.XmlText);
+
+    Definition.XmlText is somewhat different from Task.XML:
+     - It has (resourcename.dll,resourceid) strings expanded
+     - It has [CDATA] blocks expanded
+    I dunno the reason for this but lets print out the more raw version.
+  }
+
+    AddProp('Description', TaskDef.RegistrationInfo.Description);
+    AddProp('Author', TaskDef.RegistrationInfo.Author);
+    AddProp('Version', TaskDef.RegistrationInfo.Version);
+    AddProp('Date', TaskDef.RegistrationInfo.Date);
+    AddProp('Documentation', TaskDef.RegistrationInfo.Documentation);
+    AddProp('URI', TaskDef.RegistrationInfo.URI);
+    AddProp('Source', TaskDef.RegistrationInfo.Source);
+  //  AddProp('Reg.XmlText', TaskDef.RegistrationInfo.XmlText); //Not supported
+
+    AddProp('AllowDemandStart', TaskDef.Settings.AllowDemandStart);
+    AddProp('RestartInterval', TaskDef.Settings.RestartInterval);
+    AddProp('RestartCount', TaskDef.Settings.RestartCount);
+    AddProp('AllowHardTerminate', TaskDef.Settings.AllowHardTerminate);
+    AddProp('Priority', TaskDef.Settings.Priority);
+    AddProp('Network.Name', TaskDef.Settings.NetworkSettings.Name);
+    AddProp('Network.Id', TaskDef.Settings.NetworkSettings.Id);
+
+  { AddProp('', );
+    TaskDef.Settings.MultipleInstances;
+    TaskDef.Settings.StopIfGoingOnBatteries;
+    TaskDef.Settings.DisallowStartIfOnBatteries;
+    TaskDef.Settings.StartWhenAvailable;
+    TaskDef.Settings.RunOnlyIfNetworkAvailable;
+    TaskDef.Settings.ExecutionTimeLimit;
+    TaskDef.Settings.DeleteExpiredTaskAfter;
+    TaskDef.Settings.Compatibility;
+    TaskDef.Settings.Enabled;
+    TaskDef.Settings.Hidden;
+    TaskDef.Settings.RunOnlyIfIdle;
+    TaskDef.Settings.WakeToRun;}
+
+    AddProp('PrincipalId', TaskDef.Principal.Id);
+    AddProp('PrincipalDisplayName', TaskDef.Principal.DisplayName);
+    AddProp('UserId', TaskDef.Principal.UserId);
+    AddProp('GroupId', TaskDef.Principal.GroupId);
+    AddProp('RunLevel', TaskRunLevelToStr(TaskDef.Principal.RunLevel));
+    AddProp('LogonType', TaskLogonTypeToStr(TaskDef.Principal.LogonType));
+  end;
+end;
+
+procedure TScheduledTasksMainForm.ClearProps;
+begin
+  mmDetails.Clear;
+end;
+
+procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: string);
+begin
+  mmDetails.Lines.Add(AName + ' = ' + AValue);
+end;
+
+procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: integer);
+begin
+  AddProp(AName, IntToStr(AValue));
+end;
+
+procedure TScheduledTasksMainForm.AddPropHex(const AName: string; const AValue: integer);
+begin
+  AddProp(AName, '0x'+IntToHex(AValue, 8));
+end;
+
+procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: TDatetime);
+begin
+  AddProp(AName, DateTimeToStr(AValue));
+end;
+
+procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: boolean);
+begin
+  AddProp(AName, BoolToStr(AValue, true));
+end;
+
+
+
+{
+Task actions
+}
+
+procedure TScheduledTasksMainForm.aStartExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Data: PNdTaskData;
+  RunningTask: IRunningTask;
+begin
+  Tasks := Self.GetSelectedTasks;
+  for Data in Tasks do begin
+{$IFNDEF TASK_SUPPORT_MULTISTART}
+    //For now we don't support multi-start so check for RUNNING to avoid accidentally doing that
+    //when mass-starting
+    if Data.Task.State = TASK_STATE_RUNNING then
+      continue;
+{$ENDIF}
+
+    RunningTask := nil; //These methods don't properly release what's passed
+    OleCheck(Data.Task.Run(Variants.EmptyParam, RunningTask));
+  end;
+
+  //Refresh all of them, it's cheaper than rebuilding the array
+  RefreshTasks(Tasks);
+end;
+
+procedure TScheduledTasksMainForm.aStopExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Data: PNdTaskData;
+  Instances: IRunningTaskCollection;
+  i: integer;
+begin
+  Tasks := Self.GetSelectedTasks;
+  for Data in Tasks do begin
+    Instances := nil;
+    OleCheck(Data.Task.GetInstances(0, Instances));
+    if Instances.Count <= 0 then
+      continue;
+
+    //A task can have multiple running instances but for now we simply stop them all.
+    //We'll need a completely different UI approach to allow stoping them individually.
+    for i := 1 to Instances.Count do //These are 1-based
+      OleCheck(Instances[i].Stop());
+  end;
+
+  RefreshTasks(Tasks);
+end;
+
+procedure TScheduledTasksMainForm.aEnableExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Data: PNdTaskData;
+begin
+  Tasks := Self.GetSelectedTasks;
+  for Data in Tasks do
+    Data.Task.Enabled := true;
+  RefreshTasks(Tasks);
+end;
+
+procedure TScheduledTasksMainForm.aDisableExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Data: PNdTaskData;
+begin
+  Tasks := Self.GetSelectedTasks;
+  for Data in Tasks do
+    Data.Task.Enabled := false;
+  RefreshTasks(Tasks);
 end;
 
 

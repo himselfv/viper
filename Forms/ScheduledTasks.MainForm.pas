@@ -139,6 +139,7 @@ type
     procedure LoadRegistryBucket(const ABucket: string);
     procedure LoadRegistryTree;
     procedure LoadRegistryTreePath(const APath: string);
+    procedure LoadFsFolder(const APath: string);
 
   protected //Property panel
     procedure ReloadFocusedProps;
@@ -155,7 +156,7 @@ var
   ScheduledTasksMainForm: TScheduledTasksMainForm;
 
 implementation
-uses ActiveX, ComObj, ShellUtils, WinApiHelper;
+uses ActiveX, ComObj, ShellUtils, WinApiHelper, FilenameUtils;
 
 {$R *.dfm}
 
@@ -197,7 +198,7 @@ const
   sRegTasksTree = sRegTasksRoot+'\Tree';
   sSystem32TasksFolder = '%SystemRoot%\System32\Tasks';
 
-function GetSystem32TasksFolder: string;
+function GetSystem32TasksPath: string;
 begin
   Result := ExpandEnvironmentStrings(sSystem32TasksFolder);
 end;
@@ -427,6 +428,8 @@ begin
     Self.LoadRegistryBucket('Logon');
     Self.LoadRegistryBucket('Maintenance');
     Self.LoadRegistryBucket('Plain');
+
+    Self.LoadFsFolder('');
 
     //Verify that all tasks now have GUIDs
   finally
@@ -690,6 +693,35 @@ begin
   end;
 end;
 
+procedure TScheduledTasksMainForm.LoadFsFolder(const APath: string);
+var sr: TSearchRec;
+  Node: PVirtualNode;
+  Data: PNdTaskData;
+  TaskPath: string;
+begin
+  for sr in FilenameUtils.ListFilesEx(GetSystem32TasksPath()+APath+'\*.*', faAnyFile) do begin
+    if (sr.Name='.') or (sr.Name='..') then
+      continue;
+
+    if faDirectory and sr.Attr <> 0 then begin
+      LoadFsFolder(APath+'\'+sr.Name);
+      continue;
+    end;
+
+    TaskPath := NormalizeTaskPath(APath+'\'+sr.Name);
+    Node := Self.FindTaskByPath(TaskPath);
+    if Node = nil then begin
+      Node := Self.AddOrphanTask;
+      Data := Self.GetNodeData(Node);
+      Data.Path := TaskPath;
+    end else
+      Data := Self.GetNodeData(Node);
+
+    Data.Presence := Data.Presence + [tpStorage];
+  end;
+end;
+
+
 
 {
 Task selection and details
@@ -734,7 +766,6 @@ begin
   aJumpToRegPlain.Visible := Length(SelNodes) = 1;
   aJumpToRegTree.Visible := Length(SelNodes) = 1;
   aJumpToSystem32Tasks.Visible := Length(SelNodes) = 1;
-
 
   ReloadFocusedProps;
 end;
@@ -856,7 +887,7 @@ end;
 
 procedure TScheduledTasksMainForm.aOpenSchedulerFolderExecute(Sender: TObject);
 begin
-  ExplorerAtFile(GetSystem32TasksFolder());
+  ExplorerAtFile(GetSystem32TasksPath());
 end;
 
 procedure TScheduledTasksMainForm.aOpenSchedulerMMCExecute(Sender: TObject);
@@ -889,7 +920,7 @@ var Data: PNdTaskData;
 begin
   Data := Self.GetFocusedTask;
   if (Data = nil) or (Data.Path ='') then exit;
-  ExplorerAtFile(GetSystem32TasksFolder()+NormalizeTaskPath(Data.Path));
+  ExplorerAtFile(GetSystem32TasksPath()+NormalizeTaskPath(Data.Path));
 end;
 
 

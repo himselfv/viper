@@ -13,6 +13,7 @@ uses
   Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
   Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
   Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
+  Viper.MainTriggerList in '..\Forms\Viper.MainTriggerList.pas' {MainTriggerList: TFrame},
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
@@ -49,5 +50,6 @@ begin
   Application.CreateForm(TLogForm, LogForm);
   Application.CreateForm(TSettingsForm, SettingsForm);
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
+  Application.CreateForm(TMainTriggerList, TriggerBrowser);
   Application.Run;
 end.

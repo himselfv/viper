@@ -1,0 +1,2 @@
+inherited MainTriggerList: TMainTriggerList
+end

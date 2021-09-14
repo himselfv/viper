@@ -9,6 +9,12 @@ uses
   Viper.ServiceList, Viper.TriggerList, Viper.DependencyList, Viper.ServiceTriggerList,
   Viper.RichEditEx;
 
+const
+  //Custom messages will be delivered to registered views
+  UM_CLEAR                = WM_APP + 1; //Flush internal data in preparation for full reload
+  UM_REFRESH              = WM_APP + 2; //Refresh data while trying to keep internal data where it fits
+  UM_QUICKFILTER_CHANGED  = WM_APP + 3; //Main QuickFilter text changed
+
 type
   //Folder node data contains only a single pointer.
   //If it's < ntMax then it's TFolderNodeType, otherwise it's a TServiceFolder.
@@ -34,6 +40,8 @@ type
     function GetEffectiveDisplayName: string; override;
     procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); override;
   end;
+
+  TCallback<TFunc> = class(TList<TFunc>) end;
 
   TMainForm = class(TForm)
     ActionList: TActionList;
@@ -174,9 +182,8 @@ type
     procedure aRestoreServiceConfigExecute(Sender: TObject);
     procedure miShowLogClick(Sender: TObject);
     procedure edtQuickFilterChange(Sender: TObject);
+    procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure aRestartAsAdminExecute(Sender: TObject);
-    procedure miTriggerBrowserClick(Sender: TObject);
-    procedure miServiceBrowserClick(Sender: TObject);
     procedure aRemoveServiceFromFolderExecute(Sender: TObject);
     procedure mmNotesExit(Sender: TObject);
     procedure aSaveNotesExecute(Sender: TObject);
@@ -191,7 +198,6 @@ type
       Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure aEditServiceNotesExecute(Sender: TObject);
     procedure aConfigureColorsExecute(Sender: TObject);
-    procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
     procedure aShowUserPrototypesExecute(Sender: TObject);
@@ -202,6 +208,33 @@ type
     procedure miQueryLocalRPCClick(Sender: TObject);
     procedure miQueryLocalCOMClick(Sender: TObject);
     procedure miDumpLocalRPCClick(Sender: TObject);
+
+  public
+    class constructor Create;
+    class destructor Destroy;
+
+  {
+  The main window can switch between a number of modes (Views).
+  Some controls such as details pane and quicksearch, as well as reload action,
+  should apply to all modes, so we have to:
+  1. Only apply them to the active View
+  2. Re-apply their effects every time we switch to a different View.
+  }
+  public //Views
+    function GetActiveView: TControl;
+    procedure RegisterView(AView: TWinControl);
+    procedure UnregisterView(AView: TWinControl);
+    procedure SwitchToView(AView: TWinControl);
+
+  public class var //QuickFilter
+    //Register to be notified of quickfilter changes. Do not react unless visible!
+    //Active view will also be delivered a custom message on this.
+    OnQuickFilterChanged: TCallback<TNotifyEvent>;
+  protected
+    function GetQuickFilter: string;
+    procedure QuickFilterChanged; virtual;
+  public
+    property QuickFilter: string read GetQuickFilter;
 
   protected
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
@@ -228,35 +261,28 @@ type
   protected
     FServices: TServiceEntryList;
     function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
+    procedure MainServiceListOnActivate();
     procedure FilterServices();
     procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    procedure FilterTriggers();
-    procedure FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
     procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+  public
+    property Services: TServiceEntryList read FServices;
 
   protected //Details pane
     FDetailsPaneFocusedService: TExtServiceEntry;
-    procedure SetDetailsPaneFocusedService(AService: TExtServiceEntry);
     procedure ReloadDetails;
     procedure ReloadServiceInfo;
     procedure ReloadServiceDependencies;
     procedure ReloadServiceDependents;
     procedure ReloadTriggers;
     function mmNotes: TRichEdit; inline;
+  public
+    procedure SetDetailsPaneFocusedService(AService: TExtServiceEntry);
 
   protected //Service editing
     function CanEditServiceInfo: boolean;
     procedure SaveNotes;
-
-  protected //Inplace trigger browser
-    FTriggerBrowser: TTriggerList;
-    procedure InitTriggerBrowser;
-    procedure FreeTriggerBrowser;
-    function TriggerBrowserGetFocusedService: TExtServiceEntry;
-    procedure TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerFacet);
-    procedure ShowServiceBrowser;
-    procedure ShowTriggerBrowser;
 
   protected
     procedure InitInterfaceClasses;
@@ -280,7 +306,7 @@ var
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
   GuidDict, CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
-  Viper.StyleSettings, Viper.Settings;
+  Viper.StyleSettings, Viper.Settings, Viper.MainTriggerList;
 
 {$R *.dfm}
 
@@ -302,6 +328,16 @@ begin
     AIndex := CommonRes.iService;
 end;
 
+class constructor TMainForm.Create;
+begin
+  OnQuickFilterChanged := TCallback<TNotifyEvent>.Create;
+end;
+
+class destructor TMainForm.Destroy;
+begin
+  FreeAndNil(OnQuickFilterChanged);
+end;
+
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create();
@@ -318,7 +354,6 @@ begin
   MainServiceList.Clear;
   DependencySvcList.Clear;
   DependentsSvcList.Clear;
-  FreeTriggerBrowser;
   FreeAndNil(FServices);
   FreeAndNil(FServiceCat);
 end;
@@ -418,6 +453,125 @@ begin
   MainServiceList.Invalidate;
 end;
 
+
+{
+Views are independent screens available for the main content (the right side).
+All views are currently children of pnlMain.
+MainServiceList is pre-registered.
+
+Views receive the following events:
+  Show -- on activation
+  Hide -- on deactivation
+
+  Refresh
+  QuickFilter  -- active filter can be queried from MainForm.QuickFilter.
+}
+procedure TMainForm.RegisterView(AView: TWinControl);
+begin
+  AView.Dock(pnlMain, MainServiceList.ClientRect);
+  AView.Align := alClient;
+  AView.TabOrder := MainServiceList.TabOrder;
+end;
+
+procedure TMainForm.UnregisterView(AView: TWinControl);
+begin
+  //The view will be hidden (-> OnHide) automatically,
+  //but this is mostly for unloading so we don't switch to another view.
+  pnlMain.RemoveControl(AView);
+end;
+
+//Returns the active view control or nil
+function TMainForm.GetActiveView: TControl;
+var i: integer;
+begin
+  Result := nil;
+  for i := 0 to pnlMain.ControlCount-1 do
+    if pnlMain.Controls[i].Visible then begin
+      Result := pnlMain.Controls[i];
+      break;
+    end;
+end;
+
+procedure TMainForm.SwitchToView(AView: TWinControl);
+var WasFocused: boolean;
+  OldView: TControl;
+  i: integer;
+begin
+  if AView=nil then exit;
+  if AView.Visible then exit; //already visible
+  WasFocused := AView.Focused;
+
+  //Make the new View visible
+  AView.Show;
+
+  //The view should implement CMShowingChanged and handle stuff like initial
+  //initialization, refreshing and applying actual quickfilter.
+  //For some of that, Views can rely on automated UM_* messages (delivered only
+  //when needed).
+
+  //Deliver QUICKFILTER_CHANGED and REFRESH
+  AView.Perform(UM_QUICKFILTER_CHANGED, 0, 0);
+  AView.Perform(UM_REFRESH, 0, 0);
+
+  //Manual OnActivate/OnDeactivate handling for service list for now
+  if AView = MainServiceList then
+    MainServiceListOnActivate;
+
+  for i := 0 to pnlMain.ControlCount-1 do begin
+    OldView := pnlMain.Controls[i];
+    if OldView = AView then continue; //should remain visible
+    if OldView.Visible then
+      OldView.Visible := false;
+  end;
+
+  if WasFocused then
+    AView.SetFocus;
+end;
+
+procedure TMainForm.MainServiceListOnActivate;
+begin
+  Self.FilterServices;
+  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
+end;
+
+
+{
+Filters
+}
+function TMainForm.GetQuickFilter: string;
+begin
+  Result := Self.edtQuickFilter.Text;
+end;
+
+procedure TMainForm.QuickFilterChanged;
+var ActiveView: TControl;
+  Event: TNotifyEvent;
+begin
+ //Notify the currently active View
+  ActiveView := Self.GetActiveView;
+  if ActiveView <> nil then
+    ActiveView.Perform(UM_QUICKFILTER_CHANGED, 0, 0);
+
+ //Notify the event subscribers
+  for Event in Self.OnQuickFilterChanged do
+    Event(Self);
+end;
+
+procedure TMainForm.edtQuickFilterChange(Sender: TObject);
+begin
+  FilterServices();
+  QuickFilterChanged();
+end;
+
+procedure TMainForm.edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_ESCAPE then begin
+    edtQuickfilter.Text := '';
+    edtQuickFilterChange(edtQuickfilter);
+  end;
+end;
+
+
 {
 Updates the list of services and their status.
 To do a full reload, clear everything then refresh. Otherwise tries to keep changes to a minimum.
@@ -512,21 +666,30 @@ begin
 end;
 
 procedure TMainForm.Refresh;
+var ActiveView: TControl;
 begin
-  RefreshServiceList;
-  //TriggerBrowser is dumber and currently always reloads fully
-  if (FTriggerBrowser <> nil) and FTriggerBrowser.Visible then begin
-    FTriggerBrowser.Reload;
-    Self.FilterTriggers;
-  end;
+  RefreshServiceList; //Always needed right now
+
+  //Refresh active view
+  ActiveView := Self.GetActiveView;
+  if ActiveView <> nil then
+    ActiveView.Perform(UM_REFRESH, 0, 0);
 end;
 
 procedure TMainForm.FullReload;
+var ActiveView: TControl;
 begin
   MainServiceList.Clear;
   FServices.Clear;
-  if FTriggerBrowser <> nil then
-    FTriggerBrowser.Clear;
+
+  //This is currently weird...
+  //"Full reload" only reloads the page currently open. Should it be like this?
+
+  //Clear active view
+  ActiveView := Self.GetActiveView;
+  if ActiveView <> nil then
+    ActiveView.Perform(UM_CLEAR, 0, 0);
+
   Refresh;
 end;
 
@@ -612,49 +775,6 @@ begin
   Sender.IsVisible[Node] := isVisible;
 end;
 
-procedure TMainForm.FilterTriggers();
-begin
-  //If it's invisible it's going to be filtered when it's reloaded
-  if (FTriggerBrowser <> nil) and FTriggerBrowser.Visible then
-    FTriggerBrowser.ApplyFilter(FilterTriggers_Callback, nil);
-end;
-
-procedure TMainForm.FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var triggerData: PNdTriggerFacet;
-  svc: TExtServiceEntry;
-  isService: boolean;
-  isVisible: boolean;
-  filterText: string;
-begin
-  triggerData := Sender.GetNodeData(Node);
-
-  svc := TExtServiceEntry(Self.FServices.Find(triggerData.Trigger.ServiceName));
-  if svc = nil then begin
-    //Maybe someone created a service while we weren't reloading? Show for now.
-    Sender.IsVisible[Node] := true;
-    exit;
-  end;
-
-  isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
-  isVisible := true;
-
-  //Filter out drivers if disabled
-  if not aShowDrivers.Checked and not isService then
-    isVisible := false;
-
-  //Quickfilter
-  filterText := AnsiLowerCase(string(edtQuickfilter.Text).Trim());
-  if filterText <> '' then
-    if not AnsiLowerCase(svc.ServiceName).Contains(filterText)
-    and not AnsiLowerCase(svc.DisplayName).Contains(filterText)
-    and not AnsiLowerCase(triggerData.Description).Contains(filterText)
-    and not AnsiLowerCase(triggerData.Params).Contains(filterText)
-    and not AnsiLowerCase(TriggerActionToString(triggerData.Action)).Contains(filterText) then
-      isVisible := false;
-
-  Sender.IsVisible[Node] := isVisible;
-end;
-
 //True if the folder contains service.
 //Handled outside of TNdFolderData inself because we need to support recursion and only the tree knows children.
 function TMainForm.IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
@@ -673,22 +793,6 @@ var AService: TServiceEntry absolute Data;
 begin
   Abort := IsFolderContainsService(Node, AService, {ARecursive=}false);
 end;
-
-procedure TMainForm.edtQuickFilterChange(Sender: TObject);
-begin
-  FilterServices();
-  FilterTriggers();
-end;
-
-procedure TMainForm.edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if Key = VK_ESCAPE then begin
-    edtQuickfilter.Text := '';
-    edtQuickFilterChange(edtQuickfilter);
-  end;
-
-end;
-
 
 
 
@@ -1057,13 +1161,10 @@ procedure TMainForm.vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode
 var Data: TNdFolderData;
 begin
   Data := GetFolderData(Node);
-  if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntTriggers) then begin
-    ShowTriggerBrowser;
-    FilterTriggers;
-  end else begin
-    ShowServiceBrowser;
-    FilterServices;
-  end;
+  if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntTriggers) then
+    SwitchToView(TriggerBrowser)
+  else
+    SwitchToView(MainServiceList);
 end;
 
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -1156,14 +1257,13 @@ end;
 procedure TMainForm.aShowDriversExecute(Sender: TObject);
 begin
   FilterFolders;
-  FilterServices;
-  FilterTriggers;
+  QuickFilterChanged;
 end;
 
 procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
 begin
   FilterServices;
-  FilterTriggers;
+  QuickFilterChanged;
 end;
 
 procedure TMainForm.MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
@@ -1195,103 +1295,6 @@ procedure TMainForm.aRunServicesMscExecute(Sender: TObject);
 begin
   ShellOpen('services.msc');
 end;
-
-
-{
-Inplace trigger browser
-The main window can switch between service list mode and trigger list mode.
-Some controls such as details pane and quicksearch, as well as reload action,
-should apply to both modes, so we have to:
-1. Check which mode in their handlers.
-2. Re-apply their effects every time we switch to a different mode.
-}
-
-//Initializes the trigger browser. Call before first showing the browser (or before all times -- no harm)
-procedure TMainForm.InitTriggerBrowser;
-begin
-  if FTriggerBrowser <> nil then exit;
-  FTriggerBrowser := TTriggerList.Create(nil);
-  FTriggerBrowser.OnFocusChanged := Self.TriggerBrowserFocusChanged;
-  FTriggerBrowser.Dock(pnlMain, MainServiceList.ClientRect);
-  FTriggerBrowser.Align := alClient;
-  FTriggerBrowser.TabOrder := MainServiceList.TabOrder;
-end;
-
-//Frees the browser windows. Call once, at termination.
-procedure TMainForm.FreeTriggerBrowser;
-begin
-  if FTriggerBrowser = nil then exit;
-  FreeAndNil(FTriggerBrowser);
-  FTriggerBrowser := nil;
-end;
-
-//This returns our INTERNAL TServiceEntry matching the trigger entry currently
-//focused in the TriggerBrowser
-//Returns Nil if a matching service cannot be found which is a valid corner
-//case so handle gracefully.
-function TMainForm.TriggerBrowserGetFocusedService: TExtServiceEntry;
-var TriggerData: PNdTriggerFacet;
-begin
-  if FTriggerBrowser = nil then begin
-    Result := nil;
-    exit;
-  end;
-  TriggerData := FTriggerBrowser.FocusedFacet;
-  if TriggerData = nil then
-    Result := nil
-  else
-    //There can be some corner cases where the trigger has already been detected
-    //by the TriggerBrowser but the matching new services is not yet in our local list.
-    //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
-    Result := TExtServiceEntry(FServices.Find(TriggerData.Trigger.ServiceName))
-end;
-
-procedure TMainForm.TriggerBrowserFocusChanged(Sender: TObject; const TriggerData: PNdTriggerFacet);
-begin
-  if (FTriggerBrowser = nil) or not FTriggerBrowser.Visible then exit; //we'll handle the TB focus when showing the TB
-  //Show details for this service in details pane.
-  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
-end;
-
-procedure TMainForm.ShowServiceBrowser;
-var WasFocused: boolean;
-begin
-  if FTriggerBrowser = nil then exit;
-  if MainServiceList.Visible then exit; //already visible
-  WasFocused := FTriggerBrowser.Focused;
-  MainServiceList.Visible := true;
-  FTriggerBrowser.Visible := false;
-  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
-  if WasFocused then
-    MainServiceList.SetFocus;
-end;
-
-procedure TMainForm.ShowTriggerBrowser;
-var WasFocused: boolean;
-begin
-  if FTriggerBrowser = nil then
-    InitTriggerBrowser
-  else
-    if FTriggerBrowser.Visible then exit; //already visible
-  WasFocused := MainServiceList.Focused;
-  FTriggerBrowser.Show;
-  MainServiceList.Visible := false;
-  FTriggerBrowser.Reload;
-  SetDetailsPaneFocusedService(Self.TriggerBrowserGetFocusedService);
-  if WasFocused then
-    FTriggerBrowser.SetFocus;
-end;
-
-procedure TMainForm.miServiceBrowserClick(Sender: TObject);
-begin
-  ShowServiceBrowser;
-end;
-
-procedure TMainForm.miTriggerBrowserClick(Sender: TObject);
-begin
-  ShowTriggerBrowser;
-end;
-
 
 
 {

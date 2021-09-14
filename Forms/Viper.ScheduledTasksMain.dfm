@@ -1,0 +1,2 @@
+inherited ScheduledTasksMainForm: TScheduledTasksMainForm
+end

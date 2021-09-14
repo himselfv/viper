@@ -1,7 +1,7 @@
-object ScheduledTasksMainForm: TScheduledTasksMainForm
+object ScheduledTasksForm: TScheduledTasksForm
   Left = 0
   Top = 0
-  Caption = 'ScheduledTasksMainForm'
+  Caption = 'Scheduled Tasks'
   ClientHeight = 480
   ClientWidth = 640
   Color = clBtnFace
@@ -10,7 +10,6 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  Menu = MainMenu
   OldCreateOrder = False
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -217,35 +216,6 @@ object ScheduledTasksMainForm: TScheduledTasksMainForm
     end
     object aReload1: TMenuItem
       Action = aReload
-    end
-  end
-  object MainMenu: TMainMenu
-    Left = 72
-    Top = 32
-    object miFile: TMenuItem
-      Caption = 'File'
-      object Refresh1: TMenuItem
-        Action = aReload
-      end
-      object N3: TMenuItem
-        Caption = '-'
-      end
-      object Exit1: TMenuItem
-        Action = aExit
-        OnClick = Exit1Click
-      end
-    end
-    object miTools: TMenuItem
-      Caption = 'Tools'
-      object HKLMScheduleTaskCache1: TMenuItem
-        Action = aOpenSchedulerRegistry
-      end
-      object System32Tasks1: TMenuItem
-        Action = aOpenSchedulerFolder
-      end
-      object taskschedmmc1: TMenuItem
-        Action = aOpenSchedulerMMC
-      end
     end
   end
 end

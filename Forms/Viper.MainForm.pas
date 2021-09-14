@@ -28,6 +28,7 @@ type
     ntAllServices = 10,
     ntAllDrivers,
     ntTriggers = 20,
+    ntScheduledTasks = 30,
     ntFolder = 100,           //represents the other values when cast to TFolderNodeType, for sorting purposes
     ntUnknownServices = 200,  //unsorted
     ntRunningServices,
@@ -306,7 +307,7 @@ var
 implementation
 uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHelpers,
   GuidDict, CommonResources, Viper.RestoreServiceConfig, Viper.Log, TriggerUtils,
-  Viper.StyleSettings, Viper.Settings, Viper.MainTriggerList;
+  Viper.StyleSettings, Viper.Settings, Viper.MainTriggerList, Viper.ScheduledTasksMain;
 
 {$R *.dfm}
 
@@ -752,6 +753,7 @@ begin
       ntRunningDrivers: isVisible := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
       ntAllDrivers: isVisible := not isService;
       ntTriggers: isVisible := false;
+      ntScheduledTasks: isVisible := false;
     else //pointer
       isVisible := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
     end;
@@ -805,6 +807,7 @@ resourcestring
   sFolderAllDrivers = 'Drivers';
   sFolderRunningDrivers = 'Running';
   sFolderTriggers = 'Triggers';
+  sFolderScheduledTasks = 'Tasks';
 
 //Reloads services and their folder structure
 procedure TMainForm.ReloadServiceTree;
@@ -825,6 +828,7 @@ begin
     vtFolders_AddSpecial(section, ntRunningDrivers);
     vtFolders.Expanded[section] := true;
     vtFolders_AddSpecial(nil, ntTriggers);
+    vtFolders_AddSpecial(nil, ntScheduledTasks);
   finally
     vtFolders.EndUpdate;
   end;
@@ -926,6 +930,7 @@ begin
         ntRunningDrivers: CellText := sFolderRunningDrivers;
         ntAllDrivers: CellText := sFolderAllDrivers;
         ntTriggers: CellText := sFolderTriggers;
+        ntScheduledTasks: CellText := sFolderScheduledTasks;
       else CellText := Data.Name;
       end;
   end;
@@ -948,6 +953,7 @@ begin
     ntRunningDrivers: ImageIndex := CommonRes.iStart;
     ntAllDrivers: ImageIndex := CommonRes.iDriver;
     ntTriggers: ImageIndex := CommonRes.iTrigger;
+    ntScheduledTasks: ImageIndex := CommonRes.iScheduledTask;
   else ImageIndex := CommonRes.iFolder;
   end;
 end;
@@ -1164,6 +1170,9 @@ begin
   Data := GetFolderData(Node);
   if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntTriggers) then
     SwitchToView(TriggerBrowser)
+  else
+  if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntScheduledTasks) then
+    SwitchToView(ScheduledTasksMainForm)
   else
     SwitchToView(MainServiceList);
 end;

@@ -1,4 +1,4 @@
-unit ScheduledTasks.MainForm;
+unit Viper.ScheduledTasks;
 
 interface
 
@@ -40,7 +40,7 @@ type
 
   TTaskDataArray = array of PNdTaskData;
 
-  TScheduledTasksMainForm = class(TForm)
+  TScheduledTasksForm = class(TForm)
     vtTasks: TVirtualStringTree;
     alActions: TActionList;
     aReload: TAction;
@@ -57,7 +57,6 @@ type
     N1: TMenuItem;
     Enable1: TMenuItem;
     Disable1: TMenuItem;
-    MainMenu: TMainMenu;
     aExit: TAction;
     aOpenSchedulerRegistry: TAction;
     aOpenSchedulerFolder: TAction;
@@ -65,20 +64,12 @@ type
     aJumpToRegPlain: TAction;
     aJumpToRegTree: TAction;
     aJumpToSystem32Tasks: TAction;
-    miFile: TMenuItem;
-    miTools: TMenuItem;
-    HKLMScheduleTaskCache1: TMenuItem;
-    System32Tasks1: TMenuItem;
-    taskschedmmc1: TMenuItem;
-    Exit1: TMenuItem;
     RegistryPlainkey1: TMenuItem;
     RegistryTreekey1: TMenuItem;
     System32Taskskey1: TMenuItem;
     N2: TMenuItem;
     Copy1: TMenuItem;
     aReload1: TMenuItem;
-    Refresh1: TMenuItem;
-    N3: TMenuItem;
     N4: TMenuItem;
     procedure vtTasksGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
@@ -152,8 +143,6 @@ type
 
   end;
 
-var
-  ScheduledTasksMainForm: TScheduledTasksMainForm;
 
 implementation
 uses ActiveX, ComObj, ShellUtils, WinApiHelper, FilenameUtils;
@@ -258,7 +247,7 @@ begin
 end;
 
 
-procedure TScheduledTasksMainForm.FormCreate(Sender: TObject);
+procedure TScheduledTasksForm.FormCreate(Sender: TObject);
 begin
   CoInitialize(nil);
   //Sic: CLSID_TaskScheduler but IID_ITaskService.
@@ -270,7 +259,7 @@ begin
   FReg.Access := KEY_READ;
 end;
 
-procedure TScheduledTasksMainForm.FormDestroy(Sender: TObject);
+procedure TScheduledTasksForm.FormDestroy(Sender: TObject);
 begin
   Clear;
   FreeAndNil(FReg);
@@ -278,23 +267,23 @@ begin
   CoUninitialize();
 end;
 
-procedure TScheduledTasksMainForm.FormShow(Sender: TObject);
+procedure TScheduledTasksForm.FormShow(Sender: TObject);
 begin
   Reload;
 end;
 
-procedure TScheduledTasksMainForm.Exit1Click(Sender: TObject);
+procedure TScheduledTasksForm.Exit1Click(Sender: TObject);
 begin
   Self.Close;
 end;
 
-procedure TScheduledTasksMainForm.vtTasksGetNodeDataSize(
+procedure TScheduledTasksForm.vtTasksGetNodeDataSize(
   Sender: TBaseVirtualTree; var NodeDataSize: Integer);
 begin
   NodeDataSize := SizeOf(TNdTaskData);
 end;
 
-procedure TScheduledTasksMainForm.vtTasksInitNode(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.vtTasksInitNode(Sender: TBaseVirtualTree;
   ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 var NodeData: PNdTaskData;
 begin
@@ -302,7 +291,7 @@ begin
   Initialize(NodeData^);
 end;
 
-procedure TScheduledTasksMainForm.vtTasksFreeNode(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.vtTasksFreeNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
 var NodeData: PNdTaskData;
 begin
@@ -310,12 +299,12 @@ begin
   Finalize(NodeData^);
 end;
 
-function TScheduledTasksMainForm.GetNodeData(Node: PVirtualNode): PNdTaskData;
+function TScheduledTasksForm.GetNodeData(Node: PVirtualNode): PNdTaskData;
 begin
   Result := PNdTaskData(vtTasks.GetNodeData(Node));
 end;
 
-function TScheduledTasksMainForm.GetFocusedTask: PNdTaskData;
+function TScheduledTasksForm.GetFocusedTask: PNdTaskData;
 begin
   if vtTasks.FocusedNode = nil then
     Result := nil
@@ -323,13 +312,13 @@ begin
     Result := PNdTaskData(vtTasks.GetNodeData(vtTasks.FocusedNode));
 end;
 
-function TScheduledTasksMainForm.GetSelectedNodes: TNodeList;
+function TScheduledTasksForm.GetSelectedNodes: TNodeList;
 begin
   SetLength(Result, 0);
   vtTasks.IterateSubtree(nil, Iterate_AddNodeToArray, @Result, [vsSelected]);
 end;
 
-procedure TScheduledTasksMainForm.Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.Iterate_AddNodeToArray(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var entries: PNodeList absolute Data;
 begin
@@ -337,13 +326,13 @@ begin
   entries^[Length(entries^)-1] := Node;
 end;
 
-function TScheduledTasksMainForm.GetSelectedTasks: TTaskDataArray;
+function TScheduledTasksForm.GetSelectedTasks: TTaskDataArray;
 begin
   SetLength(Result, 0);
   vtTasks.IterateSubtree(nil, Iterate_AddNodeDataToArray, @Result, [vsSelected]);
 end;
 
-procedure TScheduledTasksMainForm.Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.Iterate_AddNodeDataToArray(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 var entries: PNodeDataArray absolute Data;
 begin
@@ -351,7 +340,7 @@ begin
   entries^[Length(entries^)-1] := Sender.GetNodeData(Node);
 end;
 
-procedure TScheduledTasksMainForm.vtTasksGetText(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.vtTasksGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
 var NodeData: PNdTaskData;
@@ -371,14 +360,14 @@ begin
   end;
 end;
 
-procedure TScheduledTasksMainForm.vtTasksCompareNodes(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.vtTasksCompareNodes(Sender: TBaseVirtualTree;
   Node1, Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 begin
   //По умолчанию, если нет специальной обработки для колонки:
   Result := CompareText(vtTasks.Text[Node1, Column], vtTasks.Text[Node2, Column]);
 end;
 
-procedure TScheduledTasksMainForm.vtTasksHeaderClick(Sender: TVTHeader;
+procedure TScheduledTasksForm.vtTasksHeaderClick(Sender: TVTHeader;
   HitInfo: TVTHeaderHitInfo);
 begin
   if Sender.SortColumn <> HitInfo.Column then begin
@@ -399,19 +388,19 @@ end;
 Task reloading
 }
 
-procedure TScheduledTasksMainForm.aReloadExecute(Sender: TObject);
+procedure TScheduledTasksForm.aReloadExecute(Sender: TObject);
 begin
   Self.Reload;
 end;
 
-procedure TScheduledTasksMainForm.Clear;
+procedure TScheduledTasksForm.Clear;
 begin
   vtTasks.Clear;
 end;
 
 //Refreshes all tasks data
 //Eventually this should work in a way that doesn't break current selection in the UI
-procedure TScheduledTasksMainForm.Reload;
+procedure TScheduledTasksForm.Reload;
 begin
   Self.Clear;
   vtTasks.BeginUpdate;
@@ -438,14 +427,14 @@ begin
 end;
 
 //Refreshes all the task data only for the given tasks. Does not reload the task list.
-procedure TScheduledTasksMainForm.RefreshTasks(const ATasks: TTaskDataArray);
+procedure TScheduledTasksForm.RefreshTasks(const ATasks: TTaskDataArray);
 begin
   //For now we just reload everything
   Self.Reload;
 end;
 
 //The path should not end with \, unless its a single \
-procedure TScheduledTasksMainForm.AddFolder(APath: string);
+procedure TScheduledTasksForm.AddFolder(APath: string);
 var AFolder: ITaskFolder;
 begin
   if APath='' then
@@ -455,7 +444,7 @@ begin
   Self.AddFolder(AFolder);
 end;
 
-procedure TScheduledTasksMainForm.AddFolder(AFolder: ITaskFolder);
+procedure TScheduledTasksForm.AddFolder(AFolder: ITaskFolder);
 var AFolders: ITaskFolderCollection;
   ATasks: IRegisteredTaskCollection;
   i: integer;
@@ -469,7 +458,7 @@ begin
     AddFolder(AFolders.Item[i]);
 end;
 
-function TScheduledTasksMainForm.AddTask(ATask: IRegisteredTask): PVirtualNode;
+function TScheduledTasksForm.AddTask(ATask: IRegisteredTask): PVirtualNode;
 var NodeData: PNdTaskData;
 begin
   Result := vtTasks.AddChild(nil);
@@ -491,7 +480,7 @@ begin
   Assert(SameText(NodeData.Path, NormalizeTaskPath(ATask.Definition.RegistrationInfo.URI)));
 end;
 
-function TScheduledTasksMainForm.FindTaskByPath(const APath: string): PVirtualNode;
+function TScheduledTasksForm.FindTaskByPath(const APath: string): PVirtualNode;
 begin
   if APath='' then
     Result := nil
@@ -499,7 +488,7 @@ begin
     Result := vtTasks.IterateSubtree(nil, FindTaskByPath_Callback, pointer(APath));
 end;
 
-function TScheduledTasksMainForm.FindTaskByGuid(const AGuid: string): PVirtualNode;
+function TScheduledTasksForm.FindTaskByGuid(const AGuid: string): PVirtualNode;
 begin
   if AGuid='' then
     Result := nil
@@ -507,13 +496,13 @@ begin
     Result := vtTasks.IterateSubtree(nil, FindTaskByGuid_Callback, pointer(AGuid));
 end;
 
-procedure TScheduledTasksMainForm.FindTaskByPath_Callback(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.FindTaskByPath_Callback(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 begin
   Abort := SameText(Self.GetNodeData(Node).Path, string(Data));
 end;
 
-procedure TScheduledTasksMainForm.FindTaskByGuid_Callback(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.FindTaskByGuid_Callback(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 begin
   Abort := SameText(Self.GetNodeData(Node).GUID, string(Data));
@@ -529,7 +518,7 @@ and either one can IN THEORY contain tasks not mentioned elsewhere.
 We'll scan both, find matches, and add any tasks not mentioned before.
 }
 
-procedure TScheduledTasksMainForm.LoadRegistryFlat;
+procedure TScheduledTasksForm.LoadRegistryFlat;
 var KeyNames: TStringList;
   i: integer;
 begin
@@ -547,7 +536,7 @@ begin
 end;
 
 //Adds a task that hasn't been mentioned in some of the lists but has been in others
-function TScheduledTasksMainForm.AddOrphanTask(): PVirtualNode;
+function TScheduledTasksForm.AddOrphanTask(): PVirtualNode;
 var ATaskData: PNdTaskData;
 begin
   Result := vtTasks.AddChild(nil);
@@ -556,7 +545,7 @@ begin
   ATaskData.FlagsStr := 'ORPHAN';
 end;
 
-procedure TScheduledTasksMainForm.LoadRegistryFlatTask(const AGuid: string);
+procedure TScheduledTasksForm.LoadRegistryFlatTask(const AGuid: string);
 var APath, AURI: string;
   ATaskNode: PVirtualNode;
   ATaskData: PNdTaskData;
@@ -596,7 +585,7 @@ begin
 end;
 
 //Call only after loading GUIDs for all tasks
-procedure TScheduledTasksMainForm.LoadRegistryBucket(const ABucket: string);
+procedure TScheduledTasksForm.LoadRegistryBucket(const ABucket: string);
 var KeyNames: TStringList;
   i: integer;
   TaskNode: PVirtualNode;
@@ -624,13 +613,13 @@ begin
   end;
 end;
 
-procedure TScheduledTasksMainForm.LoadRegistryTree;
+procedure TScheduledTasksForm.LoadRegistryTree;
 begin
   LoadRegistryTreePath('');
 end;
 
 //APath starts with \ (unless it's root) and does not end with \.
-procedure TScheduledTasksMainForm.LoadRegistryTreePath(const APath: string);
+procedure TScheduledTasksForm.LoadRegistryTreePath(const APath: string);
 var KeyNames: TStringList;
   i: integer;
   ATaskPath: string;
@@ -693,7 +682,7 @@ begin
   end;
 end;
 
-procedure TScheduledTasksMainForm.LoadFsFolder(const APath: string);
+procedure TScheduledTasksForm.LoadFsFolder(const APath: string);
 var sr: TSearchRec;
   Node: PVirtualNode;
   Data: PNdTaskData;
@@ -727,7 +716,7 @@ end;
 Task selection and details
 }
 
-procedure TScheduledTasksMainForm.vtTasksFocusChanged(Sender: TBaseVirtualTree;
+procedure TScheduledTasksForm.vtTasksFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 var SelNodes: TTaskDataArray;
   SelData: PNdTaskData;
@@ -770,7 +759,7 @@ begin
   ReloadFocusedProps;
 end;
 
-procedure TScheduledTasksMainForm.ReloadFocusedProps;
+procedure TScheduledTasksForm.ReloadFocusedProps;
 var NodeData: PNdTaskData;
   Task: IRegisteredTask;
   TaskDef: ITaskDefinition;
@@ -845,32 +834,32 @@ begin
   end;
 end;
 
-procedure TScheduledTasksMainForm.ClearProps;
+procedure TScheduledTasksForm.ClearProps;
 begin
   mmDetails.Clear;
 end;
 
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: string);
+procedure TScheduledTasksForm.AddProp(const AName: string; const AValue: string);
 begin
   mmDetails.Lines.Add(AName + ' = ' + AValue);
 end;
 
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: integer);
+procedure TScheduledTasksForm.AddProp(const AName: string; const AValue: integer);
 begin
   AddProp(AName, IntToStr(AValue));
 end;
 
-procedure TScheduledTasksMainForm.AddPropHex(const AName: string; const AValue: integer);
+procedure TScheduledTasksForm.AddPropHex(const AName: string; const AValue: integer);
 begin
   AddProp(AName, '0x'+IntToHex(AValue, 8));
 end;
 
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: TDatetime);
+procedure TScheduledTasksForm.AddProp(const AName: string; const AValue: TDatetime);
 begin
   AddProp(AName, DateTimeToStr(AValue));
 end;
 
-procedure TScheduledTasksMainForm.AddProp(const AName: string; const AValue: boolean);
+procedure TScheduledTasksForm.AddProp(const AName: string; const AValue: boolean);
 begin
   AddProp(AName, BoolToStr(AValue, true));
 end;
@@ -879,18 +868,18 @@ end;
 {
 Common actions
 }
-procedure TScheduledTasksMainForm.aOpenSchedulerRegistryExecute(
+procedure TScheduledTasksForm.aOpenSchedulerRegistryExecute(
   Sender: TObject);
 begin
   RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksRoot);
 end;
 
-procedure TScheduledTasksMainForm.aOpenSchedulerFolderExecute(Sender: TObject);
+procedure TScheduledTasksForm.aOpenSchedulerFolderExecute(Sender: TObject);
 begin
   ExplorerAtFile(GetSystem32TasksPath());
 end;
 
-procedure TScheduledTasksMainForm.aOpenSchedulerMMCExecute(Sender: TObject);
+procedure TScheduledTasksForm.aOpenSchedulerMMCExecute(Sender: TObject);
 begin
   ShellOpen(ExpandEnvironmentStrings('%SystemRoot%\System32\taskschd.msc'))
 end;
@@ -899,7 +888,7 @@ end;
 {
 Task jumps
 }
-procedure TScheduledTasksMainForm.aJumpToRegPlainExecute(Sender: TObject);
+procedure TScheduledTasksForm.aJumpToRegPlainExecute(Sender: TObject);
 var Data: PNdTaskData;
 begin
   Data := Self.GetFocusedTask;
@@ -907,7 +896,7 @@ begin
   RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksFlat+'\'+Data.GUID);
 end;
 
-procedure TScheduledTasksMainForm.aJumpToRegTreeExecute(Sender: TObject);
+procedure TScheduledTasksForm.aJumpToRegTreeExecute(Sender: TObject);
 var Data: PNdTaskData;
 begin
   Data := Self.GetFocusedTask;
@@ -915,7 +904,7 @@ begin
   RegeditAtKey('HKEY_LOCAL_MACHINE'+sRegTasksTree+NormalizeTaskPath(Data.Path));
 end;
 
-procedure TScheduledTasksMainForm.aJumpToSystem32TasksExecute(Sender: TObject);
+procedure TScheduledTasksForm.aJumpToSystem32TasksExecute(Sender: TObject);
 var Data: PNdTaskData;
 begin
   Data := Self.GetFocusedTask;
@@ -927,7 +916,7 @@ end;
 {
 Task actions
 }
-procedure TScheduledTasksMainForm.aStartExecute(Sender: TObject);
+procedure TScheduledTasksForm.aStartExecute(Sender: TObject);
 var Tasks: TTaskDataArray;
   Data: PNdTaskData;
   RunningTask: IRunningTask;
@@ -949,7 +938,7 @@ begin
   RefreshTasks(Tasks);
 end;
 
-procedure TScheduledTasksMainForm.aStopExecute(Sender: TObject);
+procedure TScheduledTasksForm.aStopExecute(Sender: TObject);
 var Tasks: TTaskDataArray;
   Data: PNdTaskData;
   Instances: IRunningTaskCollection;
@@ -971,7 +960,7 @@ begin
   RefreshTasks(Tasks);
 end;
 
-procedure TScheduledTasksMainForm.aEnableExecute(Sender: TObject);
+procedure TScheduledTasksForm.aEnableExecute(Sender: TObject);
 var Tasks: TTaskDataArray;
   Data: PNdTaskData;
 begin
@@ -981,7 +970,7 @@ begin
   RefreshTasks(Tasks);
 end;
 
-procedure TScheduledTasksMainForm.aDisableExecute(Sender: TObject);
+procedure TScheduledTasksForm.aDisableExecute(Sender: TObject);
 var Tasks: TTaskDataArray;
   Data: PNdTaskData;
 begin

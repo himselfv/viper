@@ -137,6 +137,12 @@
         <DCCReference Include="..\Forms\Viper.ServiceEdit.pas">
             <Form>ServiceEditForm</Form>
         </DCCReference>
+        <DCCReference Include="..\Forms\Viper.ScheduledTasks.pas">
+            <Form>ScheduledTasksForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Forms\Viper.ScheduledTasksMain.pas">
+            <Form>ScheduledTasksMainForm</Form>
+        </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>
         <DCCReference Include="ShellUtils.pas"/>

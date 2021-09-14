@@ -21,6 +21,8 @@ uses
   Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
   Viper.ServiceImport in 'Viper.ServiceImport.pas' {ServiceImportForm},
   Viper.ServiceEdit in '..\Forms\Viper.ServiceEdit.pas' {ServiceEditForm},
+  Viper.ScheduledTasks in '..\Forms\Viper.ScheduledTasks.pas' {ScheduledTasksForm},
+  Viper.ScheduledTasksMain in '..\Forms\Viper.ScheduledTasksMain.pas' {ScheduledTasksMainForm},
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',
@@ -51,5 +53,6 @@ begin
   Application.CreateForm(TSettingsForm, SettingsForm);
   Application.CreateForm(TStyleSettingsForm, StyleSettingsForm);
   Application.CreateForm(TMainTriggerList, TriggerBrowser);
+  Application.CreateForm(TScheduledTasksMainForm, ScheduledTasksMainForm);
   Application.Run;
 end.

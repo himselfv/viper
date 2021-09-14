@@ -64,7 +64,7 @@ end;
 
 procedure TMainTriggerList.ViewOnActivate;
 begin
-  Self.Reload;
+  //Self.Reload; //Refresh will be automatically called
   MainForm.SetDetailsPaneFocusedService(Self.GetFocusedService);
 end;
 

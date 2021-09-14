@@ -34,6 +34,7 @@ type
     iShieldOverlay: integer;
     iDriver: integer;
     iBrokenDependency: integer;
+    iScheduledTask: integer;
     function LoadIcon16(const ALibName: string; AResId: integer): integer; overload;
     function LoadIcon16(const ALibName: string; const AResName: string): integer; overload;
     function LoadIcon8(const ALibName: string; const AResName: string): integer;
@@ -62,6 +63,7 @@ begin
   iService := LoadIcon16('filemgmt.dll', 0); //Service icon in services.msc
   iShield := LoadIcon16('imageres.dll', 'SHIDI_SHIELD_INTERNAL');
   iShieldOverlay := LoadIcon8('imageres.dll', 'SHIDI_SHIELD_INTERNAL');
+  iScheduledTask := LoadIcon16('miguiresource.dll', -600);
 end;
 
 function TCommonRes.LoadIconResource(const ALibName: string; const AResName: string; AW, AH: integer): HICON;

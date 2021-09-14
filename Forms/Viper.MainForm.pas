@@ -471,6 +471,7 @@ begin
   AView.Dock(pnlMain, MainServiceList.ClientRect);
   AView.Align := alClient;
   AView.TabOrder := MainServiceList.TabOrder;
+  AView.Visible := false;
 end;
 
 procedure TMainForm.UnregisterView(AView: TWinControl);

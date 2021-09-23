@@ -485,13 +485,17 @@ end;
 //Returns the active view control or nil
 function TMainForm.GetActiveView: TControl;
 var i: integer;
+  AControl: TControl;
 begin
   Result := nil;
-  for i := 0 to pnlMain.ControlCount-1 do
-    if pnlMain.Controls[i].Visible then begin
-      Result := pnlMain.Controls[i];
-      break;
-    end;
+  for i := 0 to pnlMain.ControlCount-1 do begin
+    AControl := pnlMain.Controls[i];
+    if not AControl.Visible then continue;
+    if AControl is TSplitter then continue;
+    if AControl = pcBottom then continue;
+    Result := AControl;
+    break;
+  end;
 end;
 
 procedure TMainForm.SwitchToView(AView: TWinControl);
@@ -549,6 +553,8 @@ procedure TMainForm.QuickFilterChanged;
 var ActiveView: TControl;
   Event: TNotifyEvent;
 begin
+  FilterServices();
+
  //Notify the currently active View
   ActiveView := Self.GetActiveView;
   if ActiveView <> nil then
@@ -561,7 +567,6 @@ end;
 
 procedure TMainForm.edtQuickFilterChange(Sender: TObject);
 begin
-  FilterServices();
   QuickFilterChanged();
 end;
 
@@ -1166,15 +1171,25 @@ end;
 //Selection changed
 procedure TMainForm.vtFoldersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 var Data: TNdFolderData;
+  NewView: TWinControl;
 begin
   Data := GetFolderData(Node);
   if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntTriggers) then
-    SwitchToView(TriggerBrowser)
+    NewView := TriggerBrowser
   else
   if IsSpecialFolder(Data) and (TFolderNodeType(Data) = ntScheduledTasks) then
-    SwitchToView(ScheduledTasksMainForm)
-  else
-    SwitchToView(MainServiceList);
+    NewView := ScheduledTasksMainForm
+  else begin
+    NewView := MainServiceList;
+  end;
+
+  if GetActiveView() <> NewView then
+    SwitchToView(NewView) //Auto-refreshes it
+  else begin
+    //Notify the view that the folder selection has changed -- even if the view is the same
+    //We currently don't have anything better than quickfilter change notification:
+    Self.QuickFilterChanged;
+  end;
 end;
 
 procedure TMainForm.vtFoldersFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;

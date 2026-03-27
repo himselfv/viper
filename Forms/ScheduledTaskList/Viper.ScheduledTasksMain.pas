@@ -15,6 +15,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    procedure Reload; override;
   protected
     procedure UMClear(var Message: TMessage); message UM_CLEAR;
     procedure UMRefresh(var Message: TMessage); message UM_REFRESH;
@@ -98,6 +99,17 @@ end;
 procedure TScheduledTasksMainForm.UMQuickFilterChanged(var Message: TMessage);
 begin
   Self.FilterTasks;
+end;
+
+procedure TScheduledTasksMainForm.Reload;
+begin
+  vtTasks.BeginUpdate;
+  try
+    inherited;
+    Self.FilterTasks();
+  finally
+    vtTasks.EndUpdate;
+  end;
 end;
 
 procedure TScheduledTasksMainForm.FilterTasks();

@@ -48,7 +48,6 @@ type
     procedure aShowDriversExecute(Sender: TObject);
     procedure aShowUserPrototypesExecute(Sender: TObject);
 
-
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -175,7 +174,6 @@ procedure TMainServiceList.vtServicesFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 begin
   inherited;
-  Self.vtServicesFocusChanged(Sender, Node, Column); //inherited
   if Self.Visible then
     SetDetailsPaneFocusedService(TExtServiceEntry(Self.GetFocusedService));
   //Action availability checking is done in OnChanged, depends on Selection

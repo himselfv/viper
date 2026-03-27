@@ -78,6 +78,8 @@ type
     N3: TMenuItem;
     Unlock1: TMenuItem;
     N5: TMenuItem;
+    aUnlockSecurityCOM: TAction;
+    Unlockofficially1: TMenuItem;
     procedure vtTasksGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtTasksInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -116,7 +118,7 @@ type
     procedure FindTaskByGuid_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   public
     procedure Clear;
-    procedure Reload;
+    procedure Reload; virtual;
     procedure RefreshTasks(const ATasks: TTaskDataArray); overload;
     function AddOrphanTask(): PVirtualNode;
     function GetNodeData(Node: PVirtualNode): PNdTaskData;
@@ -1042,12 +1044,24 @@ What else could be unlocked per task/per folder:
 
 Other possible bulk actions:
  - Bulk unlock all registry/all FS/all tasks/folders.
+
+NOTE FROM EXPERIENCE:
+If you're unlocking via the registry SD, you HAVE to unlock files too.
+Otherwise you'll get updated SDs from COM but it will still fail to apply your
+further changes.
+This is because it tries to keep those two SDs (binary in registry and actual
+on disk) in sync. When you call SetSecurityDescriptor, it applies new SD to both,
+and you don't have rights to apply it to the System32\Tasks\..\TaskFile.
+Do the unlock on both.
+Unlocking THE REGISTRY KEY is a separate endeavor, but likely you'll also have
+to do it just to get a chance of changing the registry-stored SD.
 }
 resourcestring
-  sUnlockDone = 'Done.';
+  sUnlockDone = 'Done.'#13'Unlocked tasks will become accessible after a reboot.';
   sUnlockHadProblems = 'Some tasks had problems while unlocking:';
   sNothingToChange = 'Nothing to change.';
   sUnlockActionRegistry = 'Registry unlock';
+  sUnlockActionSystem32Tasks = 'System32\Tasks unlock';
   sUnlockActionSDInRegistry = 'SD in Registry';
 
 type
@@ -1064,6 +1078,7 @@ type
     constructor Create;
     destructor Destroy; override;
     function UnlockRegistry(const Task: PNdTaskData): cardinal;
+    function UnlockSystem32Tasks(const Task: PNdTaskData): cardinal;
     function UnlockSDInRegistry(const Task: PNdTaskData): cardinal;
   end;
 
@@ -1107,6 +1122,15 @@ begin
   //Sic! HKLM is written as "MACHINE" for NamedSecurity functions.
   Result := UnlockNamedObject('MACHINE'+sRegTasksTree+'\'+Task.Path, SE_REGISTRY_KEY, pSidAdmin, KEY_ALL_ACCESS, Results);
 end;
+
+function TTaskSecurityUnlocker.UnlockSystem32Tasks(const Task: PNdTaskData): cardinal;
+var Results: TUnlockResults;
+begin
+  Assert(Task.Path<>'');
+  Log('Unlocking System32\Tasks: '+Task.Path+'...');
+  Result := UnlockNamedObject(GetSystem32TasksPath()+'\'+Task.Path, SE_FILE_OBJECT, pSidAdmin, FILE_ALL_ACCESS, Results);
+end;
+
 
 //Tries to load the task SD from the registry.
 //Returns nil if that for some reason didn't work (no key, no access),
@@ -1233,6 +1257,9 @@ begin
       err := Unlocker.UnlockRegistry(Task);
       if err <> 0 then
         FailedTasks := FailedTasks + Task.Name+' ('+sUnlockActionRegistry+'): '+IntToStr(err)+#13;
+      err := Unlocker.UnlockSystem32Tasks(Task);
+      if err <> 0 then
+        FailedTasks := FailedTasks + Task.Name+' ('+sUnlockActionSystem32Tasks+'): '+IntToStr(err)+#13;
       err := Unlocker.UnlockSDInRegistry(Task);
       if err <> 0 then
         FailedTasks := FailedTasks + Task.Name+' ('+sUnlockActionSDInRegistry+'): '+IntToStr(err)+#13;
@@ -1249,6 +1276,5 @@ begin
   end;
   RefreshTasks(Tasks);
 end;
-
 
 end.

@@ -13,7 +13,7 @@ inherited MainServiceList: TMainServiceList
   inherited vtServices: TVirtualStringTree
     Height = 397
     OnFocusChanging = vtServicesFocusChanging
-    ExplicitHeight = 13
+    ExplicitHeight = 397
   end
   object pcBottom: TPageControl [2]
     Left = 0

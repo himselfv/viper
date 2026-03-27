@@ -182,9 +182,15 @@ object ScheduledTasksForm: TScheduledTasksForm
       Caption = 'Edit...'
       OnExecute = aEditSecurityExecute
     end
+    object aUnlockSecurityCOM: TAction
+      Category = 'Protection'
+      Caption = 'COM unlock'
+      Hint = 'Unlock the task via the official COM interface'
+    end
     object aUnlockSecurity: TAction
       Category = 'Protection'
       Caption = 'Unlock'
+      Hint = 'Unlock everything related to the task'
       OnExecute = aUnlockSecurityExecute
     end
   end
@@ -228,6 +234,10 @@ object ScheduledTasksForm: TScheduledTasksForm
       Caption = 'Security'
       object Edit1: TMenuItem
         Action = aEditSecurity
+      end
+      object Unlockofficially1: TMenuItem
+        Action = aUnlockSecurityCOM
+        Hint = 'Unlock via the official COM interface'
       end
       object N3: TMenuItem
         Caption = '-'

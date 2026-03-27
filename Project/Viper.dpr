@@ -33,6 +33,7 @@ uses
   SetupApiHelper in 'SetupApiHelper.pas',
   AclUi in 'AclUi.pas',
   SecEdit in 'SecEdit.pas',
+  SecEditTasks in 'SecEditTasks.pas',
   TriggerUtils in 'TriggerUtils.pas',
   GuidDict in 'GuidDict.pas',
   EtwUtils in 'EtwUtils.pas',

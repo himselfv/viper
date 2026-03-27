@@ -153,6 +153,7 @@
         <DCCReference Include="SetupApiHelper.pas"/>
         <DCCReference Include="AclUi.pas"/>
         <DCCReference Include="SecEdit.pas"/>
+        <DCCReference Include="SecEditTasks.pas"/>
         <DCCReference Include="TriggerUtils.pas"/>
         <DCCReference Include="GuidDict.pas"/>
         <DCCReference Include="EtwUtils.pas"/>

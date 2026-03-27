@@ -177,6 +177,16 @@ object ScheduledTasksForm: TScheduledTasksForm
       Caption = 'Jump to System32\Tasks'
       OnExecute = aJumpToSystem32TasksExecute
     end
+    object aEditSecurity: TAction
+      Category = 'Protection'
+      Caption = 'Edit...'
+      OnExecute = aEditSecurityExecute
+    end
+    object aUnlockSecurity: TAction
+      Category = 'Protection'
+      Caption = 'Unlock'
+      OnExecute = aUnlockSecurityExecute
+    end
   end
   object pmPopup: TPopupMenu
     Left = 24
@@ -210,6 +220,21 @@ object ScheduledTasksForm: TScheduledTasksForm
     end
     object Disable1: TMenuItem
       Action = aDisable
+    end
+    object N5: TMenuItem
+      Caption = '-'
+    end
+    object Security1: TMenuItem
+      Caption = 'Security'
+      object Edit1: TMenuItem
+        Action = aEditSecurity
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object Unlock1: TMenuItem
+        Action = aUnlockSecurity
+      end
     end
     object N4: TMenuItem
       Caption = '-'

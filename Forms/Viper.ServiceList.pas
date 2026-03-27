@@ -1198,83 +1198,84 @@ resourcestring
   sUnlockDone = 'Done.';
   sNothingToChange = 'Nothing to change.';
 
+type
+  TServiceSecurityUnlocker = class
+  protected
+    hPriv: TPrivToken;
+    pSidAdmin: PSID;
+  public
+    hadLaunchProt: boolean;
+    hadOwnershipChanged: boolean;
+    hadPermissionsChanged: boolean;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Unlock(const Service: TServiceEntry);
+  end;
+
+constructor TServiceSecurityUnlocker.Create;
+begin
+  inherited;
+  hadLaunchProt := false;
+  hadOwnershipChanged := false;
+  hadPermissionsChanged := false;
+  //Try to claim SE_TAKE_OWNERSHIP_NAME but tolerate if it's unavailable
+  ClaimPrivilege(SE_TAKE_OWNERSHIP_NAME, hPriv);
+  pSidAdmin := AllocateSidBuiltinAdministrators();
+end;
+
+destructor TServiceSecurityUnlocker.Destroy;
+begin
+  ReleasePrivilege(hPriv);
+  if pSidAdmin <> nil then
+    FreeSid(pSIDAdmin);
+  inherited;
+end;
+
+procedure TServiceSecurityUnlocker.Unlock(const Service: TServiceEntry);
+var err: integer;
+  Results: TUnlockResults;
+begin
+  Log('Trying '+Service.ServiceName+'...');
+  if Service.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE then begin
+    Log('Resetting launch protection for '+Service.ServiceName+'...');
+    Log(GetServiceKey(Service.ServiceName));
+    OverwriteServiceLaunchProtection(Service.ServiceName, SERVICE_LAUNCH_PROTECTED_NONE);
+    hadLaunchProt := true;
+    exit; //Launch protection reset requires reboot, do not touch ownership or we'll fail with ACCESS_DENIED
+  end;
+
+  err := UnlockNamedObject(Service.ServiceName, SE_SERVICE, pSidAdmin, SERVICE_ALL_ACCESS, Results);
+  if err <> 0 then
+    RaiseLastOsError(err);
+  Self.hadOwnershipChanged := Self.hadOwnershipChanged or Results.hadOwnershipChanged;
+  Self.hadPermissionsChanged := Self.hadPermissionsChanged or Results.hadPermissionsChanged;
+end;
+
 procedure TServiceList.aUnlockSecurityExecute(Sender: TObject);
 var Services: TServiceEntries;
   Service: TServiceEntry;
-  hPriv: TPrivToken;
-  pSidAdmin, pSidPreviousOwner: PSID;
-  pPreviousDesc: PSECURITY_DESCRIPTOR;
-  APreviousPermissions: cardinal;
-  hadLaunchProt: boolean;
-  hadOwnershipChanged: boolean;
-  hadPermissionsChanged: boolean;
-  err: integer;
+  Unlocker: TServiceSecurityUnlocker;
 begin
   Services := GetSelectedServices();
   if Length(Services) <= 0 then exit;
 
-  hadLaunchProt := false;
-  hadOwnershipChanged := false;
-  hadPermissionsChanged := false;
-  pSidAdmin := nil;
-
-{$IFDEF DEBUG}
-  AclHelpers.OnLog := LogForm.Log;
-{$ENDIF}
-
-  //Try to claim SE_TAKE_OWNERSHIP_NAME but tolerate if it's unavailable
-  ClaimPrivilege(SE_TAKE_OWNERSHIP_NAME, hPriv);
+  Unlocker := TServiceSecurityUnlocker.Create;
   try
-
-    pSidAdmin := AllocateSidBuiltinAdministrators();
-
     for Service in GetSelectedServices() do begin
-      Log('Trying '+Service.ServiceName+'...');
-      if Service.LaunchProtection <> SERVICE_LAUNCH_PROTECTED_NONE then begin
-        Log('Resetting launch protection for '+Service.ServiceName+'...');
-        Log(GetServiceKey(Service.ServiceName));
-        OverwriteServiceLaunchProtection(Service.ServiceName, SERVICE_LAUNCH_PROTECTED_NONE);
-        hadLaunchProt := true;
-        continue; //Launch protection reset requires reboot, do not touch ownership or we'll fail with ACCESS_DENIED
-      end;
-
-      Log('Checking ownership for '+Service.ServiceName+'...');
-      err := SwitchOwnership(Service.ServiceName, SE_SERVICE, pSidAdmin, pSidPreviousOwner, pPreviousDesc);
-      if err <> 0 then
-        RaiseLastOsError(err);
-
-      if pSidPreviousOwner <> nil then begin
-        Log('Ownership changed for '+Service.ServiceName+', giving the original owner all permissions...');
-        hadOwnershipChanged := true;
-        AddExplicitPermissions(Service.ServiceName, SE_SERVICE, pSidPreviousOwner, SERVICE_ALL_ACCESS);
-        if pPreviousDesc <> nil then
-          LocalFree(NativeUInt(pPreviousDesc));
-      end;
-      Log('Giving Administrators all permissions...');
-      err := AddExplicitPermissions(Service.ServiceName, SE_SERVICE, pSidAdmin, SERVICE_ALL_ACCESS, @APreviousPermissions);
-      if err = 0 then
-        hadPermissionsChanged := APreviousPermissions <> SERVICE_ALL_ACCESS
-      else begin
-        Log('Cannot give permissions, error '+IntToStr(err));
-        hadPermissionsChanged := false;
-      end;
-
+      Unlocker.Unlock(Service);
       RefreshService(Service);
     end;
 
+    if Unlocker.hadLaunchProt then
+      MessageBox(Self.Handle, PChar(sUnlockNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+    else
+    if Unlocker.hadOwnershipChanged or Unlocker.hadPermissionsChanged then
+      MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+    else
+      MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
   finally
-    ReleasePrivilege(hPriv);
-    if pSIDAdmin <> nil then
-      FreeSid(pSIDAdmin);
+    FreeAndNil(Unlocker);
   end;
-
-  if hadLaunchProt then
-    MessageBox(Self.Handle, PChar(sUnlockNeedToReboot), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
-  else
-  if hadOwnershipChanged or hadPermissionsChanged then
-    MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
-  else
-    MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
 end;
 
 

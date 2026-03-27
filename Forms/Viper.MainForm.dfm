@@ -223,7 +223,7 @@ object MainForm: TMainForm
             Columns = <
               item
                 Position = 0
-                Width = 293
+                Width = 299
                 WideText = 'Trigger'
               end
               item
@@ -248,6 +248,10 @@ object MainForm: TMainForm
         Caption = 'Operations'
         ImageIndex = -1
         TabVisible = False
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
     end
     inline MainServiceList: TServiceList

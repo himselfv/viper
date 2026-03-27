@@ -413,6 +413,10 @@ begin
   //Load settings
   SettingsForm.LoadSettings;
 
+{$IFDEF DEBUG}
+  AclHelpers.OnLog := LogForm.Log;
+{$ENDIF}
+
   aRestartAsAdmin.Visible := not IsUserAdmin();
   pcBottom.ActivePage := tsDescription;
   ReloadDetails; //tsDescription doesn't update itself and SetDetailsPaneFocusedService will not work

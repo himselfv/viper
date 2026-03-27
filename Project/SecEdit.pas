@@ -22,8 +22,8 @@ type
 
   TServiceSecurityInformation = class(TInterfacedObject, ISecurityInformation)
   class var
-    ServiceAccessMasks: array of SI_ACCESS;
-    ServiceAccessNames: array of string;
+    AccessMasks: array of SI_ACCESS;
+    AccessNames: array of string;
     class constructor Create;
   protected
     FServiceName: string;
@@ -62,9 +62,6 @@ const
   );
 
 
-implementation
-uses SysUtils, Viper.Log;
-
 resourcestring
   sSvcAccessAll       = 'Full access';
   sSvcAccessRead      = 'Read';
@@ -86,21 +83,24 @@ resourcestring
   sCmnAccessWriteOwner     = 'Change owner';
   sCmnAccessDelete         = 'Delete';
 
+implementation
+uses SysUtils, Viper.Log;
+
 class constructor TServiceSecurityInformation.Create;
 var i: integer;
   procedure Push(m: ACCESS_MASK; const t: string; f: DWORD);
   begin
-    ServiceAccessNames[i] := t; //we have to keep this somewhere or it'll be freed
-    ServiceAccessMasks[i].pguid := nil;
-    ServiceAccessMasks[i].mask := m;
-    ServiceAccessMasks[i].pszName := PChar(ServiceAccessNames[i]);
-    ServiceAccessMasks[i].dwFlags := f;
+    AccessNames[i] := t; //we have to keep this somewhere or it'll be freed
+    AccessMasks[i].pguid := nil;
+    AccessMasks[i].mask := m;
+    AccessMasks[i].pszName := PChar(AccessNames[i]);
+    AccessMasks[i].dwFlags := f;
     Inc(i);
   end;
 
 begin
-  SetLength(ServiceAccessNames, 17);
-  SetLength(ServiceAccessMasks, 17);
+  SetLength(AccessNames, 17);
+  SetLength(AccessMasks, 17);
   i := 0;
  //We'd prefer to have a static precompiled table, but alas, resourcestrings cannot be referenced correctly in static
   Push(SERVICE_ALL_ACCESS,            sSvcAccessAll,              SI_ACCESS_GENERAL or SI_ACCESS_SPECIFIC);
@@ -154,7 +154,7 @@ end;
 function TServiceSecurityInformation.GetSecurity(RequestedInformation: SECURITY_INFORMATION;
   out ppSecurityDescriptor: PSECURITY_DESCRIPTOR; fDefault: BOOL): HRESULT;
 var err: integer;
-  buf: NativeUInt;
+  buf: pointer;
   bufSz, bufNeeded: cardinal;
   hSvc: SC_HANDLE;
   requiredRights: DWORD;
@@ -172,7 +172,7 @@ begin
   try
 
     bufSz := 512;
-    buf := LocalAlloc(LMEM_FIXED, bufSz);
+    buf := LocalAlloc(bufSz);
     while true do begin
       if QueryServiceObjectSecurity(hSvc, RequestedInformation, pointer(buf), bufSz, bufNeeded) then begin
         ppSecurityDescriptor := PSECURITY_DESCRIPTOR(buf);
@@ -186,7 +186,7 @@ begin
         break;
 
       bufSz := bufNeeded;
-      buf := LocalRealloc(buf, bufNeeded, LMEM_FIXED);
+      buf := LocalRealloc(buf, bufNeeded);
     end;
 
     LocalFree(buf);
@@ -255,8 +255,8 @@ function TServiceSecurityInformation.GetAccessRights(pguidObjectType: PGUID; dwF
   out ppAccess: PSI_ACCESS; out pcAccesses, piDefaultAccess: ULONG): HRESULT;
 begin
   Log('SecurityInformation.GetAccessRights');
-  ppAccess := @Self.ServiceAccessMasks[0];
-  pcAccesses := Length(Self.ServiceAccessMasks);
+  ppAccess := @Self.AccessMasks[0];
+  pcAccesses := Length(Self.AccessMasks);
   piDefaultAccess := 0; //index of SERVICE_ALL_ACCESS
   Result := S_OK;
 end;

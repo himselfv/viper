@@ -71,6 +71,13 @@ type
     Copy1: TMenuItem;
     aReload1: TMenuItem;
     N4: TMenuItem;
+    aEditSecurity: TAction;
+    aUnlockSecurity: TAction;
+    Security1: TMenuItem;
+    Edit1: TMenuItem;
+    N3: TMenuItem;
+    Unlock1: TMenuItem;
+    N5: TMenuItem;
     procedure vtTasksGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
     procedure vtTasksInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -98,6 +105,8 @@ type
     procedure aJumpToRegPlainExecute(Sender: TObject);
     procedure aJumpToRegTreeExecute(Sender: TObject);
     procedure aJumpToSystem32TasksExecute(Sender: TObject);
+    procedure aEditSecurityExecute(Sender: TObject);
+    procedure aUnlockSecurityExecute(Sender: TObject);
 
   protected //Task nodes
     procedure Iterate_AddNodeToArray(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -145,7 +154,8 @@ type
 
 
 implementation
-uses ActiveX, ComObj, ShellUtils, WinApiHelper, FilenameUtils;
+uses ActiveX, ComObj, ShellUtils, WinApiHelper, FilenameUtils, SecEditTasks, SecEdit,
+  Viper.Log, AclHelpers, AccCtrl;
 
 {$R *.dfm}
 
@@ -523,7 +533,7 @@ var KeyNames: TStringList;
   i: integer;
 begin
   if not FReg.OpenKey(sRegTasksFlat, false) then
-    raise Exception.Create('Cannot open '+sRegTasksFlat);
+    RaiseLastOsError(FReg.LastError, 'Cannot open '+sRegTasksFlat);
 
   KeyNames := TStringList.Create;
   try
@@ -551,7 +561,7 @@ var APath, AURI: string;
   ATaskData: PNdTaskData;
 begin
   if not FReg.OpenKey(sRegTasksFlat+'\'+AGuid, false) then
-    raise Exception.Create('Cannot open '+sRegTasksFlat+'\'+AGuid);
+    RaiseLastOsError(FReg.LastError, 'Cannot open '+sRegTasksFlat+'\'+AGuid);
 
   APath := NormalizeTaskPath(FReg.ReadString('Path'));
   AURI := NormalizeTaskPath(FReg.ReadString('URI'));
@@ -592,7 +602,7 @@ var KeyNames: TStringList;
   TaskData: PNdTaskData;
 begin
   if not FReg.OpenKey(sRegTasksRoot+'\'+ABucket, false) then
-    raise Exception.Create('Cannot open '+sRegTasksRoot+'\'+ABucket);
+    RaiseLastOsError(FReg.LastError, 'Cannot open '+sRegTasksRoot+'\'+ABucket);
 
   KeyNames := TStringList.Create;
   try
@@ -628,7 +638,7 @@ var KeyNames: TStringList;
   AGuid: string;
 begin
   if not FReg.OpenKey(sRegTasksTree+APath, false) then
-    raise Exception.Create('Cannot open '+sRegTasksTree);
+    RaiseLastOsError(FReg.LastError, 'Cannot open '+sRegTasksTree);
 
   KeyNames := TStringList.Create;
   try
@@ -980,6 +990,254 @@ begin
   RefreshTasks(Tasks);
 end;
 
+procedure TScheduledTasksForm.aEditSecurityExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Task: PNdTaskData;
+begin
+  Tasks := Self.GetSelectedTasks;
+  for Task in Tasks do begin
+    //Can't edit security RN if we don't have the COM interface for now.
+    //It's stored in HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\<Task\Path>\SD,
+    //in binary SDDL format, so if we have that pointer, we can fall back to that method (or be forced to use it).
+    if Task.Task = nil then begin
+      Log('No interface to edit security for task: '+Task.Name);
+      continue;
+    end;
+
+    EditTaskSecurity(Self.Handle, Task.Task, [efEditSacl]);
+  end;
+  RefreshTasks(Tasks);
+end;
+
+
+{
+Actions:
+- Edit SD the official way (IRegisteredTask) - only for those with IRegisteredTask. May fail.
+- Edit SD via registry
+  -- Sometimes requires registry unlock. If edit fails, may want to auto-suggest that.
+
+- Unlock - first via the official way, then default to force-unlock:
+  "These tasks could not be unlocked the official way, use force-unlock?"
+- Force-unlock:
+  - Unlocks the registry key
+  - Unlocks SDs via the registry key
+  - Might not get applied immediately
+
+What else could be unlocked per task/per folder:
+ - Task folder permissions (official and registry ways, same as with tasks)
+ - Windows\Tasks and Windows\System32\Tasks folder permissions
+ - "Recursively unlock all folders up to the root" (not sure if this is needed)
+ - Bulk unlock everything about this task
+
+Other possible bulk actions:
+ - Bulk unlock all registry/all FS/all tasks/folders.
+}
+resourcestring
+  sUnlockDone = 'Done.';
+  sUnlockHadProblems = 'Some tasks had problems while unlocking:';
+  sNothingToChange = 'Nothing to change.';
+  sUnlockActionRegistry = 'Registry unlock';
+  sUnlockActionSDInRegistry = 'SD in Registry';
+
+type
+  TTaskSecurityUnlocker = class
+  protected
+    hPriv: TPrivToken;
+    pSidAdmin: PSID;
+    reg: TRegistry;
+    function ReadSDInRegistry(const Task: PNdTaskData; out sd: TAbsoluteSD): cardinal;
+    function WriteSDInRegistry(const Task: PNdTaskData; sd: TAbsoluteSD): cardinal;
+  public
+    hadOwnershipChanged: boolean;
+    hadPermissionsChanged: boolean;
+    constructor Create;
+    destructor Destroy; override;
+    function UnlockRegistry(const Task: PNdTaskData): cardinal;
+    function UnlockSDInRegistry(const Task: PNdTaskData): cardinal;
+  end;
+
+constructor TTaskSecurityUnlocker.Create;
+begin
+  inherited;
+  hadOwnershipChanged := false;
+  hadPermissionsChanged := false;
+  //Try to claim SE_TAKE_OWNERSHIP_NAME but tolerate if it's unavailable
+  ClaimPrivilege(SE_TAKE_OWNERSHIP_NAME, hPriv);
+  pSidAdmin := AllocateSidBuiltinAdministrators();
+  reg := TRegistry.Create;
+  reg.RootKey := HKEY_LOCAL_MACHINE;
+end;
+
+destructor TTaskSecurityUnlocker.Destroy;
+begin
+  FreeAndNil(reg);
+  ReleasePrivilege(hPriv);
+  if pSidAdmin <> nil then
+    FreeSid(pSIDAdmin);
+  inherited;
+end;
+
+
+{
+All unlock functions:
+1. Do the most that they can.
+2. Return 0 on complete success (which includes "no changes needed") or error code.
+}
+
+{
+Unlocks registry key which stores the task's SD value.
+Might or might not be needed.
+}
+function TTaskSecurityUnlocker.UnlockRegistry(const Task: PNdTaskData): cardinal;
+var Results: TUnlockResults;
+begin
+  Assert(Task.Path<>'');
+  Log('Unlocking registry: '+Task.Path+'...');
+  //Sic! HKLM is written as "MACHINE" for NamedSecurity functions.
+  Result := UnlockNamedObject('MACHINE'+sRegTasksTree+'\'+Task.Path, SE_REGISTRY_KEY, pSidAdmin, KEY_ALL_ACCESS, Results);
+end;
+
+//Tries to load the task SD from the registry.
+//Returns nil if that for some reason didn't work (no key, no access),
+//or a processed TAbsoluteSD object which has to be Destroyed by the caller.
+//On nil, use GetLastError to get the error code to handle.
+function TTaskSecurityUnlocker.ReadSDInRegistry(const Task: PNdTaskData; out sd: TAbsoluteSD): cardinal;
+var sdBufLen: integer;
+  pSd: PSECURITY_DESCRIPTOR;
+begin
+  sd := nil;
+  try
+    if not reg.OpenKey(sRegTasksTree+'\'+Task.Path, false) then begin
+      Result := reg.LastError;
+      if Result = 0 then Result := cardinal(-1); //Avoid returning 0 on failure
+      Log('Cannot open '+sRegTasksTree+': error '+IntToStr(Result));
+      exit;
+    end;
+
+    sdBufLen := reg.GetDataSize('SD');
+    if sdBufLen <= 0 then begin
+      //Maybe no such value
+      Result := reg.LastError;
+      if Result = 0 then Result := cardinal(-1); //Avoid returning 0 on failure
+      Log('GetDataSize(SD) failed');
+      exit;
+    end;
+
+    pSd := PSECURITY_DESCRIPTOR(LocalAlloc(sdBufLen));
+    try
+      //In this case if we fail, we throw, since no concievable SANE error should be possible
+      Assert(reg.ReadBinaryData('SD', pSd^, sdBufLen) = sdBufLen);
+      sd := TAbsoluteSD.FromSelfRelativeSD(pSd);
+    finally
+      LocalFree(pSd);
+    end;
+  except
+    on E: EOsError do begin
+      Result := E.ErrorCode;
+      exit;
+    end;
+  end;
+  Result := ERROR_SUCCESS;
+end;
+
+//Converts TAbsoluteSD to a self-relative format and writes it to registry.
+//Returns false if any of the system calls failed; use GetLastError.
+function TTaskSecurityUnlocker.WriteSDInRegistry(const Task: PNdTaskData; sd: TAbsoluteSD): cardinal;
+var pSd: PSECURITY_DESCRIPTOR;
+  pSdSize: DWORD;
+begin
+  try
+    if not reg.OpenKey(sRegTasksTree+'\'+Task.Path, false) then begin
+      Result := reg.LastError;
+      if Result = 0 then Result := cardinal(-1); //Avoid returning 0 on failure
+      Log('Cannot open '+sRegTasksTree+': error '+IntToStr(Result));
+      exit;
+    end;
+
+    pSd := sd.ToSelfRelativeSD(pSdSize);
+    try
+      reg.WriteBinaryData('SD', pSd^, pSdSize);
+    finally
+      LocalFree(pSd);
+    end;
+  except
+    on E: EOsError do begin
+      Result := E.ErrorCode;
+      exit;
+    end;
+  end;
+  Result := ERROR_SUCCESS;
+end;
+
+function TTaskSecurityUnlocker.UnlockSDInRegistry(const Task: PNdTaskData): cardinal;
+var sd: TAbsoluteSD;
+  pSidPreviousOwner: PSID;
+  APreviousPermissions: cardinal;
+begin
+  //Our best bet at unlocking is doing this via the registry
+  Assert(Task.Path<>'');
+  Log('Unlocking SD via registry: '+Task.Path+'...');
+
+  Result := ReadSDInRegistry(Task, sd);
+  if Result <> ERROR_SUCCESS then exit;
+  try
+    Log('Checking ownership for '+Task.Name+'...');
+    pSidPreviousOwner := sd.SwitchOwner(AllocateSidBuiltinAdministrators());
+    if pSidPreviousOwner <> nil then begin
+      Log('Ownership changed for '+Task.Name+', giving the original owner all permissions...');
+      hadOwnershipChanged := true;
+      sd.EnsureExplicitPermissions(pSidPreviousOwner, FILE_ALL_ACCESS, @APreviousPermissions);
+      //This doesn't count as hadPermissionsChanged, we're only maintaining the previous owner's access.
+      LocalFree(pSidPreviousOwner); //Don't nil, need as a flag
+    end;
+
+    Log('Giving Administrators all permissions...');
+    sd.EnsureExplicitPermissions(pSidAdmin, FILE_ALL_ACCESS, @APreviousPermissions);
+
+    Log('Applying registry SD changes...');
+    Result := WriteSDInRegistry(Task, sd);
+    if Result <> 0 then begin
+      Log('Cannot apply registry changes, error '+IntToStr(Result));
+    end else begin
+      hadOwnershipChanged := hadOwnershipChanged or (pSidPreviousOwner<>nil);
+      hadPermissionsChanged := hadPermissionsChanged or ((APreviousPermissions and FILE_ALL_ACCESS) <> FILE_ALL_ACCESS);
+    end;
+  finally
+    FreeAndNil(sd);
+  end;
+end;
+
+procedure TScheduledTasksForm.aUnlockSecurityExecute(Sender: TObject);
+var Tasks: TTaskDataArray;
+  Task: PNdTaskData;
+  Unlocker: TTaskSecurityUnlocker;
+  err: cardinal;
+  FailedTasks: string;
+begin
+  Unlocker := TTaskSecurityUnlocker.Create;
+  try
+    FailedTasks := '';
+    Tasks := Self.GetSelectedTasks;
+    for Task in Tasks do begin
+      err := Unlocker.UnlockRegistry(Task);
+      if err <> 0 then
+        FailedTasks := FailedTasks + Task.Name+' ('+sUnlockActionRegistry+'): '+IntToStr(err)+#13;
+      err := Unlocker.UnlockSDInRegistry(Task);
+      if err <> 0 then
+        FailedTasks := FailedTasks + Task.Name+' ('+sUnlockActionSDInRegistry+'): '+IntToStr(err)+#13;
+    end;
+    if FailedTasks<>'' then
+      MessageBox(Self.Handle, PChar(sUnlockHadProblems+#13+FailedTasks), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+    else
+    if Unlocker.hadOwnershipChanged or Unlocker.hadPermissionsChanged then
+      MessageBox(Self.Handle, PChar(sUnlockDone), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION)
+    else
+      MessageBox(Self.Handle, PChar(sNothingToChange), PChar(Self.Caption), MB_OK + MB_ICONINFORMATION);
+  finally
+    FreeAndNil(Unlocker);
+  end;
+  RefreshTasks(Tasks);
+end;
 
 
 end.

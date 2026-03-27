@@ -6,7 +6,10 @@ Inherits from common ScheduledTasksForm to add application-wide functionality.
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Viper.ScheduledTasks, Viper.MainForm;
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, Viper.ScheduledTasks, Viper.MainForm,
+  Menus, Actions, ActnList, StdCtrls, ExtCtrls,
+  VirtualTrees;
 
 type
   TScheduledTasksMainForm = class(TScheduledTasksForm)
@@ -27,7 +30,7 @@ var
 
 
 implementation
-uses Menus, Winapi.WinSvc;
+uses Winapi.WinSvc;
 
 {$R *.dfm}
 

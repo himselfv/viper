@@ -73,234 +73,6 @@ object MainForm: TMainForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    object Splitter2: TSplitter
-      Left = 0
-      Top = 405
-      Width = 857
-      Height = 3
-      Cursor = crVSplit
-      Align = alBottom
-      ExplicitLeft = 3
-      ExplicitTop = 251
-      ExplicitWidth = 837
-    end
-    object pcBottom: TPageControl
-      Left = 0
-      Top = 408
-      Width = 857
-      Height = 240
-      ActivePage = tsDescription
-      Align = alBottom
-      Font.Charset = RUSSIAN_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Segoe UI'
-      Font.Style = []
-      Images = CommonRes.ilImages
-      ParentFont = False
-      TabOrder = 2
-      object tsDescription: TTabSheet
-        Caption = 'Info'
-        ImageIndex = -1
-        object Label1: TLabel
-          Left = 0
-          Top = 57
-          Width = 849
-          Height = 13
-          Align = alTop
-          Caption = 'Additional notes:'
-          Font.Charset = RUSSIAN_CHARSET
-          Font.Color = clGrayText
-          Font.Height = -11
-          Font.Name = 'Segoe UI'
-          Font.Style = []
-          ParentFont = False
-          ExplicitWidth = 89
-        end
-        object Splitter3: TSplitter
-          Left = 0
-          Top = 54
-          Width = 849
-          Height = 3
-          Cursor = crVSplit
-          Align = alTop
-          ExplicitLeft = -1
-          ExplicitTop = 51
-        end
-        object mmDetails: TMemo
-          Left = 0
-          Top = 0
-          Width = 849
-          Height = 54
-          Align = alTop
-          BorderStyle = bsNone
-          ParentColor = True
-          ReadOnly = True
-          TabOrder = 0
-        end
-        inline NotesFrame: TRichEditFrame
-          Left = 0
-          Top = 70
-          Width = 849
-          Height = 138
-          Align = alClient
-          TabOrder = 1
-          ExplicitTop = 70
-          ExplicitWidth = 849
-          ExplicitHeight = 138
-          inherited mmNotes: TRichEdit
-            Width = 849
-            Height = 138
-            Font.Height = -13
-            Font.Name = 'Segoe UI'
-            ExplicitWidth = 849
-            ExplicitHeight = 138
-          end
-        end
-      end
-      object tsDependencies: TTabSheet
-        Caption = 'Depends on'
-        ImageIndex = -1
-        OnShow = tsDependenciesShow
-        inline DependencySvcList: TDependencyList
-          Left = 0
-          Top = 0
-          Width = 849
-          Height = 208
-          Align = alClient
-          TabOrder = 0
-          ExplicitWidth = 849
-          ExplicitHeight = 208
-          inherited vtServices: TVirtualStringTree
-            Width = 849
-            Height = 208
-            TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitWidth = 849
-            ExplicitHeight = 208
-          end
-        end
-      end
-      object tsDependents: TTabSheet
-        Caption = 'Required by'
-        ImageIndex = -1
-        OnShow = tsDependentsShow
-        inline DependentsSvcList: TDependencyList
-          Left = 0
-          Top = 0
-          Width = 849
-          Height = 208
-          Align = alClient
-          TabOrder = 0
-          ExplicitWidth = 849
-          ExplicitHeight = 208
-          inherited vtServices: TVirtualStringTree
-            Width = 849
-            Height = 208
-            TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
-            ExplicitWidth = 849
-            ExplicitHeight = 208
-          end
-        end
-      end
-      object tsTriggers: TTabSheet
-        Caption = 'Triggers'
-        ImageIndex = 2
-        OnShow = tsTriggersShow
-        inline TriggerList: TServiceTriggerList
-          Left = 0
-          Top = 0
-          Width = 849
-          Height = 208
-          Align = alClient
-          TabOrder = 0
-          ExplicitWidth = 849
-          ExplicitHeight = 208
-          inherited Tree: TVirtualStringTree
-            Width = 849
-            Height = 208
-            ExplicitWidth = 849
-            ExplicitHeight = 208
-            Columns = <
-              item
-                Position = 0
-                Width = 299
-                WideText = 'Trigger'
-              end
-              item
-                Position = 1
-                Width = 100
-                WideText = 'Action'
-              end
-              item
-                Position = 2
-                Width = 150
-                WideText = 'Service'
-              end
-              item
-                Position = 3
-                Width = 300
-                WideText = 'Params'
-              end>
-          end
-        end
-      end
-      object tsOperations: TTabSheet
-        Caption = 'Operations'
-        ImageIndex = -1
-        TabVisible = False
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
-      end
-    end
-    inline MainServiceList: TServiceList
-      Left = 0
-      Top = 21
-      Width = 857
-      Height = 384
-      Align = alClient
-      TabOrder = 1
-      ExplicitTop = 21
-      ExplicitWidth = 857
-      ExplicitHeight = 384
-      inherited vtServices: TVirtualStringTree
-        Width = 857
-        Height = 384
-        TreeOptions.MiscOptions = [toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
-        OnCreateEditor = MainServiceListvtServicesCreateEditor
-        OnDragAllowed = MainServiceListvtServicesDragAllowed
-        OnEditing = MainServiceListvtServicesEditing
-        OnFocusChanged = MainServiceListvtServicesFocusChanged
-        OnFocusChanging = MainServiceListvtServicesFocusChanging
-        OnKeyAction = MainServiceListvtServicesKeyAction
-        OnNewText = MainServiceListvtServicesNewText
-        ExplicitWidth = 857
-        ExplicitHeight = 384
-      end
-      inherited pmServices: TPopupMenu
-        object miRenameService: TMenuItem [0]
-          Action = aRenameService
-        end
-        object miRemoveServiceFromFolder: TMenuItem [1]
-          Action = aRemoveServiceFromFolder
-        end
-        object N6: TMenuItem [2]
-          Caption = '-'
-        end
-        object N1: TMenuItem [16]
-          Caption = '-'
-        end
-        inherited miAdvancedSubmenu: TMenuItem
-          object Saveserviceconfig2: TMenuItem [0]
-            Action = aSaveSelectedServicesConfig
-          end
-        end
-        object Refresh2: TMenuItem
-          Action = aRefresh
-        end
-      end
-    end
     object edtQuickFilter: TEdit
       Left = 0
       Top = 0
@@ -310,6 +82,244 @@ object MainForm: TMainForm
       TabOrder = 0
       OnChange = edtQuickFilterChange
       OnKeyDown = edtQuickFilterKeyDown
+    end
+    object pnlViewHost: TPanel
+      Left = 0
+      Top = 21
+      Width = 857
+      Height = 627
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 1
+      ExplicitLeft = 64
+      ExplicitTop = 280
+      ExplicitWidth = 185
+      ExplicitHeight = 41
+      object Splitter2: TSplitter
+        Left = 0
+        Top = 384
+        Width = 857
+        Height = 3
+        Cursor = crVSplit
+        Align = alBottom
+        ExplicitLeft = 3
+        ExplicitTop = 251
+        ExplicitWidth = 837
+      end
+      inline MainServiceList: TServiceList
+        Left = 0
+        Top = 0
+        Width = 857
+        Height = 384
+        Align = alClient
+        TabOrder = 0
+        ExplicitTop = 21
+        ExplicitWidth = 857
+        ExplicitHeight = 384
+        inherited vtServices: TVirtualStringTree
+          Width = 857
+          Height = 384
+          TreeOptions.MiscOptions = [toEditable, toFullRepaintOnResize, toInitOnSave, toReportMode, toToggleOnDblClick, toWheelPanning, toEditOnClick]
+          OnCreateEditor = MainServiceListvtServicesCreateEditor
+          OnDragAllowed = MainServiceListvtServicesDragAllowed
+          OnEditing = MainServiceListvtServicesEditing
+          OnFocusChanged = MainServiceListvtServicesFocusChanged
+          OnFocusChanging = MainServiceListvtServicesFocusChanging
+          OnKeyAction = MainServiceListvtServicesKeyAction
+          OnNewText = MainServiceListvtServicesNewText
+          ExplicitWidth = 857
+          ExplicitHeight = 384
+        end
+        inherited pmServices: TPopupMenu
+          object miRenameService: TMenuItem [0]
+            Action = aRenameService
+          end
+          object miRemoveServiceFromFolder: TMenuItem [1]
+            Action = aRemoveServiceFromFolder
+          end
+          object N6: TMenuItem [2]
+            Caption = '-'
+          end
+          object N1: TMenuItem [16]
+            Caption = '-'
+          end
+          inherited miAdvancedSubmenu: TMenuItem
+            object Saveserviceconfig2: TMenuItem [0]
+              Action = aSaveSelectedServicesConfig
+            end
+          end
+          object Refresh2: TMenuItem
+            Action = aRefresh
+          end
+        end
+      end
+      object pcBottom: TPageControl
+        Left = 0
+        Top = 387
+        Width = 857
+        Height = 240
+        ActivePage = tsDescription
+        Align = alBottom
+        Font.Charset = RUSSIAN_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        Images = CommonRes.ilImages
+        ParentFont = False
+        TabOrder = 1
+        ExplicitTop = 408
+        object tsDescription: TTabSheet
+          Caption = 'Info'
+          ImageIndex = -1
+          object Label1: TLabel
+            Left = 0
+            Top = 57
+            Width = 849
+            Height = 13
+            Align = alTop
+            Caption = 'Additional notes:'
+            Font.Charset = RUSSIAN_CHARSET
+            Font.Color = clGrayText
+            Font.Height = -11
+            Font.Name = 'Segoe UI'
+            Font.Style = []
+            ParentFont = False
+            ExplicitWidth = 89
+          end
+          object Splitter3: TSplitter
+            Left = 0
+            Top = 54
+            Width = 849
+            Height = 3
+            Cursor = crVSplit
+            Align = alTop
+            ExplicitLeft = -1
+            ExplicitTop = 51
+          end
+          object mmDetails: TMemo
+            Left = 0
+            Top = 0
+            Width = 849
+            Height = 54
+            Align = alTop
+            BorderStyle = bsNone
+            ParentColor = True
+            ReadOnly = True
+            TabOrder = 0
+          end
+          inline NotesFrame: TRichEditFrame
+            Left = 0
+            Top = 70
+            Width = 849
+            Height = 138
+            Align = alClient
+            TabOrder = 1
+            ExplicitTop = 70
+            ExplicitWidth = 849
+            ExplicitHeight = 138
+            inherited mmNotes: TRichEdit
+              Width = 849
+              Height = 138
+              Font.Height = -13
+              Font.Name = 'Segoe UI'
+              ExplicitWidth = 849
+              ExplicitHeight = 138
+            end
+          end
+        end
+        object tsDependencies: TTabSheet
+          Caption = 'Depends on'
+          ImageIndex = -1
+          OnShow = tsDependenciesShow
+          inline DependencySvcList: TDependencyList
+            Left = 0
+            Top = 0
+            Width = 849
+            Height = 208
+            Align = alClient
+            TabOrder = 0
+            ExplicitWidth = 849
+            ExplicitHeight = 208
+            inherited vtServices: TVirtualStringTree
+              Width = 849
+              Height = 208
+              TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
+              ExplicitWidth = 849
+              ExplicitHeight = 208
+            end
+          end
+        end
+        object tsDependents: TTabSheet
+          Caption = 'Required by'
+          ImageIndex = -1
+          OnShow = tsDependentsShow
+          inline DependentsSvcList: TDependencyList
+            Left = 0
+            Top = 0
+            Width = 849
+            Height = 208
+            Align = alClient
+            TabOrder = 0
+            ExplicitWidth = 849
+            ExplicitHeight = 208
+            inherited vtServices: TVirtualStringTree
+              Width = 849
+              Height = 208
+              TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toThemeAware, toUseBlendedImages]
+              ExplicitWidth = 849
+              ExplicitHeight = 208
+            end
+          end
+        end
+        object tsTriggers: TTabSheet
+          Caption = 'Triggers'
+          ImageIndex = 2
+          OnShow = tsTriggersShow
+          inline TriggerList: TServiceTriggerList
+            Left = 0
+            Top = 0
+            Width = 849
+            Height = 208
+            Align = alClient
+            TabOrder = 0
+            ExplicitWidth = 849
+            ExplicitHeight = 208
+            inherited Tree: TVirtualStringTree
+              Width = 849
+              Height = 208
+              ExplicitWidth = 849
+              ExplicitHeight = 208
+              Columns = <
+                item
+                  Position = 0
+                  Width = 293
+                  WideText = 'Trigger'
+                end
+                item
+                  Position = 1
+                  Width = 100
+                  WideText = 'Action'
+                end
+                item
+                  Position = 2
+                  Width = 150
+                  WideText = 'Service'
+                end
+                item
+                  Position = 3
+                  Width = 300
+                  WideText = 'Params'
+                end>
+            end
+          end
+        end
+        object tsOperations: TTabSheet
+          Caption = 'Operations'
+          ImageIndex = -1
+          TabVisible = False
+        end
+      end
     end
   end
   object ActionList: TActionList

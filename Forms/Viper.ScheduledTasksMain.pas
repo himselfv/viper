@@ -23,6 +23,8 @@ type
     procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure ViewOnActivate;
     procedure ViewOnDeactivate;
+    procedure FilterTasks;
+    procedure FilterTasks_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
   end;
 
 var
@@ -91,58 +93,41 @@ procedure TScheduledTasksMainForm.UMRefresh(var Message: TMessage);
 begin
   if not Self.Visible then exit;
   Self.Reload;
-//  Self.FilterTriggers;
+  Self.FilterTasks;
 end;
 
 procedure TScheduledTasksMainForm.UMQuickFilterChanged(var Message: TMessage);
 begin
-//  Self.FilterTriggers;
+  Self.FilterTasks;
 end;
 
-{
-procedure TScheduledTasksMainForm.FilterTriggers();
+procedure TScheduledTasksMainForm.FilterTasks();
 begin
   //If it's invisible it's going to be filtered when it's reloaded
   if not Self.Visible then exit;
-  Self.ApplyFilter(FilterTriggers_Callback, nil);
+  Self.ApplyFilter(FilterTasks_Callback, nil);
 end;
 
-procedure TScheduledTasksMainForm.FilterTriggers_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var triggerData: PNdTriggerFacet;
-  svc: TExtServiceEntry;
-  isService: boolean;
+procedure TScheduledTasksMainForm.FilterTasks_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
+var task: PNdTaskData;
   isVisible: boolean;
   filterText: string;
 begin
-  triggerData := Sender.GetNodeData(Node);
-
-  svc := TExtServiceEntry(MainForm.Services.Find(triggerData.Trigger.ServiceName));
-  if svc = nil then begin
-    //Maybe someone created a service while we weren't reloading? Show for now.
-    Sender.IsVisible[Node] := true;
-    exit;
-  end;
-
-  isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
+  task := Sender.GetNodeData(Node);
   isVisible := true;
-
-  //Filter out drivers if disabled
-  if not MainForm.aShowDrivers.Checked and not isService then
-    isVisible := false;
 
   //Quickfilter
   filterText := AnsiLowerCase(string(MainForm.QuickFilter).Trim());
   if filterText <> '' then
-    if not AnsiLowerCase(svc.ServiceName).Contains(filterText)
-    and not AnsiLowerCase(svc.DisplayName).Contains(filterText)
-    and not AnsiLowerCase(triggerData.Description).Contains(filterText)
-    and not AnsiLowerCase(triggerData.Params).Contains(filterText)
-    and not AnsiLowerCase(TriggerActionToString(triggerData.Action)).Contains(filterText) then
+    if not AnsiLowerCase(task.Name).Contains(filterText)
+    and not AnsiLowerCase(task.Path).Contains(filterText)
+    and not AnsiLowerCase(task.Source).Contains(filterText)
+    and not AnsiLowerCase(task.GUID).Contains(filterText)
+    and not AnsiLowerCase(task.Buckets).Contains(filterText) then
       isVisible := false;
 
   Sender.IsVisible[Node] := isVisible;
 end;
-}
 
 
 end.

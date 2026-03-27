@@ -125,6 +125,7 @@ type
     function GetSelectedTasks: TTaskDataArray;
     function FindTaskByPath(const APath: string): PVirtualNode;
     function FindTaskByGuid(const AGuid: string): PVirtualNode;
+    procedure ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
 
   protected //API loading
     FTaskScheduler: ITaskService;
@@ -516,6 +517,16 @@ procedure TScheduledTasksForm.FindTaskByGuid_Callback(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
 begin
   Abort := SameText(Self.GetNodeData(Node).GUID, string(Data));
+end;
+
+procedure TScheduledTasksForm.ApplyFilter(Callback: TVTGetNodeProc; Data: pointer);
+begin
+  vtTasks.BeginUpdate;
+  try
+    vtTasks.IterateSubtree(nil, Callback, Data, [], {DoInit=}true);
+  finally
+    vtTasks.EndUpdate;
+  end;
 end;
 
 

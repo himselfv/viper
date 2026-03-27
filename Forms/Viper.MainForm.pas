@@ -133,6 +133,7 @@ type
     miQueryLocalCOM: TMenuItem;
     miDumpLocalRPC: TMenuItem;
     miImportServices: TMenuItem;
+    pnlViewHost: TPanel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -461,7 +462,7 @@ end;
 
 {
 Views are independent screens available for the main content (the right side).
-All views are currently children of pnlMain.
+All views are currently children of pnlViewHost.
 MainServiceList is pre-registered.
 
 Views receive the following events:
@@ -473,9 +474,8 @@ Views receive the following events:
 }
 procedure TMainForm.RegisterView(AView: TWinControl);
 begin
-  AView.Dock(pnlMain, MainServiceList.ClientRect);
+  AView.Dock(pnlViewHost, pnlViewHost.ClientRect);
   AView.Align := alClient;
-  AView.TabOrder := MainServiceList.TabOrder;
   AView.Visible := false;
 end;
 
@@ -483,7 +483,7 @@ procedure TMainForm.UnregisterView(AView: TWinControl);
 begin
   //The view will be hidden (-> OnHide) automatically,
   //but this is mostly for unloading so we don't switch to another view.
-  pnlMain.RemoveControl(AView);
+  pnlViewHost.RemoveControl(AView);
 end;
 
 //Returns the active view control or nil
@@ -492,8 +492,8 @@ var i: integer;
   AControl: TControl;
 begin
   Result := nil;
-  for i := 0 to pnlMain.ControlCount-1 do begin
-    AControl := pnlMain.Controls[i];
+  for i := 0 to pnlViewHost.ControlCount-1 do begin
+    AControl := pnlViewHost.Controls[i];
     if not AControl.Visible then continue;
     if AControl is TSplitter then continue;
     if AControl = pcBottom then continue;
@@ -527,8 +527,8 @@ begin
   if AView = MainServiceList then
     MainServiceListOnActivate;
 
-  for i := 0 to pnlMain.ControlCount-1 do begin
-    OldView := pnlMain.Controls[i];
+  for i := 0 to pnlViewHost.ControlCount-1 do begin
+    OldView := pnlViewHost.Controls[i];
     if OldView = AView then continue; //should remain visible
     if OldView.Visible then
       OldView.Visible := false;

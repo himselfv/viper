@@ -66,7 +66,7 @@ type
     tsDependencies: TTabSheet;
     tsDependents: TTabSheet;
     tsOperations: TTabSheet;
-    MainServiceList: TServiceList;
+    MainServiceList: TMainServiceList;
     N1: TMenuItem;
     Refresh2: TMenuItem;
     DependencySvcList: TDependencyList;

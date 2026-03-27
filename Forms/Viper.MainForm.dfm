@@ -106,7 +106,7 @@ object MainForm: TMainForm
         ExplicitTop = 251
         ExplicitWidth = 837
       end
-      inline MainServiceList: TServiceList
+      inline MainServiceList: TMainServiceList
         Left = 0
         Top = 0
         Width = 857

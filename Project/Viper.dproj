@@ -91,28 +91,39 @@
         <DCCReference Include="..\Forms\Viper.StyleEdit.pas">
             <Form>StyleEditForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.ServiceList.pas">
+        <DCCReference Include="..\Forms\ServiceList\Viper.ServiceList.pas">
             <Form>ServiceList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.DependencyList.pas">
+        <DCCReference Include="..\Forms\ServiceList\Viper.DependencyList.pas">
             <Form>DependencyList</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Forms\ServiceList\Viper.MainServiceList.pas">
+            <Form>MainServiceList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.RestoreServiceConfig.pas">
             <Form>RestoreServiceConfigForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.TriggerList.pas">
+        <DCCReference Include="..\Forms\TriggerList\Viper.TriggerList.pas">
             <Form>TriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.ServiceTriggerList.pas">
+        <DCCReference Include="..\Forms\TriggerList\Viper.ServiceTriggerList.pas">
             <Form>ServiceTriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.MainTriggerList.pas">
+        <DCCReference Include="..\Forms\TriggerList Viper.MainTriggerList.pas">
+            <ModuleName>Viper.MainTriggerList</ModuleName>
             <Form>MainTriggerList</Form>
             <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Forms\ScheduledTasksList\Viper.ScheduledTasks.pas">
+            <Form>ScheduledTasksForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Forms\ScheduledTasksList\Viper.ScheduledTasksMain.pas">
+            <Form>ScheduledTasksMainForm</Form>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.RichEditEx.pas">
             <Form>RichEditFrame</Form>
@@ -127,7 +138,7 @@
         <DCCReference Include="..\Forms\Viper.TriggerImport.pas">
             <Form>TriggerImportForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Forms\Viper.TriggerImportList.pas">
+        <DCCReference Include="..\Forms\TriggerList\Viper.TriggerImportList.pas">
             <Form>TriggerImportList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
@@ -136,12 +147,6 @@
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.ServiceEdit.pas">
             <Form>ServiceEditForm</Form>
-        </DCCReference>
-        <DCCReference Include="..\Forms\Viper.ScheduledTasks.pas">
-            <Form>ScheduledTasksForm</Form>
-        </DCCReference>
-        <DCCReference Include="..\Forms\Viper.ScheduledTasksMain.pas">
-            <Form>ScheduledTasksMainForm</Form>
         </DCCReference>
         <DCCReference Include="ServiceHelper.pas"/>
         <DCCReference Include="WinApiHelper.pas"/>

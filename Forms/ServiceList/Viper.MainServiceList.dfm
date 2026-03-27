@@ -1,0 +1,2 @@
+inherited MainServiceList: TMainServiceList
+end

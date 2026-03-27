@@ -8,21 +8,28 @@ uses
   Viper.Settings in '..\Forms\Viper.Settings.pas' {SettingsForm},
   Viper.StyleSettings in '..\Forms\Viper.StyleSettings.pas' {StyleSettingsForm},
   Viper.StyleEdit in '..\Forms\Viper.StyleEdit.pas' {StyleEditForm},
-  Viper.ServiceList in '..\Forms\Viper.ServiceList.pas' {ServiceList: TFrame},
-  Viper.DependencyList in '..\Forms\Viper.DependencyList.pas' {DependencyList: TFrame},
+
+  Viper.ServiceList in '..\Forms\ServiceList\Viper.ServiceList.pas' {ServiceList: TFrame},
+  Viper.DependencyList in '..\Forms\ServiceList\Viper.DependencyList.pas' {DependencyList: TFrame},
+  Viper.MainServiceList in '..\Forms\ServiceList\Viper.MainServiceList.pas' {MainServiceList: TFrame},
+
   Viper.RestoreServiceConfig in '..\Forms\Viper.RestoreServiceConfig.pas' {RestoreServiceConfigForm},
-  Viper.TriggerList in '..\Forms\Viper.TriggerList.pas' {TriggerList: TFrame},
-  Viper.ServiceTriggerList in '..\Forms\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
-  Viper.MainTriggerList in '..\Forms\Viper.MainTriggerList.pas' {MainTriggerList: TFrame},
+
+  Viper.TriggerList in '..\Forms\TriggerList\Viper.TriggerList.pas' {TriggerList: TFrame},
+  Viper.ServiceTriggerList in '..\Forms\TriggerList\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
+  Viper.MainTriggerList in '..\Forms\TriggerList Viper.MainTriggerList.pas' {MainTriggerList: TFrame},
+
+  Viper.ScheduledTasks in '..\Forms\ScheduledTasksList\Viper.ScheduledTasks.pas' {ScheduledTasksForm},
+  Viper.ScheduledTasksMain in '..\Forms\ScheduledTasksList\Viper.ScheduledTasksMain.pas' {ScheduledTasksMainForm},
+
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},
   Viper.TriggerDataItemEditor in '..\Forms\Viper.TriggerDataItemEditor.pas' {TriggerDataItemEditor},
   Viper.TriggerImport in '..\Forms\Viper.TriggerImport.pas' {TriggerImportForm},
-  Viper.TriggerImportList in '..\Forms\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
+  Viper.TriggerImportList in '..\Forms\TriggerList\Viper.TriggerImportList.pas' {TriggerImportList: TFrame},
   Viper.ServiceImport in 'Viper.ServiceImport.pas' {ServiceImportForm},
   Viper.ServiceEdit in '..\Forms\Viper.ServiceEdit.pas' {ServiceEditForm},
-  Viper.ScheduledTasks in '..\Forms\Viper.ScheduledTasks.pas' {ScheduledTasksForm},
-  Viper.ScheduledTasksMain in '..\Forms\Viper.ScheduledTasksMain.pas' {ScheduledTasksMainForm},
+
   ServiceHelper in 'ServiceHelper.pas',
   WinApiHelper in 'WinApiHelper.pas',
   ShellUtils in 'ShellUtils.pas',

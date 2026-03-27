@@ -71,3 +71,4 @@ dunit.ini
 *.res
 Project/Win32*
 Project/Win64*
+_Build

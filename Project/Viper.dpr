@@ -17,10 +17,10 @@ uses
 
   Viper.TriggerList in '..\Forms\TriggerList\Viper.TriggerList.pas' {TriggerList: TFrame},
   Viper.ServiceTriggerList in '..\Forms\TriggerList\Viper.ServiceTriggerList.pas' {ServiceTriggerList: TFrame},
-  Viper.MainTriggerList in '..\Forms\TriggerList Viper.MainTriggerList.pas' {MainTriggerList: TFrame},
+  Viper.MainTriggerList in '..\Forms\TriggerList\Viper.MainTriggerList.pas' {MainTriggerList: TFrame},
 
-  Viper.ScheduledTasks in '..\Forms\ScheduledTasksList\Viper.ScheduledTasks.pas' {ScheduledTasksForm},
-  Viper.ScheduledTasksMain in '..\Forms\ScheduledTasksList\Viper.ScheduledTasksMain.pas' {ScheduledTasksMainForm},
+  Viper.ScheduledTasks in '..\Forms\ScheduledTaskList\Viper.ScheduledTasks.pas' {ScheduledTasksForm},
+  Viper.ScheduledTasksMain in '..\Forms\ScheduledTaskList\Viper.ScheduledTasksMain.pas' {ScheduledTasksMainForm},
 
   Viper.RichEditEx in '..\Forms\Viper.RichEditEx.pas' {RichEditFrame: TFrame},
   Viper.TriggerEditor in '..\Forms\Viper.TriggerEditor.pas' {TriggerEditorForm},

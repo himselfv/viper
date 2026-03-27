@@ -114,15 +114,14 @@
             <Form>ServiceTriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\TriggerList Viper.MainTriggerList.pas">
-            <ModuleName>Viper.MainTriggerList</ModuleName>
+        <DCCReference Include="..\Forms\TriggerList\Viper.MainTriggerList.pas">
             <Form>MainTriggerList</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\Forms\ScheduledTasksList\Viper.ScheduledTasks.pas">
+        <DCCReference Include="..\Forms\ScheduledTaskList\Viper.ScheduledTasks.pas">
             <Form>ScheduledTasksForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Forms\ScheduledTasksList\Viper.ScheduledTasksMain.pas">
+        <DCCReference Include="..\Forms\ScheduledTaskList\Viper.ScheduledTasksMain.pas">
             <Form>ScheduledTasksMainForm</Form>
         </DCCReference>
         <DCCReference Include="..\Forms\Viper.RichEditEx.pas">

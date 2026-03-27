@@ -7,13 +7,7 @@ uses
   Actions, ActnList, ExtCtrls, ImgList, UiTypes, Menus, StdCtrls, ComCtrls, ActiveX, VirtualTrees,
   Generics.Collections, IniFiles, ServiceHelper, SvcEntry, OsSvcEntry, SvcCat,
   Viper.ServiceList, Viper.TriggerList, Viper.DependencyList, Viper.ServiceTriggerList,
-  Viper.RichEditEx;
-
-const
-  //Custom messages will be delivered to registered views
-  UM_CLEAR                = WM_APP + 1; //Flush internal data in preparation for full reload
-  UM_REFRESH              = WM_APP + 2; //Refresh data while trying to keep internal data where it fits
-  UM_QUICKFILTER_CHANGED  = WM_APP + 3; //Main QuickFilter text changed
+  Viper.RichEditEx, Viper.MainServiceList;
 
 type
   //Folder node data contains only a single pointer.
@@ -36,12 +30,6 @@ type
     ntMax = 255               //values higher than this are objects
   );
 
-  TExtServiceEntry = class(TOsServiceEntry)
-    Info: TServiceInfo;
-    function GetEffectiveDisplayName: string; override;
-    procedure GetIcon(out AImageList: TCustomImageList; out AIndex: integer); override;
-  end;
-
   TCallback<TFunc> = class(TList<TFunc>) end;
 
   TMainForm = class(TForm)
@@ -54,25 +42,14 @@ type
     pmFolders: TPopupMenu;
     miHideEmptyFolders: TMenuItem;
     pnlMain: TPanel;
-    Splitter2: TSplitter;
     File1: TMenuItem;
-    aShowDrivers: TAction;
     miShowDrivers: TMenuItem;
     miUseColors: TMenuItem;
     aRefresh: TAction;
     Refresh1: TMenuItem;
-    pcBottom: TPageControl;
-    tsDescription: TTabSheet;
-    tsDependencies: TTabSheet;
-    tsDependents: TTabSheet;
-    tsOperations: TTabSheet;
     MainServiceList: TMainServiceList;
     N1: TMenuItem;
     Refresh2: TMenuItem;
-    DependencySvcList: TDependencyList;
-    DependentsSvcList: TDependencyList;
-    tsTriggers: TTabSheet;
-    TriggerList: TServiceTriggerList;
     aIncludeSubfolders: TAction;
     Includesubfolderscontents1: TMenuItem;
     aSaveAllServicesConfig: TAction;
@@ -107,18 +84,11 @@ type
     N6: TMenuItem;
     miRenameService: TMenuItem;
     miRemoveServiceFromFolder: TMenuItem;
-    aSaveNotes: TAction;
-    mmDetails: TMemo;
-    Label1: TLabel;
-    Splitter3: TSplitter;
-    aEditServiceNotes: TAction;
-    NotesFrame: TRichEditFrame;
     aConfigureColors: TAction;
     miConfigureColors: TMenuItem;
     miEdit: TMenuItem;
     Editfolders1: TMenuItem;
     Editnotes1: TMenuItem;
-    aShowUserPrototypes: TAction;
     miShowPrototypes: TMenuItem;
     miView: TMenuItem;
     N8: TMenuItem;
@@ -137,7 +107,6 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure aCloseExecute(Sender: TObject);
     procedure aRefreshExecute(Sender: TObject);
     procedure vtFoldersGetNodeDataSize(Sender: TBaseVirtualTree; var NodeDataSize: Integer);
@@ -170,14 +139,6 @@ type
     procedure aRenameFolderExecute(Sender: TObject);
     procedure aDeleteFolderExecute(Sender: TObject);
     procedure aHideEmptyFoldersExecute(Sender: TObject);
-    procedure aShowDriversExecute(Sender: TObject);
-    procedure MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex);
-    procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; var Allowed: Boolean);
-    procedure tsDependenciesShow(Sender: TObject);
-    procedure tsDependentsShow(Sender: TObject);
-    procedure tsTriggersShow(Sender: TObject);
     procedure aIncludeSubfoldersExecute(Sender: TObject);
     procedure aSaveAllServicesConfigExecute(Sender: TObject);
     procedure aSaveSelectedServicesConfigExecute(Sender: TObject);
@@ -187,9 +148,9 @@ type
     procedure edtQuickFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure aRestartAsAdminExecute(Sender: TObject);
     procedure aRemoveServiceFromFolderExecute(Sender: TObject);
-    procedure mmNotesExit(Sender: TObject);
-    procedure aSaveNotesExecute(Sender: TObject);
     procedure aRenameServiceExecute(Sender: TObject);
+    procedure MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
     procedure MainServiceListvtServicesEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; var Allowed: Boolean);
     procedure MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -198,11 +159,7 @@ type
       var Shift: TShiftState; var DoDefault: Boolean);
     procedure MainServiceListvtServicesCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; out EditLink: IVTEditLink);
-    procedure aEditServiceNotesExecute(Sender: TObject);
     procedure aConfigureColorsExecute(Sender: TObject);
-    procedure MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
-      NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
-    procedure aShowUserPrototypesExecute(Sender: TObject);
     procedure aRunServicesMscExecute(Sender: TObject);
     procedure aSettingsExecute(Sender: TObject);
     procedure vtFoldersCollapsing(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -234,11 +191,11 @@ type
     OnQuickFilterChanged: TCallback<TNotifyEvent>;
   protected
     function GetQuickFilter: string;
-    procedure QuickFilterChanged; virtual;
   public
+    procedure QuickFilterChanged; virtual;
     property QuickFilter: string read GetQuickFilter;
 
-  protected
+  public
     function GetFolderData(AFolderNode: PVirtualNode): TNdFolderData; inline;
     function IsSpecialFolder(AFolder: TNdFolderData): boolean; inline;
     function SpecialFolderType(AFolder: TNdFolderData): TFolderNodeType; inline;
@@ -247,13 +204,14 @@ type
     FServiceCat: TServiceCatalogue; //catalogue of static service information
     function vtFolders_Add(AParent: PVirtualNode; AInfo: TServiceFolder): PVirtualNode;
     function vtFolders_AddSpecial(AParent: PVirtualNode; AType: TFolderNodeType): PVirtualNode;
-    procedure FilterFolders();
     procedure Folders_HideAll(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure Folders_ShowFiltered(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
     procedure NodeMarkVisible(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure CreateFolderNodes(AFolderNode: PVirtualNode; AFolderInfo: TServiceFolder);
   public
+    procedure FilterFolders();
     procedure ReloadServiceTree;
+    property ServiceCat: TServiceCatalogue read FServiceCat;
 
   protected // Folder editing
     function CanEditFolders: boolean;
@@ -261,35 +219,8 @@ type
     procedure FoldersDropService(Sender: TBaseVirtualTree; Service: TServiceEntry; Mode: TDropMode); overload;
 
   protected
-    FServices: TServiceEntryList;
-    function AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
-    procedure MainServiceListOnActivate();
-    procedure FilterServices();
-    procedure FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-    function IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
-    procedure IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-  public
-    property Services: TServiceEntryList read FServices;
-
-  protected //Details pane
-    FDetailsPaneFocusedService: TExtServiceEntry;
-    procedure ReloadDetails;
-    procedure ReloadServiceInfo;
-    procedure ReloadServiceDependencies;
-    procedure ReloadServiceDependents;
-    procedure ReloadTriggers;
-    function mmNotes: TRichEdit; inline;
-  public
-    procedure SetDetailsPaneFocusedService(AService: TExtServiceEntry);
-
-  protected //Service editing
-    function CanEditServiceInfo: boolean;
-    procedure SaveNotes;
-
-  protected
     procedure InitInterfaceClasses;
     function CheckClassFilePresent(Settings: TCustomIniFile; const AFilename: string; const AName: string): boolean;
-    procedure RefreshServiceList;
   public
     procedure Refresh;
     procedure FullReload;
@@ -312,24 +243,6 @@ uses FilenameUtils, CommCtrl, ShellApi, Clipbrd, WinApiHelper, ShellUtils, AclHe
 
 {$R *.dfm}
 
-
-function TExtServiceEntry.GetEffectiveDisplayName: string;
-begin
-  if (Info <> nil) and (Info.DisplayName <> '') then
-    Result := Info.DisplayName.Replace('%1', inherited)
-  else
-    Result := inherited;
-end;
-
-procedure TExtServiceEntry.GetIcon(out AImageList: TCustomImageList; out AIndex: integer);
-begin
-  AImageList := CommonRes.ilImages;
-  if Self.Status.dwServiceType and SERVICE_DRIVER <> 0 then
-    AIndex := CommonRes.iDriver
-  else
-    AIndex := CommonRes.iService;
-end;
-
 class constructor TMainForm.Create;
 begin
   OnQuickFilterChanged := TCallback<TNotifyEvent>.Create;
@@ -343,20 +256,11 @@ end;
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FServiceCat := TServiceCatalogue.Create();
-  FServices := TServiceEntryList.Create;
   InitInterfaceClasses;
-  TriggerList.Initialize;
-  DependencySvcList.SetServiceList(FServices);
-  DependentsSvcList.SetServiceList(FServices);
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  //Clear everyone who's using FServices
-  MainServiceList.Clear;
-  DependencySvcList.Clear;
-  DependentsSvcList.Clear;
-  FreeAndNil(FServices);
   FreeAndNil(FServiceCat);
 end;
 
@@ -419,15 +323,8 @@ begin
 {$ENDIF}
 
   aRestartAsAdmin.Visible := not IsUserAdmin();
-  pcBottom.ActivePage := tsDescription;
-  ReloadDetails; //tsDescription doesn't update itself and SetDetailsPaneFocusedService will not work
   ReloadServiceTree;
   Refresh;
-end;
-
-procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
-begin
-  SaveNotes; //since OnExit won't happen
 end;
 
 procedure TMainForm.aCloseExecute(Sender: TObject);
@@ -495,8 +392,6 @@ begin
   for i := 0 to pnlViewHost.ControlCount-1 do begin
     AControl := pnlViewHost.Controls[i];
     if not AControl.Visible then continue;
-    if AControl is TSplitter then continue;
-    if AControl = pcBottom then continue;
     Result := AControl;
     break;
   end;
@@ -523,10 +418,6 @@ begin
   AView.Perform(UM_QUICKFILTER_CHANGED, 0, 0);
   AView.Perform(UM_REFRESH, 0, 0);
 
-  //Manual OnActivate/OnDeactivate handling for service list for now
-  if AView = MainServiceList then
-    MainServiceListOnActivate;
-
   for i := 0 to pnlViewHost.ControlCount-1 do begin
     OldView := pnlViewHost.Controls[i];
     if OldView = AView then continue; //should remain visible
@@ -536,12 +427,6 @@ begin
 
   if WasFocused then
     AView.SetFocus;
-end;
-
-procedure TMainForm.MainServiceListOnActivate;
-begin
-  Self.FilterServices;
-  SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
 end;
 
 
@@ -557,8 +442,6 @@ procedure TMainForm.QuickFilterChanged;
 var ActiveView: TControl;
   Event: TNotifyEvent;
 begin
-  FilterServices();
-
  //Notify the currently active View
   ActiveView := Self.GetActiveView;
   if ActiveView <> nil then
@@ -583,104 +466,10 @@ begin
 end;
 
 
-{
-Updates the list of services and their status.
-To do a full reload, clear everything then refresh. Otherwise tries to keep changes to a minimum.
-}
-procedure TMainForm.RefreshServiceList;
-var hSC: SC_HANDLE;
-  ServiceTypes: dword;
-  Services, S: PEnumServiceStatusProcess;
-  ServicesReturned: cardinal;
-  i, j: integer;
-  svc: TExtServiceEntry;
-  ServiceFound: array of boolean;
-  Node: PVirtualNode;
-  Abort: boolean;
-begin
-  //Let's load all services since we need all for dependencies, just make sure to handle
-  //permission denials well.
-  ServiceTypes := SERVICE_TYPE_ALL;
-
-  //Mark already known services for sweeping
-  SetLength(ServiceFound, FServices.Count);
-  for i := 0 to Length(ServiceFound)-1 do
-    ServiceFound[i] := false;
-
-  //Actualize the list of services
-  Services := nil;
-  hSC := OpenSCManager(SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE);
-  try
-    if not ShEnumServicesStatusEx(hSC, ServiceTypes, SERVICE_STATE_ALL, nil, Services, ServicesReturned) then
-      RaiseLastOsError();
-
-    S := Services;
-    for i := 0 to ServicesReturned - 1 do begin
-      j := FServices.FindIndex(S.lpServiceName);
-      if j >= 0 then begin
-        ServiceFound[j] := true;
-        FServices[j].Status := S.ServiceStatus;
-        //Will be invalidated later
-      end else begin
-        svc := TExtServiceEntry.CreateFromEnum(S);
-        svc.Info := FServiceCat.Find(svc.ServiceName);
-        FServices.Add(svc);
-        //Will be pushed to UI later
-      end;
-      Inc(S);
-    end;
-
-  finally
-    if Services <> nil then
-      FreeMem(Services);
-    CloseServiceHandle(hSC);
-  end;
-
-  FilterFolders; //service list changed, re-test which folders are empty
-
-  //Update the UI
-
-  MainServiceList.BeginUpdate;
-  try
-    //Add new services
-    for i := Length(ServiceFound) to FServices.Count-1 do begin
-      Abort := false;
-      Node := MainServiceList.AddService(nil, FServices[i]);
-      //Apply visibility according to filters
-      FilterServices_Callback(MainServiceList.vtServices, Node, nil, Abort);
-    end;
-
-    //Invalidate existing services
-    for i := 0 to Length(ServiceFound)-1 do
-      if ServiceFound[i] then begin
-        InvalidateService(FServices[i]); //but do not RefreshService since we already have its ServiceStatus
-
-        //We will not make visible nodes invisible, for this is usually not what the user wants.
-        //But if a service now matches the criteria, we will make it visible on Refresh
-        Node := MainServiceList.FindServiceNode(FServices[i]);
-        if not MainServiceList.vtServices.IsVisible[Node] then
-          FilterServices_Callback(MainServiceList.vtServices, Node, nil, Abort);
-      end;
-
-    //Delete missing service entries
-    for i := 0 to Length(ServiceFound)-1 do
-      if not ServiceFound[i] then
-        MainServiceList.DeleteServiceNode(FServices[i]);
-  finally
-    MainServiceList.EndUpdate;
-  end;
-
-  //Delete missing services - do this last, it'll screw with indexing
-  for i := Length(ServiceFound)-1 downto 0 do
-    if not ServiceFound[i] then
-      FServices.Delete(i);
-end;
 
 procedure TMainForm.Refresh;
 var ActiveView: TControl;
 begin
-  RefreshServiceList; //Always needed right now
-
   //Refresh active view
   ActiveView := Self.GetActiveView;
   if ActiveView <> nil then
@@ -691,7 +480,6 @@ procedure TMainForm.FullReload;
 var ActiveView: TControl;
 begin
   MainServiceList.Clear;
-  FServices.Clear;
 
   //This is currently weird...
   //"Full reload" only reloads the page currently open. Should it be like this?
@@ -713,99 +501,6 @@ procedure TMainForm.miShowLogClick(Sender: TObject);
 begin
   LogForm.Show;
 end;
-
-//Presents all services as a TServiceEntries list (some functions want this).
-//Use FServices directly if you have a choice.
-function TMainForm.AllServiceEntries(const ATypeFilter: cardinal = SERVICE_WIN32): TServiceEntries;
-var i: integer;
-begin
-  SetLength(Result, 0);
-  for i := 0 to FServices.Count-1 do
-    if (FServices[i].Config <> nil) and (FServices[i].Config.dwServiceType and ATypeFilter <> 0) then begin
-      SetLength(Result, Length(Result)+1);
-      Result[Length(Result)-1] := FServices[i];
-    end;
-end;
-
-procedure TMainForm.FilterServices();
-begin
-  MainServiceList.ApplyFilter(FilterServices_Callback, nil);
-end;
-
-procedure TMainForm.FilterServices_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var folderNode: PVirtualNode;
-  folderData: TNdFolderData;
-  nodeData: TObject;
-  svc: TExtServiceEntry;
-  isService: boolean;
-  isVisible: boolean;
-  filterText: string;
-begin
-  nodeData := TObject(Sender.GetNodeData(Node)^);
-  Assert(nodeData <> nil);
-  Assert(nodeData is TExtServiceEntry); //ServiceList can host folders and more but we don't use it yet!
-  svc := TExtServiceEntry(nodeData);
-
-  isService := (svc.Status.dwServiceType and SERVICE_WIN32 <> 0);
-  isVisible := true;
-
-  //Filter by folder
-  folderNode := vtFolders.GetFirstSelected();
-  if folderNode <> nil then begin
-    folderData := GetFolderData(folderNode);
-    case SpecialFolderType(folderData) of
-      ntNone: isVisible := false;
-      ntAllServicesDrivers: isVisible := true;
-      ntRunningServices: isVisible := isService and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
-      ntAllServices: isVisible :=  isService;
-      ntUnknownServices: isVisible := isService and ((svc.Info = nil) or (Length(svc.Info.Folders) <= 0));
-      ntRunningDrivers: isVisible := (not isService) and (svc.Status.dwCurrentState <> SERVICE_STOPPED);
-      ntAllDrivers: isVisible := not isService;
-      ntTriggers: isVisible := false;
-      ntScheduledTasks: isVisible := false;
-    else //pointer
-      isVisible := isService and IsFolderContainsService(folderNode, svc, {Recursive=}aIncludeSubfolders.Checked);
-    end;
-  end;
-
-  //Filter out drivers if disabled
-  if not aShowDrivers.Checked and not isService then
-    isVisible := false;
-
-  //Filter UserService prototypes. Instances would have SERVICE_USERSERVICE_INSTANCE
-  if not aShowUserPrototypes.Checked and (svc.Status.dwServiceType and SERVICE_USER_SERVICE <> 0)
-    and (svc.Status.dwServiceType and SERVICE_USERSERVICE_INSTANCE = 0) then
-    isVisible := false;
-
-  //Quickfilter
-  filterText := AnsiLowerCase(string(edtQuickfilter.Text).Trim());
-  if filterText <> '' then
-    if not AnsiLowerCase(svc.ServiceName).Contains(filterText)
-    and not AnsiLowerCase(svc.DisplayName).Contains(filterText) then
-      isVisible := false;
-
-  Sender.IsVisible[Node] := isVisible;
-end;
-
-//True if the folder contains service.
-//Handled outside of TNdFolderData inself because we need to support recursion and only the tree knows children.
-function TMainForm.IsFolderContainsService(AFolder: PVirtualNode; AService: TServiceEntry; ARecursive: boolean = false): boolean;
-var AFolderData: TNdFolderData;
-begin
-  AFolderData := GetFolderData(AFolder);
-  Result := AFolderData.ContainsService(AService.ServiceName);
-  if (not Result) and ARecursive then
-    Result := vtFolders.IterateSubtree(AFolder, IsFolderContainsService_Callback, pointer(AService)) <> nil;
-end;
-
-//Servant function to IsFolderContainsService.
-//Calls IsFolderContainsService on all nodes, returns first that succeeds. Called for all sub-nodes so no need to call IFCS with recursion
-procedure TMainForm.IsFolderContainsService_Callback(Sender: TBaseVirtualTree; Node: PVirtualNode; Data: Pointer; var Abort: Boolean);
-var AService: TServiceEntry absolute Data;
-begin
-  Abort := IsFolderContainsService(Node, AService, {ARecursive=}false);
-end;
-
 
 
 resourcestring
@@ -1101,7 +796,7 @@ begin
   end;
 
   FServiceCat.MoveService(SvcInfo, TargetFolder); //throws on error
-  Self.FilterServices;
+  MainServiceList.FilterServices;
 end;
 
 //Removes the selected services from exactly the active folders (not from every folder they're in)
@@ -1118,7 +813,7 @@ begin
     if SvcInfo <> nil then //those that are nil are already outside of everything
       FServiceCat.RemoveServiceFromFolder(SvcInfo, Folder);
   end;
-  Self.FilterServices;
+  MainServiceList.FilterServices;
 end;
 
 
@@ -1250,7 +945,7 @@ begin
       ntAllServicesDrivers,
       ntRunningDrivers,
       ntAllDrivers:
-        if aShowDrivers.Checked then NodeMarkVisible(Sender, Node);
+        if MainServiceList.aShowDrivers.Checked then NodeMarkVisible(Sender, Node);
     else NodeMarkVisible(Sender, Node);
     end;
     exit;
@@ -1258,7 +953,7 @@ begin
 
   //This can be moved to service/folder list reloading and HasAnyServices flag cached
   HasAnyServices := false;
-  for service in Self.FServices do
+  for service in MainServiceList.Services do
     if nd.ContainsService(service.ServiceName) then begin
       HasAnyServices := true;
       break;
@@ -1280,38 +975,7 @@ end;
 
 procedure TMainForm.aIncludeSubfoldersExecute(Sender: TObject);
 begin
-  FilterServices();
-end;
-
-procedure TMainForm.aShowDriversExecute(Sender: TObject);
-begin
-  FilterFolders;
-  QuickFilterChanged;
-end;
-
-procedure TMainForm.aShowUserPrototypesExecute(Sender: TObject);
-begin
-  FilterServices;
-  QuickFilterChanged;
-end;
-
-procedure TMainForm.MainServiceListvtServicesFocusChanging(Sender: TBaseVirtualTree; OldNode,
-  NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex; var Allowed: Boolean);
-begin
-  if OldNode <> NewNode then begin
-    //Save notes on focus change
-    if aEditServiceNotes.Checked then
-      SaveNotes;
-  end;
-end;
-
-procedure TMainForm.MainServiceListvtServicesFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
-begin
-  MainServiceList.vtServicesFocusChanged(Sender, Node, Column); //inherited
-  if MainServiceList.Visible then
-    SetDetailsPaneFocusedService(TExtServiceEntry(MainServiceList.GetFocusedService));
-  //Action availability checking is done in OnChanged, depends on Selection
+  MainServiceList.FilterServices();
 end;
 
 procedure TMainForm.MainServiceListvtServicesDragAllowed(Sender: TBaseVirtualTree;
@@ -1326,114 +990,12 @@ begin
 end;
 
 
-{
-Details pane
-Shows details for whatever is in FDetailsPaneFocusedService.
-}
-
-procedure TMainForm.SetDetailsPaneFocusedService(AService: TExtServiceEntry);
-begin
-  if AService = FDetailsPaneFocusedService then exit;
-  FDetailsPaneFocusedService := AService;
-  ReloadDetails;
-end;
-
-//Reloads all data in the details pane
-procedure TMainForm.ReloadDetails;
-begin
- //Only reload visible data, the rest is reloaded as we switch between tabs
-  ReloadServiceInfo;
-  if pcBottom.ActivePage = tsDependencies then
-    ReloadServiceDependencies;
-  if pcBottom.ActivePage = tsDependents then
-    ReloadServiceDependents;
-  if pcBottom.ActivePage = tsTriggers then
-    ReloadTriggers;
-end;
-
-type
-  TControlHack = class(TControl)
-  end;
-
-function GetControlFontHeight(Control: TWinControl): integer;
-var DC: HDC;
-  SaveFont : HFont;
-  Metrics : TTextMetric;
-begin
-  DC := GetDC(Control.Handle);
-  SaveFont := SelectObject(DC, TControlHack(Control).Font.Handle);
-  GetTextMetrics(DC, Metrics);
-  SelectObject(DC, SaveFont);
-  ReleaseDC(Control.Handle, DC);
-  Result := Metrics.tmHeight;
-end;
-
-procedure TMainForm.ReloadServiceInfo;
-var service: TExtServiceEntry;
-begin
-  service := FDetailsPaneFocusedService;
-
-  if service <> nil then
-    mmDetails.Text := service.Description
-  else
-    mmDetails.Text := '';
-//  mmDetails.Height := mmDetails.Lines.Count * GetControlFontHeight(mmDetails) + 8;
-
-  if (service <> nil) and (service.Info <> nil) then
-    mmNotes.Text := service.Info.Description
-  else
-    mmNotes.Text := '';
-end;
-
-function TMainForm.mmNotes: TRichEdit;
-begin
-  Result := NotesFrame.mmNotes;
-end;
-
-procedure TMainForm.tsDependenciesShow(Sender: TObject);
-begin
-  ReloadServiceDependencies;
-end;
-
-procedure TMainForm.ReloadServiceDependencies;
-begin
-  DependencySvcList.ReloadDependencies(FDetailsPaneFocusedService);
-end;
-
-procedure TMainForm.tsDependentsShow(Sender: TObject);
-begin
-  ReloadServiceDependents;
-end;
-
-procedure TMainForm.ReloadServiceDependents;
-begin
-  DependentsSvcList.ReloadDependents(FDetailsPaneFocusedService);
-end;
-
-//Triggers are Windows 7-introduced instructions to start/stop service on a certain system events.
-
-procedure TMainForm.tsTriggersShow(Sender: TObject);
-begin
-  ReloadTriggers;
-end;
-
-procedure TMainForm.ReloadTriggers;
-var service: TOsServiceEntry;
-begin
-  service := FDetailsPaneFocusedService;
-  if service = nil then
-    TriggerList.SetService('')
-  else
-    TriggerList.SetService(service.ServiceName, service.Handle);
-end;
-
-
 procedure TMainForm.aSaveAllServicesConfigExecute(Sender: TObject);
 begin
   if not SaveServiceConfigDialog.Execute then
     exit;
 
-  SaveServiceConfig(Self.Handle, Self.AllServiceEntries, SaveServiceConfigDialog.FileName);
+  SaveServiceConfig(Self.Handle, MainServiceList.AllServiceEntries, SaveServiceConfigDialog.FileName);
 end;
 
 procedure TMainForm.aSaveSelectedServicesConfigExecute(Sender: TObject);
@@ -1470,7 +1032,7 @@ end;
 procedure TMainForm.aEditFoldersExecute(Sender: TObject);
 begin
   if not aEditFolders.Checked then
-    SaveNotes; //before turning them read-only
+    MainServiceList.SaveNotes; //before turning them read-only
 
   aAddFolder.Visible := aEditFolders.Checked;
   aRenameFolder.Visible := aEditFolders.Checked;
@@ -1583,73 +1145,6 @@ end;
 
 // Service editing
 
-//Enters/exits notes edit mode for a currently focused service
-procedure TMainForm.aEditServiceNotesExecute(Sender: TObject);
-begin
-  //If no service is focused, abort
-  if aEditServiceNotes.Checked and (FDetailsPaneFocusedService = nil) then begin
-    aEditServiceNotes.Checked := false;
-    exit;
-  end;
-
-  //Enable note editing
-  if aEditServiceNotes.Checked then begin
-    mmNotes.Color := clWindow;
-    //Auto-switch to the editor
-    if pcBottom.ActivePage <> tsDescription then
-      pcBottom.ActivePage := tsDescription;
-    mmNotes.SetFocus;
-  end else
-    mmNotes.Color := clBtnFace;
-  mmNotes.ReadOnly := not aEditServiceNotes.Checked;
-
-  //Can't save notes unless we're editing
-  aSaveNotes.Visible := aEditServiceNotes.Checked;
-  aSaveNotes.Enabled := aEditServiceNotes.Checked;
-
-  //Return to the list if the editor was focused (but not if something else)
-  if mmNotes.Focused and not aEditServiceNotes.Checked
-  and MainServiceList.Visible then
-    MainServiceList.vtServices.SetFocus;
-end;
-
-function TMainForm.CanEditServiceInfo: boolean;
-begin
-  Result := aEditServiceNotes.Checked; //Edit mode is common for folders and service info
-end;
-
-procedure TMainForm.mmNotesExit(Sender: TObject);
-begin
-  SaveNotes;
-end;
-
-//Saves the service notes if they are currently being edited and there are changes
-procedure TMainForm.SaveNotes;
-var service: TExtServiceEntry;
-begin
-  if mmNotes.ReadOnly then exit; // couldn't have been changed
-
-  service := FDetailsPaneFocusedService;
-  if service = nil then exit;
-
-  if (service.Info = nil) and (mmNotes.Text = '') then exit; //do not create a file unless there's a point
-
-  if service.Info = nil then
-    service.Info := FServiceCat.Get(service.ServiceName);
-
-  if service.Info.Description = mmNotes.Text then exit; //nothing changed
-
-  service.Info.Description := mmNotes.Text;
-  service.Info.SaveToMainFile;
-end;
-
-procedure TMainForm.aSaveNotesExecute(Sender: TObject);
-begin
-  //Ctrl-S shortcut for saving notes while editing
-  if (not mmNotes.ReadOnly) and mmNotes.Focused then
-    SaveNotes;
-end;
-
 procedure TMainForm.aRenameServiceExecute(Sender: TObject);
 var Node: PVirtualNode;
 begin
@@ -1709,7 +1204,7 @@ procedure TMainForm.MainServiceListvtServicesNewText(Sender: TBaseVirtualTree; N
   Column: TColumnIndex; NewText: string);
 var service: TExtServiceEntry;
 begin
-  if (not CanEditServiceInfo) or (Column <> TServiceList.colDisplayName) then
+  if (not MainServiceList.CanEditServiceInfo) or (Column <> TServiceList.colDisplayName) then
     exit;
   service := TExtServiceEntry(MainServiceList.GetServiceEntry(Node));
   if service = nil then exit; //fail

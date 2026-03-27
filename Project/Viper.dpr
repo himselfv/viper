@@ -2,7 +2,9 @@ program Viper;
 
 uses
   Vcl.Forms,
+
   Viper.MainForm in '..\Forms\Viper.MainForm.pas' {MainForm},
+
   Viper.Log in 'Viper.Log.pas' {LogForm},
   CommonResources in 'CommonResources.pas' {CommonRes: TDataModule},
   Viper.Settings in '..\Forms\Viper.Settings.pas' {SettingsForm},

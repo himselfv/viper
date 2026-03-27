@@ -3,7 +3,15 @@ unit CommonResources;
 interface
 
 uses
-  SysUtils, Classes, Windows, ImgList, Controls;
+  SysUtils, Classes, Windows, ImgList, Controls, Messages;
+
+//Custom messages will be delivered to registered views
+//Stored here for now so that views can continue their spaghetti interlinking
+//with the MainForm without creating circular dependencies.
+const
+  UM_CLEAR                = WM_APP + 1; //Flush internal data in preparation for full reload
+  UM_REFRESH              = WM_APP + 2; //Refresh data while trying to keep internal data where it fits
+  UM_QUICKFILTER_CHANGED  = WM_APP + 3; //Main QuickFilter text changed
 
 type
   TCommonRes = class(TDataModule)

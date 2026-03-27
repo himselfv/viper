@@ -7,9 +7,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Viper.ScheduledTasks, Viper.MainForm,
-  Menus, Actions, ActnList, StdCtrls, ExtCtrls,
-  VirtualTrees;
+  Dialogs, Menus, Actions, ActnList, StdCtrls, ExtCtrls, VirtualTrees,
+  CommonResources, Viper.ScheduledTasks;
 
 type
   TScheduledTasksMainForm = class(TScheduledTasksForm)
@@ -32,7 +31,7 @@ var
 
 
 implementation
-uses Winapi.WinSvc;
+uses Winapi.WinSvc, Viper.MainForm;
 
 {$R *.dfm}
 

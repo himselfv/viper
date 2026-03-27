@@ -8,7 +8,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Viper.TriggerList, Vcl.ExtCtrls,
-  System.Actions, Vcl.ActnList, Vcl.Menus, VirtualTrees, Viper.MainForm;
+  System.Actions, Vcl.ActnList, Vcl.Menus, VirtualTrees, CommonResources,
+  Viper.MainServiceList;
 
 type
   TMainTriggerList = class(TTriggerList)
@@ -37,7 +38,7 @@ var
 
 
 implementation
-uses Winapi.WinSvc, SvcEntry, TriggerUtils;
+uses Winapi.WinSvc, SvcEntry, TriggerUtils, Viper.MainForm;
 
 {$R *.dfm}
 
@@ -65,7 +66,7 @@ end;
 procedure TMainTriggerList.ViewOnActivate;
 begin
   //Self.Reload; //Refresh will be automatically called
-  MainForm.SetDetailsPaneFocusedService(Self.GetFocusedService);
+  MainForm.MainServiceList.SetDetailsPaneFocusedService(Self.GetFocusedService);
 end;
 
 procedure TMainTriggerList.ViewOnDeactivate;
@@ -106,7 +107,7 @@ var triggerData: PNdTriggerFacet;
 begin
   triggerData := Sender.GetNodeData(Node);
 
-  svc := TExtServiceEntry(MainForm.Services.Find(triggerData.Trigger.ServiceName));
+  svc := TExtServiceEntry(MainForm.MainServiceList.Services.Find(triggerData.Trigger.ServiceName));
   if svc = nil then begin
     //Maybe someone created a service while we weren't reloading? Show for now.
     Sender.IsVisible[Node] := true;
@@ -117,7 +118,7 @@ begin
   isVisible := true;
 
   //Filter out drivers if disabled
-  if not MainForm.aShowDrivers.Checked and not isService then
+  if not MainForm.MainServiceList.aShowDrivers.Checked and not isService then
     isVisible := false;
 
   //Quickfilter
@@ -149,7 +150,7 @@ begin
     //There can be some corner cases where the trigger has already been detected
     //by the TriggerBrowser but the matching new services is not yet in our local list.
     //Just deal with it for now. (Maybe later we'll rely on shared ServiceList in triggers too)
-    Result := TExtServiceEntry(MainForm.Services.Find(TriggerData.Trigger.ServiceName))
+    Result := TExtServiceEntry(MainForm.MainServiceList.Services.Find(TriggerData.Trigger.ServiceName))
 end;
 
 procedure TMainTriggerList.TreeFocusChanged(Sender: TBaseVirtualTree;
@@ -158,7 +159,7 @@ begin
   inherited;
   if not Self.Visible then exit; //we'll handle the TB focus when showing the TB
   //Show details for this service in details pane.
-  MainForm.SetDetailsPaneFocusedService(Self.GetFocusedService);
+  MainForm.MainServiceList.SetDetailsPaneFocusedService(Self.GetFocusedService);
 end;
 
 
